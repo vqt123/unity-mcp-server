@@ -35,6 +35,9 @@ namespace UnityMCP
                     case "unity_get_logs":
                         return GetLogs(args);
                     
+                    case "unity_capture_screenshot":
+                        return CaptureScreenshot(args);
+                    
                     default:
                         throw new System.Exception($"Unknown tool: {tool}");
                 }
@@ -259,6 +262,147 @@ namespace UnityMCP
                 ["returnedCount"] = logs.Count,
                 ["logs"] = logs
             };
+        }
+        
+        // Tool 8: Capture Screenshot
+        private static JObject CaptureScreenshot(JObject args)
+        {
+            string viewType = args["viewType"]?.ToString() ?? "game"; // game, scene, camera
+            int width = args["width"]?.ToObject<int>() ?? 1920;
+            int height = args["height"]?.ToObject<int>() ?? 1080;
+            bool returnBase64 = args["returnBase64"]?.ToObject<bool>() ?? true;
+            string outputPath = args["outputPath"]?.ToString();
+            
+            // Create output path if not specified
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                string tempDir = System.IO.Path.Combine(Application.dataPath, "..", "Temp", "Screenshots");
+                System.IO.Directory.CreateDirectory(tempDir);
+                string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                outputPath = System.IO.Path.Combine(tempDir, $"screenshot_{timestamp}.png");
+            }
+            
+            byte[] imageBytes = null;
+            
+            try
+            {
+                if (viewType == "game")
+                {
+                    imageBytes = CaptureGameView(width, height);
+                }
+                else if (viewType == "scene")
+                {
+                    imageBytes = CaptureSceneView(width, height);
+                }
+                else
+                {
+                    throw new System.Exception($"Unsupported view type: {viewType}");
+                }
+                
+                // Save to file
+                string fullPath = System.IO.Path.GetFullPath(outputPath);
+                System.IO.File.WriteAllBytes(fullPath, imageBytes);
+                
+                var result = new JObject
+                {
+                    ["success"] = true,
+                    ["path"] = fullPath,
+                    ["width"] = width,
+                    ["height"] = height,
+                    ["fileSize"] = imageBytes.Length,
+                    ["viewType"] = viewType
+                };
+                
+                // Add base64 if requested
+                if (returnBase64)
+                {
+                    result["base64"] = System.Convert.ToBase64String(imageBytes);
+                }
+                
+                return result;
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = $"Screenshot failed: {e.Message}"
+                };
+            }
+        }
+        
+        private static byte[] CaptureGameView(int width, int height)
+        {
+            // Find Game View
+            var gameViewType = System.Type.GetType("UnityEditor.GameView,UnityEditor");
+            var gameView = EditorWindow.GetWindow(gameViewType, false, null, false);
+            
+            if (gameView == null)
+            {
+                throw new System.Exception("Game View not found. Please open a Game View window.");
+            }
+            
+            // Get the camera
+            Camera camera = Camera.main;
+            if (camera == null)
+            {
+                camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
+            }
+            
+            if (camera == null)
+            {
+                throw new System.Exception("No camera found in scene. Add a camera to capture Game View.");
+            }
+            
+            return CaptureCamera(camera, width, height);
+        }
+        
+        private static byte[] CaptureSceneView(int width, int height)
+        {
+            var sceneView = UnityEditor.SceneView.lastActiveSceneView;
+            
+            if (sceneView == null)
+            {
+                throw new System.Exception("No active Scene View found. Please open a Scene View window.");
+            }
+            
+            return CaptureCamera(sceneView.camera, width, height);
+        }
+        
+        private static byte[] CaptureCamera(Camera camera, int width, int height)
+        {
+            // Create render texture
+            RenderTexture rt = new RenderTexture(width, height, 24);
+            RenderTexture previousRT = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            
+            try
+            {
+                // Render camera to texture
+                camera.targetTexture = rt;
+                camera.Render();
+                
+                // Read pixels
+                RenderTexture.active = rt;
+                Texture2D screenshot = new Texture2D(width, height, TextureFormat.RGB24, false);
+                screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                screenshot.Apply();
+                
+                // Encode to PNG
+                byte[] bytes = screenshot.EncodeToPNG();
+                
+                // Cleanup
+                UnityEngine.Object.DestroyImmediate(screenshot);
+                rt.Release();
+                
+                return bytes;
+            }
+            finally
+            {
+                // Restore
+                camera.targetTexture = previousRT;
+                RenderTexture.active = previousActive;
+            }
         }
     }
 }

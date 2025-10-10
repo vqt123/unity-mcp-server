@@ -1,0 +1,232 @@
+# Unity MCP Server - Core Development Rules
+
+## Project Overview
+This is a Unity Editor extension that runs an HTTP-based MCP (Model Context Protocol) server, allowing AI agents to control and interact with the Unity Editor programmatically.
+
+## Architecture Principles
+
+### 1. Main Thread Execution
+- **ALL Unity API calls MUST run on the main thread**
+- Use `ConcurrentQueue<Action>` + `EditorApplication.update` for thread-safe execution
+- NEVER use `EditorApplication.delayCall` for HTTP request handling (causes hangs)
+- Pattern:
+  ```csharp
+  mainThreadActions.Enqueue(() => {
+      // Unity API calls here
+  });
+  ```
+
+### 2. HTTP Server Design
+- Use `HttpListener` on background thread for requests
+- Use `ThreadPool.QueueUserWorkItem` for request handling
+- Queue actions for main thread, send response AFTER execution
+- Always include CORS headers: `Access-Control-Allow-Origin: *`
+
+### 3. Assembly Reload Handling
+- Server MUST gracefully stop/restart during Unity recompilation
+- Use `AssemblyReloadEvents.beforeAssemblyReload` to stop
+- Use `AssemblyReloadEvents.afterAssemblyReload` to restart
+- Use `[InitializeOnLoad]` for auto-start
+
+### 4. Tool Implementation Pattern
+```csharp
+private static JObject ToolName(JObject args)
+{
+    // 1. Parse arguments with defaults
+    string param = args["param"]?.ToString() ?? "default";
+    
+    // 2. Execute Unity operations
+    try {
+        // Unity API calls here
+        return new JObject {
+            ["success"] = true,
+            ["data"] = result
+        };
+    }
+    catch (Exception e) {
+        return new JObject {
+            ["success"] = false,
+            ["error"] = e.Message
+        };
+    }
+}
+```
+
+## Code Standards
+
+### Namespaces
+- Package code: `namespace UnityMCP`
+- Always include: `UnityEngine`, `UnityEditor`, `System`, `Newtonsoft.Json.Linq`
+
+### Error Handling
+- ALWAYS wrap Unity operations in try-catch
+- Return structured errors, never throw to HTTP layer
+- Include helpful error messages for AI agents
+- Log to Unity console with `[MCP]` prefix
+
+### Logging
+```csharp
+Debug.Log("[MCP] ✅ Success message");
+Debug.LogWarning("[MCP] ⚠️ Warning message");
+Debug.LogError("[MCP] ❌ Error message");
+```
+
+### JSON Response Format
+```json
+{
+  "success": true|false,
+  "data": {},
+  "error": "message if failed"
+}
+```
+
+## Tool Development Guidelines
+
+### When Adding New Tools
+
+1. **Add to MCPTools.cs**
+   - Add case in Execute() switch statement
+   - Implement private static method
+   - Follow naming: `unity_verb_noun` (e.g., `unity_create_cube`)
+
+2. **Add to unity_mcp_server.py**
+   - Add tool definition to TOOLS array
+   - Include clear description for AI
+   - Define all parameters with defaults and descriptions
+   - Mark required parameters
+
+3. **Update MCPServerWindow.cs**
+   - Add to tools list in HelpBox
+
+4. **Test Before Committing**
+   - Test with curl or via Claude Desktop
+   - Verify main thread execution works
+   - Check Unity console for errors
+   - Test during/after compilation
+
+### Tool Naming Convention
+- Format: `unity_{action}_{subject}`
+- Examples: `unity_create_cube`, `unity_get_logs`, `unity_capture_screenshot`
+- Use verbs: create, get, set, delete, move, add, remove, list, find
+
+### Parameter Design
+- Always provide sensible defaults
+- Use optional parameters when possible
+- Document expected types and ranges
+- Use enums for limited choices
+
+## Performance Considerations
+
+### Screenshot/Large Data
+- Provide `returnBase64` option (default true for AI, false for file-only)
+- Use streaming for large responses if needed
+- Cache results when appropriate
+- Clean up temporary resources
+
+### Reflection Usage
+- Acceptable for accessing Unity internals (LogEntries, GameView)
+- Cache Type references when used repeatedly
+- Handle null gracefully
+
+### Resource Cleanup
+```csharp
+try {
+    // Allocate resources
+}
+finally {
+    // ALWAYS cleanup
+    DestroyImmediate(tempObject);
+    renderTexture.Release();
+}
+```
+
+## Testing Philosophy
+
+### NO Automated Test Scripts
+- Do NOT create test shell scripts
+- Do NOT create automated test suites
+- User will manually test via curl or Claude Desktop
+
+### Manual Testing Approach
+1. Verify Unity compiles without errors
+2. Check MCP Server window shows "running"
+3. Test tools via curl or Claude Desktop
+4. Use `unity_get_logs` to self-diagnose issues
+5. Verify screenshots/outputs visually
+
+### Self-Debugging
+- Implement `unity_get_logs` for AI to read Unity console
+- Include verbose debug logs
+- Provide clear error messages
+- Return actionable error information
+
+## Documentation Standards
+
+### Code Comments
+- Comment WHY, not WHAT
+- Document Unity API gotchas
+- Explain threading/main thread issues
+- Note deprecations and alternatives
+
+### Tool Descriptions (Python)
+- Clear, concise description for AI
+- Explain what tool does and when to use it
+- Mark essential tools with "ESSENTIAL" tag
+- Include examples in description if complex
+
+## Unity-Specific Gotchas
+
+### API Changes
+- Use `FindFirstObjectByType<T>()` not deprecated `FindObjectOfType<T>()`
+- Check Unity version compatibility (target: Unity 2021.3+)
+- Use `UnityEngine.LogType` not `UnityEditor.LogType`
+
+### Editor Windows
+- Check if window exists before operating
+- GameView requires reflection to access
+- SceneView use `SceneView.lastActiveSceneView`
+
+### Cameras
+- Check for `Camera.main` first
+- Fallback to `FindFirstObjectByType<Camera>()`
+- Provide helpful error if no camera found
+
+## Package Management
+
+### Dependencies
+- Minimize external dependencies
+- Currently: `com.unity.nuget.newtonsoft-json` (required)
+- Document any new dependencies in package.json
+
+### Version Updates
+- Follow semver: MAJOR.MINOR.PATCH
+- Update package.json version
+- Update CHANGELOG if exists
+- Tag releases in git
+
+## Security Considerations
+
+### Local Only
+- Server binds to localhost only
+- No authentication (local trust model)
+- No external network access
+- Port 8765 (configurable)
+
+### File Operations
+- Screenshots save to `Temp/Screenshots` by default
+- Never delete user files without explicit tool
+- Validate paths stay within project
+
+## Future-Proofing
+
+### Extensibility
+- Tools should be atomic and composable
+- Avoid monolithic operations
+- Design for AI agent workflows
+- Consider visual feedback loop
+
+### Scalability
+- Keep tools focused and simple
+- Complex operations = multiple tool calls
+- Let AI orchestrate, tools execute
+- Provide building blocks, not solutions

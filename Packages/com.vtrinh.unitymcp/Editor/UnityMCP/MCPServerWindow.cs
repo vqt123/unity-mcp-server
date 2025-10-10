@@ -41,7 +41,8 @@ namespace UnityMCP
                 "- unity_force_compile\n" +
                 "- unity_is_compiling\n" +
                 "- unity_wait_for_compile\n" +
-                "- unity_get_logs",
+                "- unity_get_logs\n" +
+                "- unity_capture_screenshot ⭐ NEW",
                 MessageType.Info
             );
         }

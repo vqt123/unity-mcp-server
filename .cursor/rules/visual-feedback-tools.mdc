@@ -1,0 +1,265 @@
+# Visual Feedback & Screenshot Tools
+
+## Core Principle
+**AI MUST be able to SEE what it creates to verify and iterate.**
+
+## Screenshot Implementation
+
+### Capture Methods
+
+#### 1. Game View (Camera Perspective)
+```csharp
+unity_capture_screenshot { viewType: "game" }
+```
+- Captures what the game camera sees
+- Requires active camera in scene
+- Check `Camera.main` first, fallback to `FindFirstObjectByType<Camera>()`
+- Throw helpful error if no camera exists
+
+#### 2. Scene View (Editor Perspective)  
+```csharp
+unity_capture_screenshot { viewType: "scene" }
+```
+- Captures the Scene View perspective
+- Uses `SceneView.lastActiveSceneView.camera`
+- Requires Scene View to be open
+- Best for showing object placement/layout
+
+### Technical Implementation
+
+#### Render Pipeline
+1. Create `RenderTexture` with desired dimensions
+2. Store camera's current `targetTexture` and `RenderTexture.active`
+3. Set camera to render to our RenderTexture
+4. Call `camera.Render()`
+5. Read pixels into `Texture2D`
+6. Encode to PNG with `EncodeToPNG()`
+7. **CRITICAL**: Restore previous render targets in `finally` block
+8. Cleanup temporary objects with `DestroyImmediate()`
+
+#### Code Pattern
+```csharp
+RenderTexture rt = new RenderTexture(width, height, 24);
+RenderTexture previousRT = camera.targetTexture;
+RenderTexture previousActive = RenderTexture.active;
+
+try {
+    camera.targetTexture = rt;
+    camera.Render();
+    
+    RenderTexture.active = rt;
+    Texture2D screenshot = new Texture2D(width, height, TextureFormat.RGB24, false);
+    screenshot.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+    screenshot.Apply();
+    
+    byte[] bytes = screenshot.EncodeToPNG();
+    
+    DestroyImmediate(screenshot);
+    rt.Release();
+    
+    return bytes;
+}
+finally {
+    camera.targetTexture = previousRT;
+    RenderTexture.active = previousActive;
+}
+```
+
+### Response Format
+
+#### With Base64 (Default)
+```json
+{
+  "success": true,
+  "path": "/absolute/path/to/screenshot.png",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 245680,
+  "viewType": "game",
+  "base64": "iVBORw0KGgoAAAANSUhEUgAA..."
+}
+```
+
+#### File Only
+```json
+{
+  "success": true,
+  "path": "/absolute/path/to/screenshot.png",
+  "width": 1920,
+  "height": 1080,
+  "fileSize": 245680,
+  "viewType": "game"
+}
+```
+
+### Parameters
+
+```typescript
+{
+  viewType?: "game" | "scene",      // Default: "game"
+  width?: number,                    // Default: 1920
+  height?: number,                   // Default: 1080
+  returnBase64?: boolean,            // Default: true
+  outputPath?: string                // Default: Temp/Screenshots/screenshot_{timestamp}.png
+}
+```
+
+### File Management
+
+#### Default Location
+- `{ProjectRoot}/Temp/Screenshots/`
+- Auto-create directory if doesn't exist
+- Filename: `screenshot_{yyyy-MM-dd_HH-mm-ss}.png`
+
+#### Path Handling
+- Accept absolute or relative paths
+- Ensure parent directory exists
+- Return absolute path in response
+- Never overwrite without explicit path
+
+### Error Handling
+
+#### Common Errors
+1. **No Camera Found**
+   ```json
+   {
+     "success": false,
+     "error": "No camera found in scene. Add a camera to capture Game View."
+   }
+   ```
+
+2. **View Not Open**
+   ```json
+   {
+     "success": false,
+     "error": "No active Scene View found. Please open a Scene View window."
+   }
+   ```
+
+3. **Render Failure**
+   ```json
+   {
+     "success": false,
+     "error": "Screenshot failed: {exception message}"
+   }
+   ```
+
+## Visual Feedback Loop Pattern
+
+### AI Workflow
+1. **Create** objects/UI with Unity tools
+2. **Capture** screenshot of result
+3. **Analyze** image with vision capabilities
+4. **Iterate** based on what it sees
+5. **Verify** final result matches intent
+
+### Example AI Flow
+```
+AI: "Create a red cube"
+    → unity_create_cube({color: red})
+    
+AI: "Let me see what it looks like"
+    → unity_capture_screenshot({viewType: "game"})
+    
+AI: [Analyzes base64 image]
+    "The cube looks small, let me make it bigger"
+    → unity_set_transform({scale: [2,2,2]})
+    
+AI: "Check the result again"
+    → unity_capture_screenshot({viewType: "game"})
+    
+AI: [Verifies] "Perfect! ✓"
+```
+
+## Resolution Guidelines
+
+### Defaults
+- **1920x1080**: Good balance, works with most vision APIs
+- Reduce for faster iteration: 1280x720
+- Increase for detail: 2560x1440 or 3840x2160
+
+### Vision API Limits
+- Claude: Typically handles up to 5MB base64
+- PNG compression usually keeps 1920x1080 under 2MB
+- Monitor fileSize in response
+
+## Performance Optimization
+
+### When to Skip Base64
+- File archival (set returnBase64: false)
+- Large resolutions that don't need AI analysis
+- Batch operations (save, analyze later)
+
+### Memory Management
+- DestroyImmediate() textures immediately
+- Release() RenderTextures
+- Don't cache screenshots in memory
+- Let garbage collection handle byte arrays
+
+## Future Extensions (Not Yet Implemented)
+
+### Element-Specific Screenshots
+```csharp
+unity_capture_element({
+  gameObjectName: "PlayerUI",
+  padding: 10
+})
+```
+- Find GameObject bounds
+- Capture just that region
+- Useful for UI element verification
+
+### Diff Screenshots
+```csharp
+unity_compare_screenshots({
+  path1: "before.png",
+  path2: "after.png"
+})
+```
+- Highlight differences
+- Verify changes worked
+- Detect regressions
+
+### Annotated Screenshots
+```csharp
+unity_annotate_screenshot({
+  objects: ["Cube", "Sphere"],
+  showBounds: true,
+  showLabels: true
+})
+```
+- Overlay object names
+- Show bounding boxes
+- Debug spatial relationships
+
+## Testing Checklist
+
+Before committing screenshot features:
+
+- [ ] Create simple scene with camera
+- [ ] Test Game View capture
+- [ ] Test Scene View capture
+- [ ] Verify base64 encoding works
+- [ ] Check file is saved correctly
+- [ ] Test with no camera (error case)
+- [ ] Test with view closed (error case)
+- [ ] Verify different resolutions work
+- [ ] Check file size is reasonable
+- [ ] Test returnBase64: false option
+- [ ] Verify cleanup (no memory leaks)
+- [ ] Test during/after compilation (auto-restart)
+
+## Integration with Claude Desktop
+
+### Tool Description
+- Mark as **ESSENTIAL** for visual verification
+- Emphasize this closes the feedback loop
+- Explain AI can "see" what it created
+- Suggest using after creation operations
+
+### Usage Tips
+- Default parameters work for most cases
+- Game view = "what player sees"
+- Scene view = "editor perspective" 
+- Base64 enables immediate AI analysis
+- Path allows revisiting later

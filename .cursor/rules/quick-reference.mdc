@@ -1,0 +1,626 @@
+---
+alwaysApply: true
+---
+
+# Quick Reference for AI Assistant
+
+## Project At A Glance
+
+**What:** Unity Editor MCP server - lets AI agents control Unity via HTTP  
+**Status:** v0.1.0 MVP - Screenshot capability just added  
+**Tech:** C# Unity Editor extension + Python MCP bridge  
+**Port:** 8765  
+**Repository:** https://github.com/vqt123/unity-mcp-server (public)
+
+## Critical Rules
+
+### ⛔ NEVER
+- Create automated test scripts (.sh, .py files)
+- Use `EditorApplication.delayCall` for HTTP request handling
+- Throw exceptions to HTTP layer (always return JSON)
+- Call Unity APIs from background threads
+- Create files without explicit user request
+- Use deprecated Unity APIs (`FindObjectOfType` → `FindFirstObjectByType`)
+
+### ✅ ALWAYS
+- Queue Unity operations via `ConcurrentQueue<Action>`
+- Process queue in `EditorApplication.update`
+- Include `[MCP]` prefix in Debug logs
+- Return structured JSON: `{success: bool, data/error: any}`
+- Add tools to BOTH MCPTools.cs AND unity_mcp_server.py
+- Test manually with curl or Claude Desktop
+- Use try-catch around all Unity operations
+- Cleanup resources (DestroyImmediate, Release)
+
+## File Locations
+
+### Unity Package (Distributable)
+```
+Packages/com.vtrinh.unitymcp/
+├── package.json              # Version, dependencies
+└── Editor/UnityMCP/
+    ├── MCPServer.cs          # HTTP server, threading
+    ├── MCPTools.cs           # Tool implementations
+    └── MCPServerWindow.cs    # Editor window
+```
+
+### Python MCP Bridge
+```
+mcp-server/
+├── unity_mcp_server.py       # MCP server (Claude Desktop)
+└── requirements.txt          # mcp, httpx
+```
+
+### Documentation
+```
+docs/
+├── Unity-MCP-*.md           # Comprehensive guides
+└── QUICKSTART.md            # Quick start
+```
+
+## Adding a New Tool (Fast)
+
+### 1. Unity C# - MCPTools.cs
+```csharp
+// In Execute switch
+case "unity_tool_name":
+    return ToolName(args);
+
+// Implementation
+private static JObject ToolName(JObject args)
+{
+    string param = args["param"]?.ToString() ?? "default";
+    try {
+        // Unity operations here
+        return new JObject {
+            ["success"] = true,
+            ["data"] = result
+        };
+    }
+    catch (Exception e) {
+        return new JObject {
+            ["success"] = false,
+            ["error"] = e.Message
+        };
+    }
+}
+```
+
+### 2. Python - unity_mcp_server.py
+```python
+# Add to TOOLS array
+{
+    "name": "unity_tool_name",
+    "description": "What it does and when to use it",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "param": {
+                "type": "string",
+                "description": "What this param does",
+                "default": "default"
+            }
+        },
+        "required": []
+    }
+}
+```
+
+### 3. Update Window - MCPServerWindow.cs
+```csharp
+EditorGUILayout.HelpBox(
+    "- unity_tool_name ⭐ NEW",
+    MessageType.Info
+);
+```
+
+### 4. Test
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_tool_name", "args": {}}'
+```
+
+## Current Tools (v0.1.0)
+
+1. `unity_ping` - Health check
+2. `unity_get_scene_info` - Scene details
+3. `unity_create_cube` - Create cube primitive
+4. `unity_force_compile` - Trigger compilation
+5. `unity_is_compiling` - Check compile status
+6. `unity_wait_for_compile` - Wait for compilation
+7. `unity_get_logs` - Read Unity console (self-debug)
+8. `unity_capture_screenshot` - Visual feedback ⭐ NEW
+
+## Common Tasks
+
+### Compile and Test New Tool
+```bash
+# In Unity:
+# 1. Edit code, save
+# 2. Wait for compile (blue spinner)
+# 3. Check "Unity MCP Server" window shows running
+# 4. Test with curl
+
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_get_logs", "args": {"count": 10}}'
+```
+
+### Check Unity Logs from Terminal
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_get_logs", "args": {}}'
+```
+
+### Capture Screenshot
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_capture_screenshot", "args": {"viewType": "game"}}'
+```
+
+### Git Commit
+```bash
+git add .
+git commit -m "feat(tools): add unity_new_tool
+
+- What it does
+- Parameters
+- Tested with X"
+
+git push
+```
+
+## Threading Model
+
+```
+┌─────────────────┐
+│  HTTP Request   │ (Background Thread)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ HandleRequest   │ (Background Thread)
+│ Parse JSON      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Enqueue Action      │
+│ mainThreadActions   │
+└─────────┬───────────┘
+          │
+          ▼
+┌──────────────────────┐
+│ EditorApplication    │ (Main Thread)
+│ .update              │
+│ - Dequeue action     │
+│ - Execute Unity APIs │
+│ - Send HTTP response │
+└──────────────────────┘
+```
+
+## Troubleshooting
+
+### Server Not Responding
+1. Check Unity console for `[MCP] ✅ Server started`
+2. Check compilation not running
+3. Restart Unity if needed
+4. Server auto-restarts after compilation
+
+### Compilation Errors
+1. Check `unity_get_logs` via curl
+2. Fix errors in Unity
+3. Wait for recompile
+4. Server auto-restarts
+
+### Tool Not Found
+1. Check tool name spelling
+2. Check added to both C# and Python
+3. Check Unity compiled successfully
+4. Restart Python server if needed
+
+## Next Development Phase
+
+**Goal:** GameObject manipulation tools (v0.2.0)
+
+**Priority tools to add:**
+1. `unity_delete_gameobject`
+2. `unity_find_gameobject`
+3. `unity_move_gameobject`
+4. `unity_create_primitive` (sphere, capsule, etc.)
+5. `unity_list_gameobjects`
+
+**Pattern:** Start with delete, test it thoroughly, then add others
+
+## Version Info
+
+- **Current:** v0.1.0 (MVP with screenshots)
+- **Next:** v0.2.0 (Scene Builder)
+- **Unity:** 2021.3+
+- **Python:** 3.11+
+- **Dependencies:** Newtonsoft.Json (Unity), mcp + httpx (Python)
+
+## Documentation Links
+
+Full docs in `/docs/`:
+- Unity-MCP-MVP-Guide.md - Complete MVP guide
+- Unity-MCP-Deployment-Guide.md - How to deploy
+- Unity-MCP-User-Guide.md - End user instructions
+- Unity-MCP-Tool-Catalog.md - All tools reference
+
+## Testing Philosophy
+
+**Manual testing only.**  
+User tests via:
+- curl commands
+- Claude Desktop integration
+- Unity console observation
+
+**Self-debugging:**
+- `unity_get_logs` - Read Unity console
+- `unity_capture_screenshot` - See visual results
+- `unity_is_compiling` - Check Unity state
+
+## Response to User Requests
+
+### If user asks to add a tool:
+1. Implement in C# (MCPTools.cs)
+2. Add to Python (unity_mcp_server.py)
+3. Update window (MCPServerWindow.cs)
+4. Provide curl test command
+5. Let user test manually
+
+### If user reports error:
+1. Use `unity_get_logs` to see Unity console
+2. Check compilation status
+3. Verify threading model followed
+4. Fix and test
+
+### If user wants to commit:
+1. Stage changes
+2. Write conventional commit message
+3. Push to GitHub
+4. Update version if needed
+
+## Quick Wins
+
+**Easy tools to add next (high value, low effort):**
+- `unity_delete_gameobject` - Essential for iteration
+- `unity_find_gameobject` - Find objects by name
+- `unity_create_sphere` - More primitives
+- `unity_get_gameobject_info` - Inspect objects
+- `unity_set_active` - Enable/disable objects
+
+**All follow same pattern, ~10 min each.**
+
+## Success Criteria
+
+Tool is successful when:
+1. ✅ Compiles without errors
+2. ✅ Returns proper JSON structure
+3. ✅ Logs clearly to Unity console
+4. ✅ User can test manually
+5. ✅ AI (Claude) can use it effectively
+
+## Remember
+
+- **Speed over perfection** - It's an MVP
+- **User tests manually** - No test scripts
+- **Document as you go** - Comments + commit messages
+- **Git push often** - GitHub is backup
+- **AI is the user** - Design for AI consumption
+- **Visual feedback loop** - Screenshots enable iteration
+# Quick Reference for AI Assistant
+
+## Project At A Glance
+
+**What:** Unity Editor MCP server - lets AI agents control Unity via HTTP  
+**Status:** v0.1.0 MVP - Screenshot capability just added  
+**Tech:** C# Unity Editor extension + Python MCP bridge  
+**Port:** 8765  
+**Repository:** https://github.com/vqt123/unity-mcp-server (public)
+
+## Critical Rules
+
+### ⛔ NEVER
+- Create automated test scripts (.sh, .py files)
+- Use `EditorApplication.delayCall` for HTTP request handling
+- Throw exceptions to HTTP layer (always return JSON)
+- Call Unity APIs from background threads
+- Create files without explicit user request
+- Use deprecated Unity APIs (`FindObjectOfType` → `FindFirstObjectByType`)
+
+### ✅ ALWAYS
+- Queue Unity operations via `ConcurrentQueue<Action>`
+- Process queue in `EditorApplication.update`
+- Include `[MCP]` prefix in Debug logs
+- Return structured JSON: `{success: bool, data/error: any}`
+- Add tools to BOTH MCPTools.cs AND unity_mcp_server.py
+- Test manually with curl or Claude Desktop
+- Use try-catch around all Unity operations
+- Cleanup resources (DestroyImmediate, Release)
+
+## File Locations
+
+### Unity Package (Distributable)
+```
+Packages/com.vtrinh.unitymcp/
+├── package.json              # Version, dependencies
+└── Editor/UnityMCP/
+    ├── MCPServer.cs          # HTTP server, threading
+    ├── MCPTools.cs           # Tool implementations
+    └── MCPServerWindow.cs    # Editor window
+```
+
+### Python MCP Bridge
+```
+mcp-server/
+├── unity_mcp_server.py       # MCP server (Claude Desktop)
+└── requirements.txt          # mcp, httpx
+```
+
+### Documentation
+```
+docs/
+├── Unity-MCP-*.md           # Comprehensive guides
+└── QUICKSTART.md            # Quick start
+```
+
+## Adding a New Tool (Fast)
+
+### 1. Unity C# - MCPTools.cs
+```csharp
+// In Execute switch
+case "unity_tool_name":
+    return ToolName(args);
+
+// Implementation
+private static JObject ToolName(JObject args)
+{
+    string param = args["param"]?.ToString() ?? "default";
+    try {
+        // Unity operations here
+        return new JObject {
+            ["success"] = true,
+            ["data"] = result
+        };
+    }
+    catch (Exception e) {
+        return new JObject {
+            ["success"] = false,
+            ["error"] = e.Message
+        };
+    }
+}
+```
+
+### 2. Python - unity_mcp_server.py
+```python
+# Add to TOOLS array
+{
+    "name": "unity_tool_name",
+    "description": "What it does and when to use it",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "param": {
+                "type": "string",
+                "description": "What this param does",
+                "default": "default"
+            }
+        },
+        "required": []
+    }
+}
+```
+
+### 3. Update Window - MCPServerWindow.cs
+```csharp
+EditorGUILayout.HelpBox(
+    "- unity_tool_name ⭐ NEW",
+    MessageType.Info
+);
+```
+
+### 4. Test
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_tool_name", "args": {}}'
+```
+
+## Current Tools (v0.1.0)
+
+1. `unity_ping` - Health check
+2. `unity_get_scene_info` - Scene details
+3. `unity_create_cube` - Create cube primitive
+4. `unity_force_compile` - Trigger compilation
+5. `unity_is_compiling` - Check compile status
+6. `unity_wait_for_compile` - Wait for compilation
+7. `unity_get_logs` - Read Unity console (self-debug)
+8. `unity_capture_screenshot` - Visual feedback ⭐ NEW
+
+## Common Tasks
+
+### Compile and Test New Tool
+```bash
+# In Unity:
+# 1. Edit code, save
+# 2. Wait for compile (blue spinner)
+# 3. Check "Unity MCP Server" window shows running
+# 4. Test with curl
+
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_get_logs", "args": {"count": 10}}'
+```
+
+### Check Unity Logs from Terminal
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_get_logs", "args": {}}'
+```
+
+### Capture Screenshot
+```bash
+curl -X POST http://localhost:8765 \
+  -H "Content-Type: application/json" \
+  -d '{"tool": "unity_capture_screenshot", "args": {"viewType": "game"}}'
+```
+
+### Git Commit
+```bash
+git add .
+git commit -m "feat(tools): add unity_new_tool
+
+- What it does
+- Parameters
+- Tested with X"
+
+git push
+```
+
+## Threading Model
+
+```
+┌─────────────────┐
+│  HTTP Request   │ (Background Thread)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ HandleRequest   │ (Background Thread)
+│ Parse JSON      │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Enqueue Action      │
+│ mainThreadActions   │
+└─────────┬───────────┘
+          │
+          ▼
+┌──────────────────────┐
+│ EditorApplication    │ (Main Thread)
+│ .update              │
+│ - Dequeue action     │
+│ - Execute Unity APIs │
+│ - Send HTTP response │
+└──────────────────────┘
+```
+
+## Troubleshooting
+
+### Server Not Responding
+1. Check Unity console for `[MCP] ✅ Server started`
+2. Check compilation not running
+3. Restart Unity if needed
+4. Server auto-restarts after compilation
+
+### Compilation Errors
+1. Check `unity_get_logs` via curl
+2. Fix errors in Unity
+3. Wait for recompile
+4. Server auto-restarts
+
+### Tool Not Found
+1. Check tool name spelling
+2. Check added to both C# and Python
+3. Check Unity compiled successfully
+4. Restart Python server if needed
+
+## Next Development Phase
+
+**Goal:** GameObject manipulation tools (v0.2.0)
+
+**Priority tools to add:**
+1. `unity_delete_gameobject`
+2. `unity_find_gameobject`
+3. `unity_move_gameobject`
+4. `unity_create_primitive` (sphere, capsule, etc.)
+5. `unity_list_gameobjects`
+
+**Pattern:** Start with delete, test it thoroughly, then add others
+
+## Version Info
+
+- **Current:** v0.1.0 (MVP with screenshots)
+- **Next:** v0.2.0 (Scene Builder)
+- **Unity:** 2021.3+
+- **Python:** 3.11+
+- **Dependencies:** Newtonsoft.Json (Unity), mcp + httpx (Python)
+
+## Documentation Links
+
+Full docs in `/docs/`:
+- Unity-MCP-MVP-Guide.md - Complete MVP guide
+- Unity-MCP-Deployment-Guide.md - How to deploy
+- Unity-MCP-User-Guide.md - End user instructions
+- Unity-MCP-Tool-Catalog.md - All tools reference
+
+## Testing Philosophy
+
+**Manual testing only.**  
+User tests via:
+- curl commands
+- Claude Desktop integration
+- Unity console observation
+
+**Self-debugging:**
+- `unity_get_logs` - Read Unity console
+- `unity_capture_screenshot` - See visual results
+- `unity_is_compiling` - Check Unity state
+
+## Response to User Requests
+
+### If user asks to add a tool:
+1. Implement in C# (MCPTools.cs)
+2. Add to Python (unity_mcp_server.py)
+3. Update window (MCPServerWindow.cs)
+4. Provide curl test command
+5. Let user test manually
+
+### If user reports error:
+1. Use `unity_get_logs` to see Unity console
+2. Check compilation status
+3. Verify threading model followed
+4. Fix and test
+
+### If user wants to commit:
+1. Stage changes
+2. Write conventional commit message
+3. Push to GitHub
+4. Update version if needed
+
+## Quick Wins
+
+**Easy tools to add next (high value, low effort):**
+- `unity_delete_gameobject` - Essential for iteration
+- `unity_find_gameobject` - Find objects by name
+- `unity_create_sphere` - More primitives
+- `unity_get_gameobject_info` - Inspect objects
+- `unity_set_active` - Enable/disable objects
+
+**All follow same pattern, ~10 min each.**
+
+## Success Criteria
+
+Tool is successful when:
+1. ✅ Compiles without errors
+2. ✅ Returns proper JSON structure
+3. ✅ Logs clearly to Unity console
+4. ✅ User can test manually
+5. ✅ AI (Claude) can use it effectively
+
+## Remember
+
+- **Speed over perfection** - It's an MVP
+- **User tests manually** - No test scripts
+- **Document as you go** - Comments + commit messages
+- **Git push often** - GitHub is backup
+- **AI is the user** - Design for AI consumption
+- **Visual feedback loop** - Screenshots enable iteration
