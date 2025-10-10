@@ -576,6 +576,20 @@ TOOLS = [
             "required": ["sceneName"]
         }
     },
+    {
+        "name": "unity_add_scene_to_build",
+        "description": "Add a scene to the Build Settings so it can be loaded at runtime. ESSENTIAL for scene switching to work in Play mode.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scenePath": {
+                    "type": "string",
+                    "description": "Full path to the scene file (e.g., 'Assets/Scenes/MainMenu.unity')"
+                }
+            },
+            "required": ["scenePath"]
+        }
+    },
     # GameObject Operations
     {
         "name": "unity_find_gameobject",

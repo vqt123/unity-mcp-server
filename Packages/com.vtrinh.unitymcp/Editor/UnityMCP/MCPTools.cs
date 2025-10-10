@@ -98,6 +98,9 @@ namespace UnityMCP
                     case "unity_load_scene":
                         return LoadScene(args);
                     
+                    case "unity_add_scene_to_build":
+                        return AddSceneToBuild(args);
+                    
                     // Script Management
                     case "unity_create_script":
                         return CreateScript(args);
@@ -773,6 +776,73 @@ namespace UnityMCP
             }
         }
         
+        private static JObject AddSceneToBuild(JObject args)
+        {
+            string scenePath = args["scenePath"]?.ToString();
+            
+            if (string.IsNullOrEmpty(scenePath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Scene path is required"
+                };
+            }
+            
+            try
+            {
+                // Get existing scenes in build settings
+                var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+                
+                // Check if scene is already in build settings
+                bool alreadyExists = false;
+                foreach (var scene in scenes)
+                {
+                    if (scene.path == scenePath)
+                    {
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+                
+                if (alreadyExists)
+                {
+                    Debug.Log($"[MCP] Scene '{scenePath}' is already in build settings");
+                    return new JObject
+                    {
+                        ["success"] = true,
+                        ["message"] = $"Scene '{scenePath}' is already in build settings",
+                        ["buildIndex"] = System.Array.FindIndex(scenes.ToArray(), s => s.path == scenePath)
+                    };
+                }
+                
+                // Add scene to build settings
+                var newScene = new EditorBuildSettingsScene(scenePath, true);
+                scenes.Add(newScene);
+                EditorBuildSettings.scenes = scenes.ToArray();
+                
+                int buildIndex = scenes.Count - 1;
+                
+                Debug.Log($"[MCP] Added scene '{scenePath}' to build settings at index {buildIndex}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["scenePath"] = scenePath,
+                    ["buildIndex"] = buildIndex,
+                    ["totalScenes"] = scenes.Count
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         // ==================== GAMEOBJECT MANAGEMENT ====================
         
         private static JObject DeleteGameObject(JObject args)
@@ -1141,10 +1211,14 @@ namespace UnityMCP
                     };
                 }
                 
-                // Clear existing listeners
-                button.onClick.RemoveAllListeners();
+                // Clear all existing persistent listeners
+                int listenerCount = button.onClick.GetPersistentEventCount();
+                for (int i = listenerCount - 1; i >= 0; i--)
+                {
+                    UnityEditor.Events.UnityEventTools.RemovePersistentListener(button.onClick, i);
+                }
                 
-                // Add listener based on action type
+                // Add persistent listener based on action type
                 if (action == "LoadScene")
                 {
                     if (string.IsNullOrEmpty(parameter))
@@ -1156,30 +1230,32 @@ namespace UnityMCP
                         };
                     }
                     
-                    // Use UnityEvent with string parameter
-                    UnityEngine.Events.UnityAction<string> loadSceneAction = 
+                    // Add persistent listener with string parameter
+                    UnityEditor.Events.UnityEventTools.AddStringPersistentListener(
+                        button.onClick,
                         (UnityEngine.Events.UnityAction<string>)System.Delegate.CreateDelegate(
                             typeof(UnityEngine.Events.UnityAction<string>),
                             sceneLoader,
                             "LoadScene"
-                        );
+                        ),
+                        parameter
+                    );
                     
-                    button.onClick.AddListener(() => loadSceneAction(parameter));
-                    
-                    Debug.Log($"[MCP] Set button '{buttonName}' to load scene '{parameter}'");
+                    Debug.Log($"[MCP] Set button '{buttonName}' to load scene '{parameter}' (persistent)");
                 }
                 else if (action == "Quit")
                 {
-                    UnityEngine.Events.UnityAction quitAction = 
+                    // Add persistent listener with no parameters
+                    UnityEditor.Events.UnityEventTools.AddPersistentListener(
+                        button.onClick,
                         (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(
                             typeof(UnityEngine.Events.UnityAction),
                             sceneLoader,
                             "QuitGame"
-                        );
+                        )
+                    );
                     
-                    button.onClick.AddListener(quitAction);
-                    
-                    Debug.Log($"[MCP] Set button '{buttonName}' to quit game");
+                    Debug.Log($"[MCP] Set button '{buttonName}' to quit game (persistent)");
                 }
                 else
                 {
@@ -1191,6 +1267,7 @@ namespace UnityMCP
                 }
                 
                 EditorUtility.SetDirty(button);
+                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
                 
                 return new JObject
                 {
