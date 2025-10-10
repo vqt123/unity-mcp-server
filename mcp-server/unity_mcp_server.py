@@ -521,6 +521,164 @@ TOOLS = [
             },
             "required": []
         }
+    },
+    # Scene Management
+    {
+        "name": "unity_create_scene",
+        "description": "Create a new Unity scene. Essential for creating game/menu scenes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Scene name (without .unity extension)"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Save path for the scene",
+                    "default": "Assets/Scenes/"
+                },
+                "setup": {
+                    "type": "string",
+                    "enum": ["Empty", "Default"],
+                    "description": "Scene setup: 'Empty' or 'Default' (with camera and light)",
+                    "default": "Default"
+                }
+            },
+            "required": ["name"]
+        }
+    },
+    {
+        "name": "unity_save_scene",
+        "description": "Save the current Unity scene. Always save after making changes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Optional: Save path (if different from current path)"
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "unity_load_scene",
+        "description": "Load a Unity scene by name. Used for switching between scenes in the editor.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sceneName": {
+                    "type": "string",
+                    "description": "Name of the scene to load (without .unity extension)"
+                }
+            },
+            "required": ["sceneName"]
+        }
+    },
+    # GameObject Operations
+    {
+        "name": "unity_find_gameobject",
+        "description": "Find a GameObject by name and return its information (position, path, active state).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject to find"
+                }
+            },
+            "required": ["name"]
+        }
+    },
+    {
+        "name": "unity_set_position",
+        "description": "Set the position of a GameObject in world or local space.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "position": {
+                    "type": "array",
+                    "description": "Position as [x, y, z]",
+                    "items": {
+                        "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                }
+            },
+            "required": ["name", "position"]
+        }
+    },
+    # Script Management
+    {
+        "name": "unity_create_script",
+        "description": "Create a new C# script file in Unity project. IMPORTANT: After creating scripts, use unity_force_compile and unity_wait_for_compile before using them.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Script name (without .cs extension)"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full C# script content"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Save path for the script",
+                    "default": "Assets/Scripts/"
+                }
+            },
+            "required": ["name", "content"]
+        }
+    },
+    {
+        "name": "unity_add_component",
+        "description": "Add a component to a GameObject. The component type must be compiled and available first.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gameObjectName": {
+                    "type": "string",
+                    "description": "Name of the GameObject to add component to"
+                },
+                "componentType": {
+                    "type": "string",
+                    "description": "Type name of the component (e.g., 'Rigidbody', 'CubeController')"
+                }
+            },
+            "required": ["gameObjectName", "componentType"]
+        }
+    },
+    # Button Events
+    {
+        "name": "unity_set_button_onclick",
+        "description": "Set button click handler to load scene or quit game. Requires a SceneLoader GameObject with SceneLoader script in the scene.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "buttonName": {
+                    "type": "string",
+                    "description": "Name of the Button GameObject"
+                },
+                "action": {
+                    "type": "string",
+                    "enum": ["LoadScene", "Quit"],
+                    "description": "Action type: 'LoadScene' or 'Quit'"
+                },
+                "parameter": {
+                    "type": "string",
+                    "description": "Parameter for the action (e.g., scene name for LoadScene)"
+                }
+            },
+            "required": ["buttonName", "action"]
+        }
     }
 ]
 

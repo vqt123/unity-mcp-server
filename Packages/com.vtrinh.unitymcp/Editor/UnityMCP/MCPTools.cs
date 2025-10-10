@@ -82,6 +82,33 @@ namespace UnityMCP
                     case "unity_delete_gameobject":
                         return DeleteGameObject(args);
                     
+                    case "unity_find_gameobject":
+                        return FindGameObject(args);
+                    
+                    case "unity_set_position":
+                        return SetPosition(args);
+                    
+                    // Scene Management
+                    case "unity_create_scene":
+                        return CreateScene(args);
+                    
+                    case "unity_save_scene":
+                        return SaveScene(args);
+                    
+                    case "unity_load_scene":
+                        return LoadScene(args);
+                    
+                    // Script Management
+                    case "unity_create_script":
+                        return CreateScript(args);
+                    
+                    case "unity_add_component":
+                        return AddComponent(args);
+                    
+                    // Button Events
+                    case "unity_set_button_onclick":
+                        return SetButtonOnClick(args);
+                    
                     // Test/Debug Tools
                     case "unity_test_log":
                         return TestLog(args);
@@ -592,6 +619,160 @@ namespace UnityMCP
             }
         }
         
+        // ==================== SCENE MANAGEMENT ====================
+        
+        private static JObject CreateScene(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string path = args["path"]?.ToString() ?? "Assets/Scenes/";
+            string setup = args["setup"]?.ToString() ?? "Default";
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Scene name is required"
+                };
+            }
+            
+            try
+            {
+                // Ensure directory exists
+                if (!System.IO.Directory.Exists(path))
+                {
+                    System.IO.Directory.CreateDirectory(path);
+                }
+                
+                // Create new scene
+                UnityEngine.SceneManagement.Scene newScene;
+                if (setup == "Empty")
+                {
+                    newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                }
+                else
+                {
+                    newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+                }
+                
+                // Save the scene
+                string fullPath = System.IO.Path.Combine(path, name + ".unity");
+                bool saved = EditorSceneManager.SaveScene(newScene, fullPath);
+                
+                if (!saved)
+                {
+                    throw new System.Exception("Failed to save scene");
+                }
+                
+                Debug.Log($"[MCP] Created scene: {fullPath}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["sceneName"] = name,
+                    ["scenePath"] = fullPath
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SaveScene(JObject args)
+        {
+            string path = args["path"]?.ToString();
+            
+            try
+            {
+                var activeScene = EditorSceneManager.GetActiveScene();
+                
+                bool saved;
+                if (!string.IsNullOrEmpty(path))
+                {
+                    saved = EditorSceneManager.SaveScene(activeScene, path);
+                }
+                else
+                {
+                    saved = EditorSceneManager.SaveScene(activeScene);
+                }
+                
+                if (!saved)
+                {
+                    throw new System.Exception("Failed to save scene");
+                }
+                
+                Debug.Log($"[MCP] Saved scene: {activeScene.path}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["scenePath"] = activeScene.path,
+                    ["sceneName"] = activeScene.name
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject LoadScene(JObject args)
+        {
+            string sceneName = args["sceneName"]?.ToString();
+            
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Scene name is required"
+                };
+            }
+            
+            try
+            {
+                // Find scene path
+                string[] sceneGUIDs = AssetDatabase.FindAssets($"{sceneName} t:Scene");
+                
+                if (sceneGUIDs.Length == 0)
+                {
+                    throw new System.Exception($"Scene '{sceneName}' not found");
+                }
+                
+                string scenePath = AssetDatabase.GUIDToAssetPath(sceneGUIDs[0]);
+                
+                // Load the scene
+                var loadedScene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+                
+                Debug.Log($"[MCP] Loaded scene: {scenePath}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["sceneName"] = loadedScene.name,
+                    ["scenePath"] = loadedScene.path,
+                    ["rootObjectCount"] = loadedScene.rootCount
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         // ==================== GAMEOBJECT MANAGEMENT ====================
         
         private static JObject DeleteGameObject(JObject args)
@@ -628,6 +809,395 @@ namespace UnityMCP
                 {
                     ["success"] = true,
                     ["message"] = $"Deleted GameObject: {path}"
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject FindGameObject(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                string path = GetGameObjectPath(obj);
+                Vector3 pos = obj.transform.position;
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = obj.name,
+                    ["path"] = path,
+                    ["position"] = new JArray { pos.x, pos.y, pos.z },
+                    ["active"] = obj.activeSelf
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetPosition(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            JArray positionArray = args["position"] as JArray;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (positionArray == null || positionArray.Count != 3)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Position must be an array of 3 numbers [x, y, z]"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                Vector3 newPos = new Vector3(
+                    positionArray[0].ToObject<float>(),
+                    positionArray[1].ToObject<float>(),
+                    positionArray[2].ToObject<float>()
+                );
+                
+                Undo.RecordObject(obj.transform, "Set Position");
+                obj.transform.position = newPos;
+                
+                Debug.Log($"[MCP] Set position of '{name}' to {newPos}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["newPosition"] = new JArray { newPos.x, newPos.y, newPos.z }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        // ==================== SCRIPT MANAGEMENT ====================
+        
+        private static JObject CreateScript(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string content = args["content"]?.ToString();
+            string path = args["path"]?.ToString() ?? "Assets/Scripts/";
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Script name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(content))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Script content is required"
+                };
+            }
+            
+            try
+            {
+                // Ensure directory exists
+                if (!System.IO.Directory.Exists(path))
+                {
+                    System.IO.Directory.CreateDirectory(path);
+                }
+                
+                // Ensure .cs extension
+                if (!name.EndsWith(".cs"))
+                {
+                    name += ".cs";
+                }
+                
+                string fullPath = System.IO.Path.Combine(path, name);
+                
+                // Write script file
+                System.IO.File.WriteAllText(fullPath, content);
+                AssetDatabase.Refresh();
+                
+                Debug.Log($"[MCP] Created script: {fullPath}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["scriptPath"] = fullPath,
+                    ["scriptName"] = name
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject AddComponent(JObject args)
+        {
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            string componentType = args["componentType"]?.ToString();
+            
+            if (string.IsNullOrEmpty(gameObjectName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(componentType))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Component type is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(gameObjectName);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{gameObjectName}' not found"
+                    };
+                }
+                
+                // Try to add component by type name
+                System.Type type = System.Type.GetType(componentType + ", Assembly-CSharp") 
+                                ?? System.Type.GetType(componentType + ", UnityEngine");
+                
+                if (type == null)
+                {
+                    // Try searching all assemblies
+                    foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        type = assembly.GetType(componentType);
+                        if (type != null) break;
+                    }
+                }
+                
+                if (type == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Component type '{componentType}' not found. Make sure the script has been compiled."
+                    };
+                }
+                
+                Component component = Undo.AddComponent(obj, type);
+                
+                Debug.Log($"[MCP] Added component '{componentType}' to '{gameObjectName}'");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["gameObject"] = gameObjectName,
+                    ["component"] = componentType
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        // ==================== BUTTON EVENT HANDLERS ====================
+        
+        private static JObject SetButtonOnClick(JObject args)
+        {
+            string buttonName = args["buttonName"]?.ToString();
+            string action = args["action"]?.ToString();
+            string parameter = args["parameter"]?.ToString();
+            
+            if (string.IsNullOrEmpty(buttonName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Button name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(action))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Action is required"
+                };
+            }
+            
+            try
+            {
+                GameObject buttonObj = GameObject.Find(buttonName);
+                if (buttonObj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Button '{buttonName}' not found"
+                    };
+                }
+                
+                UnityEngine.UI.Button button = buttonObj.GetComponent<UnityEngine.UI.Button>();
+                if (button == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{buttonName}' does not have a Button component"
+                    };
+                }
+                
+                // Find or create SceneLoader component
+                GameObject sceneLoaderObj = GameObject.Find("SceneLoader");
+                if (sceneLoaderObj == null)
+                {
+                    sceneLoaderObj = new GameObject("SceneLoader");
+                }
+                
+                // Check if SceneLoader component exists
+                UnityEngine.Component sceneLoader = sceneLoaderObj.GetComponent("SceneLoader");
+                if (sceneLoader == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "SceneLoader script not found. Create it first using unity_create_script."
+                    };
+                }
+                
+                // Clear existing listeners
+                button.onClick.RemoveAllListeners();
+                
+                // Add listener based on action type
+                if (action == "LoadScene")
+                {
+                    if (string.IsNullOrEmpty(parameter))
+                    {
+                        return new JObject
+                        {
+                            ["success"] = false,
+                            ["error"] = "Scene name parameter is required for LoadScene action"
+                        };
+                    }
+                    
+                    // Use UnityEvent with string parameter
+                    UnityEngine.Events.UnityAction<string> loadSceneAction = 
+                        (UnityEngine.Events.UnityAction<string>)System.Delegate.CreateDelegate(
+                            typeof(UnityEngine.Events.UnityAction<string>),
+                            sceneLoader,
+                            "LoadScene"
+                        );
+                    
+                    button.onClick.AddListener(() => loadSceneAction(parameter));
+                    
+                    Debug.Log($"[MCP] Set button '{buttonName}' to load scene '{parameter}'");
+                }
+                else if (action == "Quit")
+                {
+                    UnityEngine.Events.UnityAction quitAction = 
+                        (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(
+                            typeof(UnityEngine.Events.UnityAction),
+                            sceneLoader,
+                            "QuitGame"
+                        );
+                    
+                    button.onClick.AddListener(quitAction);
+                    
+                    Debug.Log($"[MCP] Set button '{buttonName}' to quit game");
+                }
+                else
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Unknown action: {action}. Supported: LoadScene, Quit"
+                    };
+                }
+                
+                EditorUtility.SetDirty(button);
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["button"] = buttonName,
+                    ["action"] = action,
+                    ["parameter"] = parameter ?? ""
                 };
             }
             catch (System.Exception e)
