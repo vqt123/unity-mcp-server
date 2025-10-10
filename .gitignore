@@ -54,6 +54,5 @@ Thumbs.db
 
 # Temporary test files
 temp/
-screenshots/
 test_results/
-
+Screenshots/
