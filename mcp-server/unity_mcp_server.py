@@ -122,6 +122,30 @@ TOOLS = [
         }
     },
     {
+        "name": "unity_test_log",
+        "description": "Test tool that logs a message to Unity console. Useful for verifying compilation and MCP connection.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "description": "Custom message to log (optional)",
+                    "default": "Test log from MCP"
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "unity_restart_server",
+        "description": "Manually restart the MCP server. Useful after compilation when server doesn't auto-restart.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
         "name": "unity_delete_gameobject",
         "description": "Delete a GameObject from the scene by name. Useful for cleanup and iteration.",
         "inputSchema": {

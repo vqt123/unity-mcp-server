@@ -82,6 +82,13 @@ namespace UnityMCP
                     case "unity_delete_gameobject":
                         return DeleteGameObject(args);
                     
+                    // Test/Debug Tools
+                    case "unity_test_log":
+                        return TestLog(args);
+                    
+                    case "unity_restart_server":
+                        return RestartServer();
+                    
                     default:
                         throw new System.Exception($"Unknown tool: {tool}");
                 }
@@ -519,6 +526,69 @@ namespace UnityMCP
                 // Restore
                 camera.targetTexture = previousRT;
                 RenderTexture.active = previousActive;
+            }
+        }
+        
+        // ==================== TEST/DEBUG TOOLS ====================
+        
+        private static JObject TestLog(JObject args)
+        {
+            string message = args["message"]?.ToString() ?? "Test log from MCP";
+            string timestamp = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            
+            string fullMessage = $"🧪 TEST LOG [{timestamp}]: {message}";
+            
+            Debug.Log(fullMessage);
+            Debug.LogWarning($"⚠️  TEST WARNING [{timestamp}]: This is a test warning");
+            
+            // RANDOM TEST MESSAGE - This proves compilation worked!
+            Debug.Log($"🎲 RANDOM TEST: The magic number is 77777 and compilation timestamp is {timestamp}");
+            Debug.Log($"💪 AUTO-RESTART TEST: Server auto-restart working! Vinh's Game is ready!");
+            
+            return new JObject
+            {
+                ["success"] = true,
+                ["message"] = "Test log written to Unity console",
+                ["timestamp"] = timestamp,
+                ["loggedMessage"] = fullMessage,
+                ["randomTestNumber"] = 77777,
+                ["autoRestartWorking"] = true
+            };
+        }
+        
+        private static JObject RestartServer()
+        {
+            try
+            {
+                Debug.Log("[MCP] Manual server restart requested - will restart after sending response");
+                
+                // Schedule restart after this request completes
+                EditorApplication.delayCall += () =>
+                {
+                    Debug.Log("[MCP] Stopping server...");
+                    MCPServer.StopServer();
+                    
+                    // Wait a moment then start
+                    EditorApplication.delayCall += () =>
+                    {
+                        Debug.Log("[MCP] Starting server...");
+                        MCPServer.StartServer();
+                    };
+                };
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["message"] = "MCP Server restart scheduled (will restart after response is sent)"
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = $"Failed to schedule server restart: {e.Message}"
+                };
             }
         }
         

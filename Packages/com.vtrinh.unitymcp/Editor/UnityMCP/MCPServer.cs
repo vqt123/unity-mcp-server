@@ -18,6 +18,7 @@ namespace UnityMCP
         private static Thread serverThread;
         private static bool isRunning = false;
         private static int port = 8765;
+        private static bool shouldRestart = false;
         
         // Command queue for main thread execution
         private class PendingRequest
@@ -38,12 +39,19 @@ namespace UnityMCP
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
             
-            // Start server after a short delay
-            EditorApplication.delayCall += () => StartServer();
+            // Flag server to start on next update (works without Unity focus)
+            shouldRestart = true;
         }
         
         private static void ProcessRequests()
         {
+            // Check if server needs to be started/restarted (works without Unity focus)
+            if (shouldRestart && !isRunning)
+            {
+                shouldRestart = false;
+                StartServer();
+            }
+            
             // Process all pending requests on main thread
             lock (queueLock)
             {
@@ -78,8 +86,9 @@ namespace UnityMCP
         
         private static void OnAfterAssemblyReload()
         {
-            Debug.Log("[MCP] Restarting server after assembly reload...");
-            EditorApplication.delayCall += () => StartServer();
+            Debug.Log("[MCP] Assembly reload complete - flagging server to restart...");
+            // Flag server to restart on next update (works without Unity focus)
+            shouldRestart = true;
         }
         
         public static void StartServer()
