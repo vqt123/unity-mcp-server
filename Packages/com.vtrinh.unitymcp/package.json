@@ -1,0 +1,19 @@
+{
+    "name": "com.vtrinh.unitymcp",
+    "version": "0.1.0",
+    "displayName": "Unity MCP Server",
+    "description": "Model Context Protocol server for Unity Editor - MVP",
+    "unity": "2021.3",
+    "dependencies": {
+      "com.unity.nuget.newtonsoft-json": "3.2.1"
+    },
+    "keywords": [
+      "mcp",
+      "ai",
+      "automation"
+    ],
+    "author": {
+      "name": "Vinh Trinh",
+      "email": "vqt123@gmail.com"
+    }
+  }
