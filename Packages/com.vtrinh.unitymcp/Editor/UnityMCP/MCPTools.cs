@@ -78,6 +78,9 @@ namespace UnityMCP
                     case "unity_ui_create_grid_layout":
                         return UI_CreateGridLayout(args);
                     
+                    case "unity_ui_set_sprite":
+                        return UI_SetSprite(args);
+                    
                     // GameObject Management
                     case "unity_delete_gameobject":
                         return DeleteGameObject(args);
@@ -87,6 +90,9 @@ namespace UnityMCP
                     
                     case "unity_set_position":
                         return SetPosition(args);
+                    
+                    case "unity_set_anchors":
+                        return SetAnchors(args);
                     
                     // Scene Management
                     case "unity_create_scene":
@@ -989,6 +995,158 @@ namespace UnityMCP
                     ["success"] = true,
                     ["name"] = name,
                     ["newPosition"] = new JArray { newPos.x, newPos.y, newPos.z }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetAnchors(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string preset = args["preset"]?.ToString();
+            JArray anchorMinArray = args["anchorMin"] as JArray;
+            JArray anchorMaxArray = args["anchorMax"] as JArray;
+            JArray anchoredPosArray = args["anchoredPosition"] as JArray;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                RectTransform rectTransform = obj.GetComponent<RectTransform>();
+                if (rectTransform == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' does not have a RectTransform (not a UI element)"
+                    };
+                }
+                
+                Undo.RecordObject(rectTransform, "Set Anchors");
+                
+                // Apply preset if provided
+                if (!string.IsNullOrEmpty(preset))
+                {
+                    switch (preset.ToLower())
+                    {
+                        case "top-left":
+                            rectTransform.anchorMin = new Vector2(0, 1);
+                            rectTransform.anchorMax = new Vector2(0, 1);
+                            break;
+                        case "top-center":
+                            rectTransform.anchorMin = new Vector2(0.5f, 1);
+                            rectTransform.anchorMax = new Vector2(0.5f, 1);
+                            break;
+                        case "top-right":
+                            rectTransform.anchorMin = new Vector2(1, 1);
+                            rectTransform.anchorMax = new Vector2(1, 1);
+                            break;
+                        case "middle-left":
+                            rectTransform.anchorMin = new Vector2(0, 0.5f);
+                            rectTransform.anchorMax = new Vector2(0, 0.5f);
+                            break;
+                        case "center":
+                            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                            break;
+                        case "middle-right":
+                            rectTransform.anchorMin = new Vector2(1, 0.5f);
+                            rectTransform.anchorMax = new Vector2(1, 0.5f);
+                            break;
+                        case "bottom-left":
+                            rectTransform.anchorMin = new Vector2(0, 0);
+                            rectTransform.anchorMax = new Vector2(0, 0);
+                            break;
+                        case "bottom-center":
+                            rectTransform.anchorMin = new Vector2(0.5f, 0);
+                            rectTransform.anchorMax = new Vector2(0.5f, 0);
+                            break;
+                        case "bottom-right":
+                            rectTransform.anchorMin = new Vector2(1, 0);
+                            rectTransform.anchorMax = new Vector2(1, 0);
+                            break;
+                        case "stretch-horizontal":
+                            rectTransform.anchorMin = new Vector2(0, 0.5f);
+                            rectTransform.anchorMax = new Vector2(1, 0.5f);
+                            break;
+                        case "stretch-vertical":
+                            rectTransform.anchorMin = new Vector2(0.5f, 0);
+                            rectTransform.anchorMax = new Vector2(0.5f, 1);
+                            break;
+                        case "stretch-all":
+                            rectTransform.anchorMin = new Vector2(0, 0);
+                            rectTransform.anchorMax = new Vector2(1, 1);
+                            break;
+                        default:
+                            return new JObject
+                            {
+                                ["success"] = false,
+                                ["error"] = $"Unknown preset '{preset}'. Valid presets: top-left, top-center, top-right, middle-left, center, middle-right, bottom-left, bottom-center, bottom-right, stretch-horizontal, stretch-vertical, stretch-all"
+                            };
+                    }
+                }
+                
+                // Apply custom anchors if provided
+                if (anchorMinArray != null && anchorMinArray.Count == 2)
+                {
+                    rectTransform.anchorMin = new Vector2(
+                        anchorMinArray[0].ToObject<float>(),
+                        anchorMinArray[1].ToObject<float>()
+                    );
+                }
+                
+                if (anchorMaxArray != null && anchorMaxArray.Count == 2)
+                {
+                    rectTransform.anchorMax = new Vector2(
+                        anchorMaxArray[0].ToObject<float>(),
+                        anchorMaxArray[1].ToObject<float>()
+                    );
+                }
+                
+                // Apply anchored position if provided
+                if (anchoredPosArray != null && anchoredPosArray.Count == 2)
+                {
+                    rectTransform.anchoredPosition = new Vector2(
+                        anchoredPosArray[0].ToObject<float>(),
+                        anchoredPosArray[1].ToObject<float>()
+                    );
+                }
+                
+                EditorUtility.SetDirty(obj);
+                
+                Debug.Log($"[MCP] Set anchors for '{name}' - Min: {rectTransform.anchorMin}, Max: {rectTransform.anchorMax}, Pos: {rectTransform.anchoredPosition}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["anchorMin"] = new JArray { rectTransform.anchorMin.x, rectTransform.anchorMin.y },
+                    ["anchorMax"] = new JArray { rectTransform.anchorMax.x, rectTransform.anchorMax.y },
+                    ["anchoredPosition"] = new JArray { rectTransform.anchoredPosition.x, rectTransform.anchoredPosition.y }
                 };
             }
             catch (System.Exception e)
@@ -1951,6 +2109,94 @@ namespace UnityMCP
                     ["success"] = true,
                     ["layoutPath"] = GetGameObjectPath(layoutObj),
                     ["components"] = new JArray("GridLayoutGroup", "RectTransform")
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject UI_SetSprite(JObject args)
+        {
+            string objectPath = args["objectPath"]?.ToString();
+            string spritePath = args["spritePath"]?.ToString();
+            
+            if (string.IsNullOrEmpty(objectPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "objectPath is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(spritePath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "spritePath is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(objectPath);
+                if (obj == null)
+                {
+                    throw new System.Exception($"GameObject '{objectPath}' not found");
+                }
+                
+                Image image = obj.GetComponent<Image>();
+                if (image == null)
+                {
+                    throw new System.Exception($"GameObject '{objectPath}' does not have an Image component");
+                }
+                
+                // Load the sprite from the asset path
+                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+                if (sprite == null)
+                {
+                    // Try loading from Resources
+                    string resourcePath = spritePath.Replace("Assets/Resources/", "").Replace(".png", "").Replace(".jpg", "");
+                    sprite = Resources.Load<Sprite>(resourcePath);
+                }
+                
+                if (sprite == null)
+                {
+                    // Try loading as a sub-asset (for sprite sheets)
+                    UnityEngine.Object[] sprites = AssetDatabase.LoadAllAssetsAtPath(spritePath);
+                    foreach (UnityEngine.Object asset in sprites)
+                    {
+                        if (asset is Sprite)
+                        {
+                            sprite = asset as Sprite;
+                            break;
+                        }
+                    }
+                }
+                
+                if (sprite == null)
+                {
+                    throw new System.Exception($"Sprite not found at path: {spritePath}");
+                }
+                
+                image.sprite = sprite;
+                EditorUtility.SetDirty(obj);
+                
+                Debug.Log($"[MCP] Set sprite on {objectPath} to {sprite.name}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["objectPath"] = objectPath,
+                    ["spriteName"] = sprite.name,
+                    ["spritePath"] = spritePath
                 };
             }
             catch (System.Exception e)

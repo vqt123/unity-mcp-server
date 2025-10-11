@@ -522,6 +522,24 @@ TOOLS = [
             "required": []
         }
     },
+    {
+        "name": "unity_ui_set_sprite",
+        "description": "Set a sprite on a UI Image component. Used to apply sprites from sprite sheets to UI elements.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "objectPath": {
+                    "type": "string",
+                    "description": "Full path to the GameObject (e.g., 'MenuCanvas/BackgroundPanel')"
+                },
+                "spritePath": {
+                    "type": "string",
+                    "description": "Asset path to the sprite (e.g., 'Assets/2D Casual UI/Sprite/GUI.png')"
+                }
+            },
+            "required": ["objectPath", "spritePath"]
+        }
+    },
     # Scene Management
     {
         "name": "unity_create_scene",
@@ -626,6 +644,45 @@ TOOLS = [
                 }
             },
             "required": ["name", "position"]
+        }
+    },
+    {
+        "name": "unity_set_anchors",
+        "description": "Set UI anchors and anchored position for responsive layouts. Supports presets or custom anchor points. Essential for multi-resolution support.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the UI GameObject (must have RectTransform)"
+                },
+                "preset": {
+                    "type": "string",
+                    "description": "Anchor preset: 'top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right', 'stretch-horizontal', 'stretch-vertical', 'stretch-all'"
+                },
+                "anchorMin": {
+                    "type": "array",
+                    "description": "Custom anchor min [x, y] (0-1 range)",
+                    "items": {"type": "number"},
+                    "minItems": 2,
+                    "maxItems": 2
+                },
+                "anchorMax": {
+                    "type": "array",
+                    "description": "Custom anchor max [x, y] (0-1 range)",
+                    "items": {"type": "number"},
+                    "minItems": 2,
+                    "maxItems": 2
+                },
+                "anchoredPosition": {
+                    "type": "array",
+                    "description": "Position relative to anchors [x, y] in pixels",
+                    "items": {"type": "number"},
+                    "minItems": 2,
+                    "maxItems": 2
+                }
+            },
+            "required": ["name"]
         }
     },
     # Script Management
