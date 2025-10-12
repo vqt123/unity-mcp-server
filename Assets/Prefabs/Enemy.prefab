@@ -130,4 +130,4 @@ MonoBehaviour:
   moveSpeed: 3
   attackRange: 1.5
   attackCooldown: 1
-  bloodEffect: {fileID: 0}
+  bloodEffect: {fileID: 3796766714974405070, guid: 3ae34f87c8cd642b98e40624ed6c1873, type: 3}

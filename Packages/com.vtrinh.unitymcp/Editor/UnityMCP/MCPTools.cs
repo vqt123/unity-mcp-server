@@ -39,6 +39,12 @@ namespace UnityMCP
                     case "unity_save_prefab":
                         return SaveAsPrefab(args);
                     
+                    case "unity_add_script_component":
+                        return AddScriptComponent(args);
+                    
+                    case "unity_update_prefab":
+                        return UpdatePrefab(args);
+                    
                     case "unity_force_compile":
                         return ForceCompile();
                     
@@ -3276,6 +3282,92 @@ namespace UnityMCP
             }
         }
         
+        // Add Script Component to GameObject
+        private static JObject AddScriptComponent(JObject args)
+        {
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            string scriptName = args["scriptName"]?.ToString();
+            
+            if (string.IsNullOrEmpty(gameObjectName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(scriptName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Script name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(gameObjectName);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{gameObjectName}' not found"
+                    };
+                }
+                
+                // Find the script type by name
+                System.Type scriptType = null;
+                foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    scriptType = assembly.GetType(scriptName);
+                    if (scriptType != null && typeof(MonoBehaviour).IsAssignableFrom(scriptType))
+                    {
+                        break;
+                    }
+                }
+                
+                if (scriptType == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Script type '{scriptName}' not found or is not a MonoBehaviour"
+                    };
+                }
+                
+                // Add the component
+                if (obj.GetComponent(scriptType) == null)
+                {
+                    obj.AddComponent(scriptType);
+                    EditorUtility.SetDirty(obj);
+                    EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                    Debug.Log($"[MCP] Added {scriptName} component to {gameObjectName}");
+                }
+                else
+                {
+                    Debug.Log($"[MCP] {scriptName} component already exists on {gameObjectName}");
+                }
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["gameObject"] = gameObjectName,
+                    ["scriptName"] = scriptName
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         private static JObject SaveAsPrefab(JObject args)
         {
             string gameObjectName = args["gameObjectName"]?.ToString();
@@ -3363,6 +3455,196 @@ namespace UnityMCP
                         ["error"] = "Failed to create prefab"
                     };
                 }
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject UpdatePrefab(JObject args)
+        {
+            string prefabPath = args["prefabPath"]?.ToString();
+            string action = args["action"]?.ToString(); // "add_component", "remove_component", "set_property"
+            
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Prefab path is required"
+                };
+            }
+            
+            // Ensure path starts with Assets/
+            if (!prefabPath.StartsWith("Assets/"))
+            {
+                prefabPath = "Assets/" + prefabPath;
+            }
+            
+            // Ensure path ends with .prefab
+            if (!prefabPath.EndsWith(".prefab"))
+            {
+                prefabPath += ".prefab";
+            }
+            
+            // Check if prefab exists
+            if (!System.IO.File.Exists(prefabPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = $"Prefab not found: {prefabPath}"
+                };
+            }
+            
+            try
+            {
+                // Load prefab contents for editing
+                GameObject prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+                
+                if (prefabRoot == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Failed to load prefab"
+                    };
+                }
+                
+                // Perform the requested action
+                bool modified = false;
+                string actionResult = "";
+                
+                switch (action)
+                {
+                    case "add_component":
+                        string componentType = args["componentType"]?.ToString();
+                        if (!string.IsNullOrEmpty(componentType))
+                        {
+                            System.Type type = System.Type.GetType(componentType);
+                            if (type != null)
+                            {
+                                prefabRoot.AddComponent(type);
+                                modified = true;
+                                actionResult = $"Added component: {componentType}";
+                            }
+                            else
+                            {
+                                actionResult = $"Component type not found: {componentType}";
+                            }
+                        }
+                        break;
+                    
+                    case "remove_component":
+                        string removeComponentType = args["componentType"]?.ToString();
+                        if (!string.IsNullOrEmpty(removeComponentType))
+                        {
+                            Component comp = prefabRoot.GetComponent(removeComponentType);
+                            if (comp != null)
+                            {
+                                UnityEngine.Object.DestroyImmediate(comp);
+                                modified = true;
+                                actionResult = $"Removed component: {removeComponentType}";
+                            }
+                            else
+                            {
+                                actionResult = $"Component not found: {removeComponentType}";
+                            }
+                        }
+                        break;
+                    
+                    case "set_property":
+                        string propComponentType = args["componentType"]?.ToString();
+                        string propertyName = args["propertyName"]?.ToString();
+                        JToken valueToken = args["value"];
+                        
+                        if (!string.IsNullOrEmpty(propComponentType) && !string.IsNullOrEmpty(propertyName))
+                        {
+                            Component component = prefabRoot.GetComponent(propComponentType);
+                            if (component != null)
+                            {
+                                SerializedObject so = new SerializedObject(component);
+                                SerializedProperty prop = so.FindProperty(propertyName);
+                                
+                                if (prop != null)
+                                {
+                                    // Set value based on type (reuse logic from SetComponentProperty)
+                                    if (valueToken.Type == JTokenType.Object)
+                                    {
+                                        JObject valueObj = valueToken as JObject;
+                                        string refType = valueObj["type"]?.ToString();
+                                        string refPath = valueObj["path"]?.ToString();
+                                        
+                                        if (refType == "reference" && !string.IsNullOrEmpty(refPath))
+                                        {
+                                            UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
+                                            if (asset != null)
+                                            {
+                                                prop.objectReferenceValue = asset;
+                                            }
+                                        }
+                                    }
+                                    else if (valueToken.Type == JTokenType.String)
+                                    {
+                                        prop.stringValue = valueToken.ToString();
+                                    }
+                                    else if (valueToken.Type == JTokenType.Integer)
+                                    {
+                                        prop.intValue = valueToken.ToObject<int>();
+                                    }
+                                    else if (valueToken.Type == JTokenType.Float)
+                                    {
+                                        prop.floatValue = valueToken.ToObject<float>();
+                                    }
+                                    else if (valueToken.Type == JTokenType.Boolean)
+                                    {
+                                        prop.boolValue = valueToken.ToObject<bool>();
+                                    }
+                                    
+                                    so.ApplyModifiedProperties();
+                                    modified = true;
+                                    actionResult = $"Set property '{propertyName}' on {propComponentType}";
+                                }
+                                else
+                                {
+                                    actionResult = $"Property '{propertyName}' not found on {propComponentType}";
+                                }
+                            }
+                            else
+                            {
+                                actionResult = $"Component not found: {propComponentType}";
+                            }
+                        }
+                        break;
+                    
+                    default:
+                        actionResult = "No action specified or unknown action";
+                        break;
+                }
+                
+                // Save if modified
+                if (modified)
+                {
+                    PrefabUtility.SaveAsPrefabAsset(prefabRoot, prefabPath);
+                    AssetDatabase.Refresh();
+                    Debug.Log($"[MCP] Updated prefab: {prefabPath} - {actionResult}");
+                }
+                
+                // Important: Unload the prefab contents
+                PrefabUtility.UnloadPrefabContents(prefabRoot);
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["prefabPath"] = prefabPath,
+                    ["modified"] = modified,
+                    ["action"] = actionResult
+                };
             }
             catch (System.Exception e)
             {
