@@ -12,10 +12,36 @@ public class GameManager : MonoBehaviour
     
     void Start()
     {
+        Debug.Log("[GameManager] Starting...");
+        
         GameObject heroObj = GameObject.FindGameObjectWithTag("Player");
         if (heroObj != null)
         {
             hero = heroObj.GetComponent<Hero>();
+            Debug.Log($"[GameManager] Found hero: {heroObj.name}");
+        }
+        else
+        {
+            Debug.LogError("[GameManager] Hero not found! Make sure Hero has Player tag");
+        }
+        
+        if (scoreText == null)
+        {
+            Debug.LogError("[GameManager] scoreText is NULL! Assign it in inspector");
+        }
+        else
+        {
+            Debug.Log($"[GameManager] scoreText assigned: {scoreText.gameObject.name}");
+        }
+        
+        if (cooldownRadial == null)
+        {
+            Debug.LogError("[GameManager] cooldownRadial is NULL! Assign it in inspector");
+        }
+        else
+        {
+            Debug.Log($"[GameManager] cooldownRadial assigned: {cooldownRadial.gameObject.name}");
+            Debug.Log($"[GameManager] cooldownRadial type: {cooldownRadial.type}, fillMethod: {cooldownRadial.fillMethod}");
         }
         
         UpdateScoreUI();
@@ -26,7 +52,14 @@ public class GameManager : MonoBehaviour
         // Update cooldown radial
         if (hero != null && cooldownRadial != null)
         {
-            cooldownRadial.fillAmount = hero.GetCooldownPercent();
+            float percent = hero.GetCooldownPercent();
+            cooldownRadial.fillAmount = percent;
+            
+            // Debug every 2 seconds
+            if (Time.frameCount % 120 == 0)
+            {
+                Debug.Log($"[GameManager] Cooldown: {percent:F2}, fillAmount: {cooldownRadial.fillAmount:F2}");
+            }
         }
     }
     
@@ -34,6 +67,7 @@ public class GameManager : MonoBehaviour
     {
         killScore++;
         UpdateScoreUI();
+        Debug.Log($"[GameManager] Enemy killed! Score: {killScore}");
     }
     
     void UpdateScoreUI()

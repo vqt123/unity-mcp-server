@@ -2923,6 +2923,7 @@ namespace UnityMCP
         {
             string objectPath = args["objectPath"]?.ToString();
             string spritePath = args["spritePath"]?.ToString();
+            string spriteName = args["spriteName"]?.ToString(); // Optional: specific sprite from sheet
             
             if (string.IsNullOrEmpty(objectPath))
             {
@@ -2969,12 +2970,34 @@ namespace UnityMCP
                 {
                     // Try loading as a sub-asset (for sprite sheets)
                     UnityEngine.Object[] sprites = AssetDatabase.LoadAllAssetsAtPath(spritePath);
+                    
+                    Debug.Log($"[MCP] Found {sprites.Length} assets at {spritePath}");
+                    
                     foreach (UnityEngine.Object asset in sprites)
                     {
                         if (asset is Sprite)
                         {
-                            sprite = asset as Sprite;
-                            break;
+                            Sprite s = asset as Sprite;
+                            Debug.Log($"[MCP] Found sprite: {s.name}");
+                            
+                            // If spriteName specified, find matching sprite
+                            if (!string.IsNullOrEmpty(spriteName))
+                            {
+                                if (s.name == spriteName)
+                                {
+                                    sprite = s;
+                                    Debug.Log($"[MCP] ✓ Matched sprite: {s.name}");
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // No specific name, use first sprite
+                                if (sprite == null)
+                                {
+                                    sprite = s;
+                                }
+                            }
                         }
                     }
                 }
