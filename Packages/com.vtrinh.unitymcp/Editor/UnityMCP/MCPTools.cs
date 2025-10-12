@@ -2957,21 +2957,14 @@ namespace UnityMCP
                     throw new System.Exception($"GameObject '{objectPath}' does not have an Image component");
                 }
                 
-                // Load the sprite from the asset path
-                Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
-                if (sprite == null)
-                {
-                    // Try loading from Resources
-                    string resourcePath = spritePath.Replace("Assets/Resources/", "").Replace(".png", "").Replace(".jpg", "");
-                    sprite = Resources.Load<Sprite>(resourcePath);
-                }
+                Sprite sprite = null;
                 
-                if (sprite == null)
+                // If a specific sprite name is requested, load from sprite sheet directly
+                if (!string.IsNullOrEmpty(spriteName))
                 {
-                    // Try loading as a sub-asset (for sprite sheets)
                     UnityEngine.Object[] sprites = AssetDatabase.LoadAllAssetsAtPath(spritePath);
                     
-                    Debug.Log($"[MCP] Found {sprites.Length} assets at {spritePath}");
+                    Debug.Log($"[MCP] Loading sprite '{spriteName}' from sheet with {sprites.Length} assets at {spritePath}");
                     
                     foreach (UnityEngine.Object asset in sprites)
                     {
@@ -2980,24 +2973,44 @@ namespace UnityMCP
                             Sprite s = asset as Sprite;
                             Debug.Log($"[MCP] Found sprite: {s.name}");
                             
-                            // If spriteName specified, find matching sprite
-                            if (!string.IsNullOrEmpty(spriteName))
+                            if (s.name == spriteName)
                             {
-                                if (s.name == spriteName)
-                                {
-                                    sprite = s;
-                                    Debug.Log($"[MCP] ✓ Matched sprite: {s.name}");
-                                    break;
-                                }
+                                sprite = s;
+                                Debug.Log($"[MCP] ✓ Matched sprite: {s.name}");
+                                break;
                             }
-                            else
-                            {
-                                // No specific name, use first sprite
-                                if (sprite == null)
-                                {
-                                    sprite = s;
-                                }
-                            }
+                        }
+                    }
+                    
+                    if (sprite == null)
+                    {
+                        Debug.LogWarning($"[MCP] Sprite '{spriteName}' not found in sheet, falling back to default");
+                    }
+                }
+                
+                // If no specific name or not found, try loading directly
+                if (sprite == null)
+                {
+                    sprite = AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+                }
+                
+                // Try Resources as fallback
+                if (sprite == null)
+                {
+                    string resourcePath = spritePath.Replace("Assets/Resources/", "").Replace(".png", "").Replace(".jpg", "");
+                    sprite = Resources.Load<Sprite>(resourcePath);
+                }
+                
+                // Last resort: load first sprite from sheet
+                if (sprite == null)
+                {
+                    UnityEngine.Object[] sprites = AssetDatabase.LoadAllAssetsAtPath(spritePath);
+                    foreach (UnityEngine.Object asset in sprites)
+                    {
+                        if (asset is Sprite)
+                        {
+                            sprite = asset as Sprite;
+                            break;
                         }
                     }
                 }
