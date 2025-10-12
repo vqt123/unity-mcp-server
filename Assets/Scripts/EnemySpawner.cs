@@ -5,9 +5,9 @@ public class EnemySpawner : MonoBehaviour
     [System.NonSerialized]
     public GameObject enemyPrefab;
     [System.NonSerialized]
-    public float spawnInterval = 3f;
+    public float spawnInterval = 4f;
     [System.NonSerialized]
-    public float arenaRadius = 8f;
+    public float arenaRadius = 10f;
     [System.NonSerialized]
     public int maxEnemies = 20;
     
