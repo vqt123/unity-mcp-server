@@ -7,7 +7,7 @@ public class Hero : MonoBehaviour
     public float damage = 10f;
     public float shootCooldown = 1f;
     public GameObject bulletPrefab;
-    public float bulletSpeed = 10f;
+    public float bulletSpeed = 5f; // Ultra-fast bullets!
     
     private float lastShootTime;
     

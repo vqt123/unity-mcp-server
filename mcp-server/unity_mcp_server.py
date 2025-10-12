@@ -69,6 +69,32 @@ TOOLS = [
         }
     },
     {
+        "name": "unity_create_primitive",
+        "description": "Create a primitive GameObject (Sphere, Capsule, Cylinder, Plane, Quad, Cube) in the Unity scene",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name for the primitive",
+                    "default": "Primitive"
+                },
+                "primitiveType": {
+                    "type": "string",
+                    "description": "Type of primitive: Sphere, Capsule, Cylinder, Plane, Quad, or Cube",
+                    "default": "Sphere"
+                },
+                "position": {
+                    "type": "array",
+                    "description": "Position as [x, y, z]",
+                    "items": {"type": "number"},
+                    "default": [0, 0, 0]
+                }
+            },
+            "required": []
+        }
+    },
+    {
         "name": "unity_force_compile",
         "description": "Force Unity to compile all scripts. Useful before performing operations that require up-to-date code.",
         "inputSchema": {
@@ -143,6 +169,40 @@ TOOLS = [
             "type": "object",
             "properties": {},
             "required": []
+        }
+    },
+    {
+        "name": "unity_add_particle_trail",
+        "description": "Add a particle trail effect to a GameObject (perfect for bullets, projectiles, etc). Creates fast-moving visual effect.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject to add particle trail to"
+                },
+                "color": {
+                    "type": "string",
+                    "description": "Particle color: red, green, blue, yellow, orange, cyan, white",
+                    "default": "yellow"
+                },
+                "emissionRate": {
+                    "type": "number",
+                    "description": "Particles per second (20-100, higher = denser trail)",
+                    "default": 50
+                },
+                "startSize": {
+                    "type": "number",
+                    "description": "Particle size (0.01-0.2, smaller = tighter trail)",
+                    "default": 0.05
+                },
+                "startLifetime": {
+                    "type": "number",
+                    "description": "How long particles last in seconds (0.1-1.0)",
+                    "default": 0.3
+                }
+            },
+            "required": ["name"]
         }
     },
     {

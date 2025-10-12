@@ -33,6 +33,9 @@ namespace UnityMCP
                     case "unity_create_cube":
                         return CreateCube(args);
                     
+                    case "unity_create_primitive":
+                        return CreatePrimitive(args);
+                    
                     case "unity_force_compile":
                         return ForceCompile();
                     
@@ -152,6 +155,9 @@ namespace UnityMCP
                     case "unity_restart_server":
                         return RestartServer();
                     
+                    case "unity_add_particle_trail":
+                        return AddParticleTrail(args);
+                    
                     default:
                         throw new System.Exception($"Unknown tool: {tool}");
                 }
@@ -268,6 +274,67 @@ namespace UnityMCP
                 ["name"] = cube.name,
                 ["position"] = new JArray(x, y, z),
                 ["instanceId"] = cube.GetInstanceID()
+            };
+        }
+        
+        // Create Primitive (Sphere, Capsule, Cylinder, etc.)
+        private static JObject CreatePrimitive(JObject args)
+        {
+            string name = args["name"]?.ToString() ?? "Primitive";
+            string primitiveType = args["primitiveType"]?.ToString() ?? "Cube";
+            JArray posArray = args["position"] as JArray;
+            
+            Vector3 position = Vector3.zero;
+            if (posArray != null && posArray.Count == 3)
+            {
+                position = new Vector3(
+                    posArray[0].ToObject<float>(),
+                    posArray[1].ToObject<float>(),
+                    posArray[2].ToObject<float>()
+                );
+            }
+            
+            PrimitiveType type;
+            switch (primitiveType.ToLower())
+            {
+                case "sphere":
+                    type = PrimitiveType.Sphere;
+                    break;
+                case "capsule":
+                    type = PrimitiveType.Capsule;
+                    break;
+                case "cylinder":
+                    type = PrimitiveType.Cylinder;
+                    break;
+                case "plane":
+                    type = PrimitiveType.Plane;
+                    break;
+                case "quad":
+                    type = PrimitiveType.Quad;
+                    break;
+                case "cube":
+                default:
+                    type = PrimitiveType.Cube;
+                    break;
+            }
+            
+            GameObject primitive = GameObject.CreatePrimitive(type);
+            primitive.name = name;
+            primitive.transform.position = position;
+            
+            Undo.RegisterCreatedObjectUndo(primitive, $"Create {name}");
+            Selection.activeGameObject = primitive;
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            
+            Debug.Log($"[MCP] Created {primitiveType} primitive '{name}' at {position}");
+            
+            return new JObject
+            {
+                ["success"] = true,
+                ["name"] = primitive.name,
+                ["primitiveType"] = primitiveType,
+                ["position"] = new JArray { position.x, position.y, position.z },
+                ["instanceId"] = primitive.GetInstanceID()
             };
         }
         
@@ -3031,6 +3098,146 @@ namespace UnityMCP
                     ["objectPath"] = objectPath,
                     ["spriteName"] = sprite.name,
                     ["spritePath"] = spritePath
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        // Add Particle Trail Effect
+        private static JObject AddParticleTrail(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string color = args["color"]?.ToString() ?? "yellow";
+            float emissionRate = args["emissionRate"]?.ToObject<float>() ?? 50f;
+            float startSize = args["startSize"]?.ToObject<float>() ?? 0.05f;
+            float startLifetime = args["startLifetime"]?.ToObject<float>() ?? 0.3f;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                // Add ParticleSystem component
+                ParticleSystem ps = obj.GetComponent<ParticleSystem>();
+                if (ps == null)
+                {
+                    ps = obj.AddComponent<ParticleSystem>();
+                }
+                
+                Undo.RecordObject(ps, "Configure Particle Trail");
+                
+                // Main module settings
+                var main = ps.main;
+                main.startLifetime = startLifetime;
+                main.startSpeed = 0f; // Particles stay with bullet
+                main.startSize = startSize;
+                main.startRotation = 0f;
+                main.simulationSpace = ParticleSystemSimulationSpace.World; // Particles stay behind as bullet moves
+                main.maxParticles = 1000; // Increased for high emission rates
+                main.loop = true;
+                main.playOnAwake = true;
+                main.stopAction = ParticleSystemStopAction.None; // Keep particles alive when stopped
+                
+                // Set color
+                Color particleColor;
+                switch (color.ToLower())
+                {
+                    case "red":
+                        particleColor = Color.red;
+                        break;
+                    case "green":
+                        particleColor = Color.green;
+                        break;
+                    case "blue":
+                        particleColor = Color.blue;
+                        break;
+                    case "white":
+                        particleColor = Color.white;
+                        break;
+                    case "orange":
+                        particleColor = new Color(1f, 0.5f, 0f);
+                        break;
+                    case "cyan":
+                        particleColor = Color.cyan;
+                        break;
+                    case "yellow":
+                    default:
+                        particleColor = Color.yellow;
+                        break;
+                }
+                main.startColor = particleColor;
+                
+                // Emission module
+                var emission = ps.emission;
+                emission.rateOverTime = emissionRate;
+                
+                // Shape module - emit from point
+                var shape = ps.shape;
+                shape.enabled = true;
+                shape.shapeType = ParticleSystemShapeType.Sphere;
+                shape.radius = 0.01f; // Very small, nearly a point
+                
+                // Size over lifetime - fade out
+                var sizeOverLifetime = ps.sizeOverLifetime;
+                sizeOverLifetime.enabled = true;
+                AnimationCurve sizeCurve = new AnimationCurve();
+                sizeCurve.AddKey(0f, 1f);
+                sizeCurve.AddKey(1f, 0f);
+                sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+                
+                // Color over lifetime - fade out
+                var colorOverLifetime = ps.colorOverLifetime;
+                colorOverLifetime.enabled = true;
+                Gradient gradient = new Gradient();
+                gradient.SetKeys(
+                    new GradientColorKey[] { new GradientColorKey(particleColor, 0f), new GradientColorKey(particleColor, 1f) },
+                    new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) }
+                );
+                colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
+                
+                // Renderer settings
+                var renderer = obj.GetComponent<ParticleSystemRenderer>();
+                if (renderer != null)
+                {
+                    renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                    renderer.material = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Particle.mat");
+                }
+                
+                EditorUtility.SetDirty(obj);
+                
+                Debug.Log($"[MCP] Added particle trail to '{name}' - Color: {color}, Emission: {emissionRate}, Size: {startSize}, Lifetime: {startLifetime}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["color"] = color,
+                    ["emissionRate"] = emissionRate,
+                    ["startSize"] = startSize,
+                    ["startLifetime"] = startLifetime
                 };
             }
             catch (System.Exception e)

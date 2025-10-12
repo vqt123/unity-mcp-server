@@ -55,11 +55,6 @@ public class GameManager : MonoBehaviour
             float percent = hero.GetCooldownPercent();
             cooldownRadial.fillAmount = percent;
             
-            // Debug every 2 seconds
-            if (Time.frameCount % 120 == 0)
-            {
-                Debug.Log($"[GameManager] Cooldown: {percent:F2}, fillAmount: {cooldownRadial.fillAmount:F2}");
-            }
         }
     }
     

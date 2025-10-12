@@ -294,9 +294,22 @@ Screenshots saved to: `/Screenshots/screenshot_YYYY-MM-DD_HH-MM-SS.png`
    - Happens automatically after compilation
    - Works in background (no Unity focus required)
 
+7. **unity_set_component_property doesn't change script default values** ⚠️
+   - `unity_set_component_property` only sets Inspector values
+   - Script default values (e.g., `public float bulletSpeed = 10f;`) override Inspector
+   - **Solution:** Edit the script file directly to change default values
+   - Example: Change `bulletSpeed = 10f` to `bulletSpeed = 400f` in Hero.cs
+
 ---
 
 ## Tools Created for Arena Game
+
+### GameObject Creation Tools
+- `unity_create_cube` - Create cube primitive (legacy, use create_primitive)
+- `unity_create_primitive` - Create any primitive type (Sphere, Capsule, Cylinder, Plane, Quad, Cube)
+
+### Visual Effects Tools
+- `unity_add_particle_trail` - Add particle trail effect to GameObject (perfect for projectiles) ⭐ NEW
 
 ### Transform Tools
 - `unity_set_position` - Set GameObject position
@@ -307,7 +320,7 @@ Screenshots saved to: `/Screenshots/screenshot_YYYY-MM-DD_HH-MM-SS.png`
 ### Component Tools
 - `unity_add_component` - Add component to GameObject
 - `unity_remove_component` - Remove component from GameObject
-- `unity_set_component_property` - Set component property/reference
+- `unity_set_component_property` - Set component property/reference (Inspector values only, not script defaults)
 
 ### UI Tools
 - `unity_set_ui_size` - Set RectTransform size
@@ -323,6 +336,76 @@ Screenshots saved to: `/Screenshots/screenshot_YYYY-MM-DD_HH-MM-SS.png`
 
 ### Camera Tools
 - `unity_set_camera_background` - Set camera clear flags and color
+
+---
+
+## Bullet Visual Effects
+
+### Creating Better Projectiles
+
+**Problem:** Default cube bullets are too large, slow, and visually boring.
+
+**Solution:**
+1. Create small sphere primitive (scale 0.3)
+2. Increase bullet speed significantly
+3. Add particle effects for visual flair
+
+**Implementation:**
+```csharp
+// Created unity_create_primitive tool for flexible primitive creation
+GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+sphere.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+```
+
+**Bullet Speed Tuning:**
+- Original: 10 units/sec (too slow, hard to track enemies)
+- Updated v1: 25 units/sec (better, but still not snappy)
+- Updated v2: 50 units/sec (fast, but needed more)
+- Updated v3: 100 units/sec (very fast, but particles hard to see)
+- Updated v4: 200 units/sec (insanely fast, but trail too thin)
+- **Final: 400 units/sec** (LUDICROUS SPEED! Near-instant across entire arena! 🚀💨⚡🔥)
+- General rule: Bullet speed should be 20-40x faster than enemy move speed for maximum arcade feel
+
+**Particle Trail Implementation:**
+Created `unity_add_particle_trail` tool for automated particle effect setup.
+
+**Key Configuration for ULTRA-THICK Continuous Speed Trail:**
+- **Simulation Space:** World (critical! Particles stay behind as bullet moves forward)
+- **Start Speed:** 0 (particles don't move relative to emission point)
+- **Start Lifetime:** 1.5 seconds (extra long persistent trail)
+- **Emission Rate:** 500 particles/sec (INSANE density - continuous thick stream)
+- **Start Size:** 1.0 (MASSIVE particles - 20x larger than original!)
+- **Color:** Cyan (bright, high-contrast, impossible to miss)
+- **Size Over Lifetime:** Fade from 100% → 0% (taper effect)
+- **Color Over Lifetime:** Alpha from 100% → 0% (smooth fade out)
+- **Max Particles:** 1000 (high limit for ultra-fast bullets)
+- **Play On Awake:** true (starts immediately when bullet spawns)
+- **Stop Action:** None (particles persist even after bullet destroyed)
+
+**Why World Space is Critical:**
+- `SimulationSpace.Local`: Particles move with bullet → no trail
+- `SimulationSpace.World`: Particles stay where emitted → visible trail ✓
+
+**Visual Effect Result:**
+LUDICROUSLY FAST bullets (400 units/sec) leave ULTRA-THICK bright cyan particle trails that:
+- Create MASSIVE, continuous trails that paint across the entire arena
+- Emphasize instantaneous projectile speed (40x faster than original!)
+- Particles are HUGE (1.0 size - 20x larger!) and last 1.5 seconds
+- 500 particles/sec creates solid, unbroken laser-beam effect
+- Continuous emission - particles never stop coming from bullet
+- Cyan color provides maximum contrast against any background
+- Looks like shooting thick cyan laser beams or energy weapons
+
+**Final Bullet Configuration:**
+- Speed: 400 units/sec (40x faster than original!)
+- Trail Color: Bright cyan (maximum contrast)
+- Emission Rate: 500 particles/sec (insane density - solid stream)
+- Particle Size: 1.0 (MASSIVE - 20x larger than original)
+- Trail Duration: 1.5 seconds (extra long persistence)
+- Max Particles: 1000 (supports ultra-high emission rate)
+- Play On Awake: true (instant emission)
+- Stop Action: None (continuous trail)
+- Result: Instant projectiles with thick, continuous cyan laser beam trails
 
 ---
 
