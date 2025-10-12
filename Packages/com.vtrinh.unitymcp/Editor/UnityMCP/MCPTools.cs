@@ -94,6 +94,15 @@ namespace UnityMCP
                     case "unity_set_position":
                         return SetPosition(args);
                     
+                    case "unity_set_rotation":
+                        return SetRotation(args);
+                    
+                    case "unity_set_scale":
+                        return SetScale(args);
+                    
+                    case "unity_set_tag":
+                        return SetTag(args);
+
                     case "unity_set_anchors":
                         return SetAnchors(args);
                     
@@ -102,6 +111,9 @@ namespace UnityMCP
                     
                     case "unity_set_ui_size":
                         return SetUISize(args);
+                    
+                    case "unity_set_image_fill":
+                        return SetImageFill(args);
                     
                     // Scene Management
                     case "unity_create_scene":
@@ -125,6 +137,9 @@ namespace UnityMCP
                     
                     case "unity_remove_component":
                         return RemoveComponent(args);
+                    
+                    case "unity_set_component_property":
+                        return SetComponentProperty(args);
                     
                     // Button Events
                     case "unity_set_button_onclick":
@@ -1061,6 +1076,214 @@ namespace UnityMCP
             }
         }
         
+        private static JObject SetRotation(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            JArray rotationArray = args["rotation"] as JArray;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (rotationArray == null || rotationArray.Count != 3)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Rotation must be an array of 3 numbers [x, y, z] in degrees"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                Vector3 newRot = new Vector3(
+                    rotationArray[0].ToObject<float>(),
+                    rotationArray[1].ToObject<float>(),
+                    rotationArray[2].ToObject<float>()
+                );
+                
+                Undo.RecordObject(obj.transform, "Set Rotation");
+                obj.transform.eulerAngles = newRot;
+                
+                Debug.Log($"[MCP] Set rotation of '{name}' to {newRot}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["newRotation"] = new JArray { newRot.x, newRot.y, newRot.z }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetScale(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            JArray scaleArray = args["scale"] as JArray;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (scaleArray == null || scaleArray.Count != 3)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Scale must be an array of 3 numbers [x, y, z]"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                Vector3 newScale = new Vector3(
+                    scaleArray[0].ToObject<float>(),
+                    scaleArray[1].ToObject<float>(),
+                    scaleArray[2].ToObject<float>()
+                );
+                
+                Undo.RecordObject(obj.transform, "Set Scale");
+                obj.transform.localScale = newScale;
+                
+                Debug.Log($"[MCP] Set scale of '{name}' to {newScale}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["newScale"] = new JArray { newScale.x, newScale.y, newScale.z }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetTag(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string tag = args["tag"]?.ToString();
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(tag))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Tag is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                // Check if tag exists, if not try to add it
+                bool tagExists = false;
+                foreach (string t in UnityEditorInternal.InternalEditorUtility.tags)
+                {
+                    if (t == tag)
+                    {
+                        tagExists = true;
+                        break;
+                    }
+                }
+                
+                if (!tagExists)
+                {
+                    // Add tag using SerializedObject
+                    SerializedObject tagManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+                    SerializedProperty tagsProp = tagManager.FindProperty("tags");
+                    
+                    tagsProp.InsertArrayElementAtIndex(tagsProp.arraySize);
+                    SerializedProperty newTag = tagsProp.GetArrayElementAtIndex(tagsProp.arraySize - 1);
+                    newTag.stringValue = tag;
+                    tagManager.ApplyModifiedProperties();
+                    
+                    Debug.Log($"[MCP] Created new tag '{tag}'");
+                }
+                
+                Undo.RecordObject(obj, "Set Tag");
+                obj.tag = tag;
+                
+                Debug.Log($"[MCP] Set tag of '{name}' to '{tag}'");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["tag"] = tag
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         private static JObject SetAnchors(JObject args)
         {
             string name = args["name"]?.ToString();
@@ -1380,6 +1603,124 @@ namespace UnityMCP
             }
         }
         
+        private static JObject SetImageFill(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string fillMethod = args["fillMethod"]?.ToString();
+            string fillOrigin = args["fillOrigin"]?.ToString();
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                UnityEngine.UI.Image image = obj.GetComponent<UnityEngine.UI.Image>();
+                if (image == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' does not have an Image component"
+                    };
+                }
+                
+                Undo.RecordObject(image, "Set Image Fill");
+                
+                // Set to Filled type
+                image.type = UnityEngine.UI.Image.Type.Filled;
+                
+                // Set fill method
+                if (!string.IsNullOrEmpty(fillMethod))
+                {
+                    switch (fillMethod.ToLower())
+                    {
+                        case "horizontal":
+                            image.fillMethod = UnityEngine.UI.Image.FillMethod.Horizontal;
+                            break;
+                        case "vertical":
+                            image.fillMethod = UnityEngine.UI.Image.FillMethod.Vertical;
+                            break;
+                        case "radial90":
+                            image.fillMethod = UnityEngine.UI.Image.FillMethod.Radial90;
+                            break;
+                        case "radial180":
+                            image.fillMethod = UnityEngine.UI.Image.FillMethod.Radial180;
+                            break;
+                        case "radial360":
+                            image.fillMethod = UnityEngine.UI.Image.FillMethod.Radial360;
+                            break;
+                        default:
+                            return new JObject
+                            {
+                                ["success"] = false,
+                                ["error"] = $"Unknown fill method '{fillMethod}'. Valid options: horizontal, vertical, radial90, radial180, radial360"
+                            };
+                    }
+                }
+                
+                // Set fill origin
+                if (!string.IsNullOrEmpty(fillOrigin))
+                {
+                    if (image.fillMethod == UnityEngine.UI.Image.FillMethod.Radial360)
+                    {
+                        switch (fillOrigin.ToLower())
+                        {
+                            case "bottom":
+                                image.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Bottom;
+                                break;
+                            case "right":
+                                image.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Right;
+                                break;
+                            case "top":
+                                image.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Top;
+                                break;
+                            case "left":
+                                image.fillOrigin = (int)UnityEngine.UI.Image.Origin360.Left;
+                                break;
+                        }
+                    }
+                }
+                
+                image.fillAmount = 1.0f; // Start full
+                
+                EditorUtility.SetDirty(obj);
+                
+                Debug.Log($"[MCP] Set Image fill for '{name}' - Method: {image.fillMethod}, Origin: {image.fillOrigin}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["fillMethod"] = image.fillMethod.ToString(),
+                    ["fillOrigin"] = image.fillOrigin
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         // ==================== SCRIPT MANAGEMENT ====================
         
         private static JObject CreateScript(JObject args)
@@ -1603,6 +1944,151 @@ namespace UnityMCP
                     ["gameObject"] = gameObjectName,
                     ["component"] = componentType,
                     ["message"] = $"Removed {componentType} from {gameObjectName}"
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetComponentProperty(JObject args)
+        {
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            string componentType = args["componentType"]?.ToString();
+            string propertyName = args["propertyName"]?.ToString();
+            JToken valueToken = args["value"];
+            
+            if (string.IsNullOrEmpty(gameObjectName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(componentType))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Component type is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Property name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(gameObjectName);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{gameObjectName}' not found"
+                    };
+                }
+                
+                // Find component
+                System.Type type = System.Type.GetType(componentType + ", Assembly-CSharp") 
+                                ?? System.Type.GetType(componentType + ", UnityEngine")
+                                ?? System.Type.GetType("UnityEngine." + componentType + ", UnityEngine")
+                                ?? System.Type.GetType("UnityEngine.UI." + componentType + ", Unity.ugui")
+                                ?? System.Type.GetType("TMPro." + componentType + ", Unity.TextMeshPro");
+                
+                if (type == null)
+                {
+                    foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        type = assembly.GetType(componentType);
+                        if (type != null) break;
+                    }
+                }
+                
+                if (type == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Component type '{componentType}' not found"
+                    };
+                }
+                
+                Component component = obj.GetComponent(type);
+                if (component == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Component '{componentType}' not found on GameObject '{gameObjectName}'"
+                    };
+                }
+                
+                // Use SerializedObject for proper Undo support
+                SerializedObject so = new SerializedObject(component);
+                SerializedProperty prop = so.FindProperty(propertyName);
+                
+                if (prop == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Property '{propertyName}' not found on component '{componentType}'"
+                    };
+                }
+                
+                // Set value based on property type
+                if (valueToken.Type == JTokenType.String)
+                {
+                    string valueStr = valueToken.ToString();
+                    
+                    // Check if it's a GameObject reference
+                    GameObject refObj = GameObject.Find(valueStr);
+                    if (refObj != null && prop.propertyType == SerializedPropertyType.ObjectReference)
+                    {
+                        prop.objectReferenceValue = refObj;
+                    }
+                    else
+                    {
+                        prop.stringValue = valueStr;
+                    }
+                }
+                else if (valueToken.Type == JTokenType.Integer)
+                {
+                    prop.intValue = valueToken.ToObject<int>();
+                }
+                else if (valueToken.Type == JTokenType.Float)
+                {
+                    prop.floatValue = valueToken.ToObject<float>();
+                }
+                else if (valueToken.Type == JTokenType.Boolean)
+                {
+                    prop.boolValue = valueToken.ToObject<bool>();
+                }
+                
+                so.ApplyModifiedProperties();
+                
+                Debug.Log($"[MCP] Set property '{propertyName}' on '{componentType}' of '{gameObjectName}'");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["gameObject"] = gameObjectName,
+                    ["component"] = componentType,
+                    ["property"] = propertyName
                 };
             }
             catch (System.Exception e)
