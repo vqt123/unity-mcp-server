@@ -2,12 +2,18 @@ using UnityEngine;
 
 public class Hero : MonoBehaviour
 {
+    [System.NonSerialized]
     public float maxHealth = 100f;
+    [System.NonSerialized]
     public float currentHealth;
+    [System.NonSerialized]
     public float damage = 10f;
+    [System.NonSerialized]
     public float shootCooldown = 1f;
+    [System.NonSerialized]
     public GameObject bulletPrefab;
-    public float bulletSpeed = 20f; // Ultra-fast bullets!
+    [System.NonSerialized]
+    public float bulletSpeed = 5f;
     
     private float lastShootTime;
     
@@ -15,6 +21,10 @@ public class Hero : MonoBehaviour
     {
         currentHealth = maxHealth;
         lastShootTime = -shootCooldown; // Can shoot immediately
+        
+        // Load bullet prefab from Resources folder (non-serialized fields must be loaded in code)
+        bulletPrefab = Resources.Load<GameObject>("Bullet");
+        
         Debug.Log($"[Hero] Started - bulletPrefab: {(bulletPrefab != null ? bulletPrefab.name : "NULL")}, bulletSpeed: {bulletSpeed}");
     }
     

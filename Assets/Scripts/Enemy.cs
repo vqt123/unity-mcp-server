@@ -2,12 +2,19 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
+    [System.NonSerialized]
     public float maxHealth = 30f;
+    [System.NonSerialized]
     public float currentHealth;
+    [System.NonSerialized]
     public float damage = 5f;
-    public float moveSpeed = 3f;
+    [System.NonSerialized]
+    public float moveSpeed = 1.5f;
+    [System.NonSerialized]
     public float attackRange = 1.5f;
+    [System.NonSerialized]
     public float attackCooldown = 1f;
+    [System.NonSerialized]
     public GameObject bloodEffect; // Assign BloodEffect prefab
     
     private Transform hero;
@@ -21,6 +28,11 @@ public class Enemy : MonoBehaviour
         {
             hero = heroObj.transform;
         }
+        
+        // Load blood effect from Resources folder (non-serialized fields must be loaded in code)
+        bloodEffect = Resources.Load<GameObject>("BloodEffect");
+        
+        Debug.Log($"[Enemy] Loaded bloodEffect: {(bloodEffect != null ? bloodEffect.name : "NULL")}");
     }
     
     void Update()

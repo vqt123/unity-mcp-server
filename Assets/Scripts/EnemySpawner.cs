@@ -2,9 +2,13 @@ using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
+    [System.NonSerialized]
     public GameObject enemyPrefab;
-    public float spawnInterval = 2f;
-    public float arenaRadius = 10f;
+    [System.NonSerialized]
+    public float spawnInterval = 3f;
+    [System.NonSerialized]
+    public float arenaRadius = 8f;
+    [System.NonSerialized]
     public int maxEnemies = 20;
     
     private float lastSpawnTime;
@@ -12,6 +16,11 @@ public class EnemySpawner : MonoBehaviour
     void Start()
     {
         lastSpawnTime = Time.time;
+        
+        // Load enemy prefab from Resources folder (non-serialized fields must be loaded in code)
+        enemyPrefab = Resources.Load<GameObject>("Enemy");
+        
+        Debug.Log($"[EnemySpawner] Loaded enemyPrefab: {(enemyPrefab != null ? enemyPrefab.name : "NULL")}");
     }
     
     void Update()
