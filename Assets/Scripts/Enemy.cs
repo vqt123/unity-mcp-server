@@ -8,6 +8,7 @@ public class Enemy : MonoBehaviour
     public float moveSpeed = 3f;
     public float attackRange = 1.5f;
     public float attackCooldown = 1f;
+    public GameObject bloodEffect; // Assign BloodEffect prefab
     
     private Transform hero;
     private float lastAttackTime;
@@ -61,6 +62,15 @@ public class Enemy : MonoBehaviour
     {
         currentHealth -= amount;
         
+        // Spawn blood effect
+        if (bloodEffect != null)
+        {
+            GameObject blood = Instantiate(bloodEffect, transform.position, Quaternion.identity);
+            Destroy(blood, 1f); // Destroy after 1 second
+        }
+        
+        Debug.Log($"[Enemy] Took {amount} damage, health: {currentHealth}/{maxHealth}");
+        
         if (currentHealth <= 0)
         {
             Die();
@@ -69,6 +79,8 @@ public class Enemy : MonoBehaviour
     
     void Die()
     {
+        Debug.Log("[Enemy] Dying!");
+        
         // Notify game manager
         GameManager gm = FindFirstObjectByType<GameManager>();
         if (gm != null)
