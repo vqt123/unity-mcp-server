@@ -27,6 +27,9 @@ namespace UnityMCP
                     case "unity_get_scene_info":
                         return GetSceneInfo();
                     
+                    case "unity_list_all_gameobjects":
+                        return ListAllGameObjects();
+
                     case "unity_create_cube":
                         return CreateCube(args);
                     
@@ -94,6 +97,12 @@ namespace UnityMCP
                     case "unity_set_anchors":
                         return SetAnchors(args);
                     
+                    case "unity_set_camera_background":
+                        return SetCameraBackground(args);
+                    
+                    case "unity_set_ui_size":
+                        return SetUISize(args);
+                    
                     // Scene Management
                     case "unity_create_scene":
                         return CreateScene(args);
@@ -113,6 +122,9 @@ namespace UnityMCP
                     
                     case "unity_add_component":
                         return AddComponent(args);
+                    
+                    case "unity_remove_component":
+                        return RemoveComponent(args);
                     
                     // Button Events
                     case "unity_set_button_onclick":
@@ -167,6 +179,48 @@ namespace UnityMCP
                 ["rootObjects"] = new JArray(
                     rootObjects.Select(go => go.name)
                 )
+            };
+        }
+        
+        private static JObject ListAllGameObjects()
+        {
+            var scene = EditorSceneManager.GetActiveScene();
+            var rootObjects = scene.GetRootGameObjects();
+            
+            var allObjects = new JArray();
+            
+            void AddGameObjectAndChildren(GameObject go, string parentPath = "")
+            {
+                string path = string.IsNullOrEmpty(parentPath) ? go.name : $"{parentPath}/{go.name}";
+                
+                allObjects.Add(new JObject
+                {
+                    ["name"] = go.name,
+                    ["path"] = path,
+                    ["active"] = go.activeInHierarchy,
+                    ["tag"] = go.tag,
+                    ["layer"] = LayerMask.LayerToName(go.layer),
+                    ["position"] = new JArray { go.transform.position.x, go.transform.position.y, go.transform.position.z }
+                });
+                
+                // Recursively add children
+                foreach (Transform child in go.transform)
+                {
+                    AddGameObjectAndChildren(child.gameObject, path);
+                }
+            }
+            
+            foreach (var rootObject in rootObjects)
+            {
+                AddGameObjectAndChildren(rootObject);
+            }
+            
+            return new JObject
+            {
+                ["success"] = true,
+                ["sceneName"] = scene.name,
+                ["totalObjects"] = allObjects.Count,
+                ["objects"] = allObjects
             };
         }
         
@@ -1159,6 +1213,173 @@ namespace UnityMCP
             }
         }
         
+        private static JObject SetCameraBackground(JObject args)
+        {
+            string cameraName = args["cameraName"]?.ToString() ?? "Main Camera";
+            string clearFlags = args["clearFlags"]?.ToString();
+            JArray colorArray = args["backgroundColor"] as JArray;
+            
+            try
+            {
+                Camera camera = null;
+                
+                // Try to find the camera
+                GameObject cameraObj = GameObject.Find(cameraName);
+                if (cameraObj != null)
+                {
+                    camera = cameraObj.GetComponent<Camera>();
+                }
+                
+                // If not found by name, try Camera.main
+                if (camera == null && cameraName == "Main Camera")
+                {
+                    camera = Camera.main;
+                }
+                
+                if (camera == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Camera '{cameraName}' not found"
+                    };
+                }
+                
+                Undo.RecordObject(camera, "Set Camera Background");
+                
+                // Set clear flags
+                if (!string.IsNullOrEmpty(clearFlags))
+                {
+                    switch (clearFlags.ToLower())
+                    {
+                        case "skybox":
+                            camera.clearFlags = CameraClearFlags.Skybox;
+                            break;
+                        case "solidcolor":
+                        case "solid":
+                            camera.clearFlags = CameraClearFlags.SolidColor;
+                            break;
+                        case "depth":
+                            camera.clearFlags = CameraClearFlags.Depth;
+                            break;
+                        case "nothing":
+                            camera.clearFlags = CameraClearFlags.Nothing;
+                            break;
+                        default:
+                            return new JObject
+                            {
+                                ["success"] = false,
+                                ["error"] = $"Unknown clearFlags '{clearFlags}'. Valid options: skybox, solidcolor, depth, nothing"
+                            };
+                    }
+                }
+                
+                // Set background color
+                if (colorArray != null && colorArray.Count >= 3)
+                {
+                    float r = colorArray[0].ToObject<float>();
+                    float g = colorArray[1].ToObject<float>();
+                    float b = colorArray[2].ToObject<float>();
+                    float a = colorArray.Count >= 4 ? colorArray[3].ToObject<float>() : 1f;
+                    
+                    camera.backgroundColor = new Color(r, g, b, a);
+                }
+                
+                EditorUtility.SetDirty(camera);
+                
+                Debug.Log($"[MCP] Set camera '{cameraName}' - ClearFlags: {camera.clearFlags}, BackgroundColor: {camera.backgroundColor}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["cameraName"] = cameraName,
+                    ["clearFlags"] = camera.clearFlags.ToString(),
+                    ["backgroundColor"] = new JArray { camera.backgroundColor.r, camera.backgroundColor.g, camera.backgroundColor.b, camera.backgroundColor.a }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetUISize(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            JArray sizeArray = args["size"] as JArray;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (sizeArray == null || sizeArray.Count != 2)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Size must be an array of [width, height]"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                RectTransform rectTransform = obj.GetComponent<RectTransform>();
+                if (rectTransform == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' does not have a RectTransform (not a UI element)"
+                    };
+                }
+                
+                Undo.RecordObject(rectTransform, "Set UI Size");
+                
+                float width = sizeArray[0].ToObject<float>();
+                float height = sizeArray[1].ToObject<float>();
+                
+                rectTransform.sizeDelta = new Vector2(width, height);
+                
+                EditorUtility.SetDirty(obj);
+                
+                Debug.Log($"[MCP] Set size for '{name}' to {width}x{height}");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["size"] = new JArray { rectTransform.sizeDelta.x, rectTransform.sizeDelta.y }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
         // ==================== SCRIPT MANAGEMENT ====================
         
         private static JObject CreateScript(JObject args)
@@ -1291,6 +1512,97 @@ namespace UnityMCP
                     ["success"] = true,
                     ["gameObject"] = gameObjectName,
                     ["component"] = componentType
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject RemoveComponent(JObject args)
+        {
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            string componentType = args["componentType"]?.ToString();
+            
+            if (string.IsNullOrEmpty(gameObjectName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(componentType))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Component type is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(gameObjectName);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{gameObjectName}' not found"
+                    };
+                }
+                
+                // Try to find component by type name
+                System.Type type = System.Type.GetType(componentType + ", Assembly-CSharp") 
+                                ?? System.Type.GetType(componentType + ", UnityEngine")
+                                ?? System.Type.GetType("UnityEngine." + componentType + ", UnityEngine");
+                
+                if (type == null)
+                {
+                    // Try searching all assemblies
+                    foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        type = assembly.GetType(componentType);
+                        if (type != null) break;
+                    }
+                }
+                
+                if (type == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Component type '{componentType}' not found"
+                    };
+                }
+                
+                Component component = obj.GetComponent(type);
+                if (component == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Component '{componentType}' not found on GameObject '{gameObjectName}'"
+                    };
+                }
+                
+                Undo.DestroyObjectImmediate(component);
+                
+                Debug.Log($"[MCP] Removed component '{componentType}' from '{gameObjectName}'");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["gameObject"] = gameObjectName,
+                    ["component"] = componentType,
+                    ["message"] = $"Removed {componentType} from {gameObjectName}"
                 };
             }
             catch (System.Exception e)

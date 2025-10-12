@@ -685,6 +685,53 @@ TOOLS = [
             "required": ["name"]
         }
     },
+    {
+        "name": "unity_set_camera_background",
+        "description": "Set camera clear flags and background color. Use to hide 3D scenes behind UI or set solid color backgrounds.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "cameraName": {
+                    "type": "string",
+                    "description": "Name of the camera GameObject",
+                    "default": "Main Camera"
+                },
+                "clearFlags": {
+                    "type": "string",
+                    "description": "Clear flags mode: 'skybox', 'solidcolor', 'depth', or 'nothing'"
+                },
+                "backgroundColor": {
+                    "type": "array",
+                    "description": "Background color as [r, g, b] or [r, g, b, a] (0-1 range)",
+                    "items": {"type": "number"},
+                    "minItems": 3,
+                    "maxItems": 4
+                }
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "unity_set_ui_size",
+        "description": "Set the size (width and height) of a UI element's RectTransform.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Full path to the UI GameObject (e.g., 'Canvas/Button')"
+                },
+                "size": {
+                    "type": "array",
+                    "description": "Size as [width, height] in pixels",
+                    "items": {"type": "number"},
+                    "minItems": 2,
+                    "maxItems": 2
+                }
+            },
+            "required": ["name", "size"]
+        }
+    },
     # Script Management
     {
         "name": "unity_create_script",
