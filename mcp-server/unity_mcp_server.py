@@ -206,6 +206,24 @@ TOOLS = [
         }
     },
     {
+        "name": "unity_save_prefab",
+        "description": "Save a GameObject as a prefab asset file. This creates a reusable template that can be instantiated multiple times.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gameObjectName": {
+                    "type": "string",
+                    "description": "Name of the GameObject in the scene to save as prefab"
+                },
+                "prefabPath": {
+                    "type": "string",
+                    "description": "Path where to save the prefab (e.g., 'Assets/Prefabs/Enemy.prefab' or 'Prefabs/Enemy')"
+                }
+            },
+            "required": ["gameObjectName", "prefabPath"]
+        }
+    },
+    {
         "name": "unity_delete_gameobject",
         "description": "Delete a GameObject from the scene by name. Useful for cleanup and iteration.",
         "inputSchema": {

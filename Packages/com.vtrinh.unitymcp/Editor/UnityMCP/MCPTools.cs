@@ -36,6 +36,9 @@ namespace UnityMCP
                     case "unity_create_primitive":
                         return CreatePrimitive(args);
                     
+                    case "unity_save_prefab":
+                        return SaveAsPrefab(args);
+                    
                     case "unity_force_compile":
                         return ForceCompile();
                     
@@ -2118,7 +2121,28 @@ namespace UnityMCP
                 }
                 
                 // Set value based on property type
-                if (valueToken.Type == JTokenType.String)
+                if (valueToken.Type == JTokenType.Object)
+                {
+                    // Handle reference objects like {"type": "reference", "path": "Assets/..."}
+                    JObject valueObj = valueToken as JObject;
+                    string refType = valueObj["type"]?.ToString();
+                    string refPath = valueObj["path"]?.ToString();
+                    
+                    if (refType == "reference" && !string.IsNullOrEmpty(refPath))
+                    {
+                        UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
+                        if (asset != null)
+                        {
+                            prop.objectReferenceValue = asset;
+                            Debug.Log($"[MCP] Loaded asset from '{refPath}': {asset.name}");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[MCP] Could not load asset from path: {refPath}");
+                        }
+                    }
+                }
+                else if (valueToken.Type == JTokenType.String)
                 {
                     string valueStr = valueToken.ToString();
                     
@@ -2147,6 +2171,8 @@ namespace UnityMCP
                 }
                 
                 so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(component);
+                EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
                 
                 Debug.Log($"[MCP] Set property '{propertyName}' on '{componentType}' of '{gameObjectName}'");
                 
@@ -3239,6 +3265,104 @@ namespace UnityMCP
                     ["startSize"] = startSize,
                     ["startLifetime"] = startLifetime
                 };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SaveAsPrefab(JObject args)
+        {
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            string prefabPath = args["prefabPath"]?.ToString();
+            
+            if (string.IsNullOrEmpty(gameObjectName))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Prefab path is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(gameObjectName);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{gameObjectName}' not found"
+                    };
+                }
+                
+                // Ensure path starts with Assets/
+                if (!prefabPath.StartsWith("Assets/"))
+                {
+                    prefabPath = "Assets/" + prefabPath;
+                }
+                
+                // Ensure path ends with .prefab
+                if (!prefabPath.EndsWith(".prefab"))
+                {
+                    prefabPath += ".prefab";
+                }
+                
+                // Ensure directory exists
+                string directory = System.IO.Path.GetDirectoryName(prefabPath);
+                if (!AssetDatabase.IsValidFolder(directory))
+                {
+                    string[] folders = directory.Split('/');
+                    string currentPath = folders[0];
+                    for (int i = 1; i < folders.Length; i++)
+                    {
+                        string newPath = currentPath + "/" + folders[i];
+                        if (!AssetDatabase.IsValidFolder(newPath))
+                        {
+                            AssetDatabase.CreateFolder(currentPath, folders[i]);
+                        }
+                        currentPath = newPath;
+                    }
+                }
+                
+                // Save as prefab
+                GameObject prefab = PrefabUtility.SaveAsPrefabAsset(obj, prefabPath);
+                
+                if (prefab != null)
+                {
+                    AssetDatabase.Refresh();
+                    Debug.Log($"[MCP] Created prefab: {prefabPath}");
+                    
+                    return new JObject
+                    {
+                        ["success"] = true,
+                        ["prefabPath"] = prefabPath,
+                        ["gameObjectName"] = gameObjectName
+                    };
+                }
+                else
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Failed to create prefab"
+                    };
+                }
             }
             catch (System.Exception e)
             {

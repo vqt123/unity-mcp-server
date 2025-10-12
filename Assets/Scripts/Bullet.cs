@@ -9,7 +9,7 @@ public class Bullet : MonoBehaviour
     private float lifetime = 5f;
     private Rigidbody rb;
     
-    public void Initialize(Vector3 dir, float spd, float dmg, string tag)
+    public void Initialize(Vector3 dir, float spd, float dmg, string tag, GameObject shooter)
     {
         direction = dir;
         speed = spd;
@@ -22,6 +22,17 @@ public class Bullet : MonoBehaviour
         rb.isKinematic = false;
         // Don't set collisionDetectionMode - let Unity use default
         rb.linearVelocity = direction * speed;
+        
+        // Ignore collision with shooter
+        if (shooter != null)
+        {
+            Collider shooterCollider = shooter.GetComponent<Collider>();
+            Collider bulletCollider = GetComponent<Collider>();
+            if (shooterCollider != null && bulletCollider != null)
+            {
+                Physics.IgnoreCollision(bulletCollider, shooterCollider);
+            }
+        }
         
         Debug.Log($"[Bullet] Initialized with speed {speed}, velocity {rb.linearVelocity.magnitude}");
         

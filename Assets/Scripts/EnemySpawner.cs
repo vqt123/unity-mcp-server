@@ -27,11 +27,17 @@ public class EnemySpawner : MonoBehaviour
     {
         // Check max enemies
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-        if (enemies.Length >= maxEnemies) return;
+        Debug.Log($"[EnemySpawner] Found {enemies.Length} enemies (max: {maxEnemies}), enemyPrefab: {(enemyPrefab != null ? enemyPrefab.name : "NULL")}");
+        
+        if (enemies.Length >= maxEnemies)
+        {
+            Debug.Log($"[EnemySpawner] Max enemies reached, not spawning");
+            return;
+        }
         
         if (enemyPrefab == null)
         {
-            Debug.LogWarning("EnemyPrefab is not assigned!");
+            Debug.LogWarning("[EnemySpawner] EnemyPrefab is not assigned!");
             return;
         }
         
@@ -43,6 +49,7 @@ public class EnemySpawner : MonoBehaviour
             Mathf.Sin(angle) * arenaRadius
         );
         
-        Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        GameObject newEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+        Debug.Log($"[EnemySpawner] Spawned enemy at {spawnPos}");
     }
 }

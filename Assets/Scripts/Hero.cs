@@ -7,7 +7,7 @@ public class Hero : MonoBehaviour
     public float damage = 10f;
     public float shootCooldown = 1f;
     public GameObject bulletPrefab;
-    public float bulletSpeed = 5f; // Ultra-fast bullets!
+    public float bulletSpeed = 20f; // Ultra-fast bullets!
     
     private float lastShootTime;
     
@@ -15,6 +15,7 @@ public class Hero : MonoBehaviour
     {
         currentHealth = maxHealth;
         lastShootTime = -shootCooldown; // Can shoot immediately
+        Debug.Log($"[Hero] Started - bulletPrefab: {(bulletPrefab != null ? bulletPrefab.name : "NULL")}, bulletSpeed: {bulletSpeed}");
     }
     
     void Update()
@@ -57,7 +58,7 @@ public class Hero : MonoBehaviour
                 Bullet bulletScript = bullet.GetComponent<Bullet>();
                 if (bulletScript != null)
                 {
-                    bulletScript.Initialize(direction, bulletSpeed, damage, "Enemy");
+                    bulletScript.Initialize(direction, bulletSpeed, damage, "Enemy", gameObject);
                 }
             }
             
