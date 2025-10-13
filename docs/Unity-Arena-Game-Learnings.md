@@ -785,3 +785,257 @@ GameObject newEnemy = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
 
 **Prefab Workflow:** Create → Configure → Save → Delete Template → Assign Reference
 
+---
+
+## Particle System Persistence and Serialization Issues 🎯
+
+### The Problem: Particles Never Show Up or Disappear After Changes
+
+**Symptoms:**
+- Particles configured correctly in prefabs but not visible in game
+- Changes to particle settings don't take effect
+- Settings revert to old cached values
+- Yellow particles appear as white
+- Particle trails invisible or not animating
+
+**Root Cause: Unity's Serialization System**
+
+Unity caches serialized values from prefabs and Inspector settings. When you:
+1. Create a prefab with particle settings
+2. Edit the prefab YAML manually or via tools
+3. Unity loads the cached version, not your changes
+
+This creates a **circular problem** where:
+- You set particle color to yellow → Unity loads white
+- You set particle size to 1.0 → Unity loads 0.08
+- You set simulation space to World → Unity loads Local
+- Changes never persist!
+
+---
+
+### The Solution: [System.NonSerialized] + Resources.Load()
+
+**Phase 1: Make ALL Fields Non-Serialized**
+
+```csharp
+public class Hero : MonoBehaviour
+{
+    // OLD: Unity serializes these to prefabs/scenes
+    public float bulletSpeed = 20f;
+    public GameObject bulletPrefab;
+    
+    // NEW: Unity never caches these values
+    [System.NonSerialized]
+    public float bulletSpeed = 20f;
+    [System.NonSerialized]
+    public GameObject bulletPrefab;
+}
+```
+
+**Why This Works:**
+- `[System.NonSerialized]` tells Unity: "Never save this value to Inspector/prefab"
+- Values ONLY come from script defaults (the source of truth)
+- No more cached values overriding your changes!
+
+**Phase 2: Load Prefabs from Resources/ Folder**
+
+```csharp
+void Start()
+{
+    // Load bullet prefab at runtime from Resources/ folder
+    bulletPrefab = Resources.Load<GameObject>("Bullet");
+    
+    Debug.Log($"Loaded bulletPrefab: {(bulletPrefab != null ? bulletPrefab.name : "NULL")}");
+}
+```
+
+**File Structure:**
+```
+Assets/
+├── Resources/           # Special folder - Unity includes in builds
+│   ├── Bullet.prefab
+│   ├── Enemy.prefab
+│   └── BloodEffect.prefab
+├── Scripts/
+│   ├── Hero.cs         # Loads "Bullet" from Resources
+│   ├── Enemy.cs        # Loads "BloodEffect" from Resources
+│   └── EnemySpawner.cs # Loads "Enemy" from Resources
+```
+
+**Key Insight:**
+- Inspector assignments are serialized (cached by Unity)
+- `Resources.Load()` loads fresh from disk every time
+- Prefab files become the ONLY source of truth
+- Script defaults + Prefab files = No more circular issues!
+
+---
+
+### Particle System Configuration for Visible Trails
+
+**Critical Settings:**
+
+1. **Simulation Space: World** (NOT Local)
+   - Local: Particles move with bullet → no visible trail
+   - World: Particles stay where emitted → visible trail ✓
+
+2. **Color: Yellow (#FFFF00)** (NOT white)
+   - White particles blend into backgrounds
+   - Yellow provides high contrast
+
+3. **Particle Renderer Mode: Stretched Billboard**
+   - Enables velocity-based stretching
+   - Creates motion blur effect
+
+4. **Velocity Scale: 0.5** (NOT 0)
+   - Controls trail length based on movement speed
+   - 0 = no stretching, 0.5 = moderate stretch
+
+5. **Start Size: 1.0** (NOT 0.08)
+   - Particles need to be visible!
+   - 1.0 is 10-12x larger than default
+
+6. **Emission Rate: 500 particles/sec**
+   - Creates continuous, thick trail
+   - Lower rates create dotted lines
+
+**Using MCP Tools:**
+
+```bash
+# Create bullet with yellow particles
+curl -X POST http://localhost:8765 -d '{
+  "tool": "unity_create_primitive",
+  "args": {
+    "primitiveType": "Sphere",
+    "name": "Bullet",
+    "scale": [0.35, 0.35, 0.35]
+  }
+}'
+
+# Add yellow particle trail
+curl -X POST http://localhost:8765 -d '{
+  "tool": "unity_add_particle_trail",
+  "args": {
+    "name": "Bullet",
+    "color": "#FFFF00",
+    "startSize": 1.0,
+    "emissionRate": 500
+  }
+}'
+
+# Save as prefab
+curl -X POST http://localhost:8765 -d '{
+  "tool": "unity_save_prefab",
+  "args": {
+    "gameObjectName": "Bullet",
+    "prefabPath": "Assets/Resources/Bullet.prefab"
+  }
+}'
+```
+
+---
+
+### The Complete Fix: Step-by-Step
+
+**1. Update All Scripts to Use [System.NonSerialized]**
+
+```csharp
+// Hero.cs, Enemy.cs, EnemySpawner.cs, etc.
+[System.NonSerialized]
+public float bulletSpeed = 5f;
+
+[System.NonSerialized]
+public GameObject bulletPrefab;
+```
+
+**2. Move Prefabs to Resources/ Folder**
+
+```bash
+mkdir -p Assets/Resources
+mv Assets/Prefabs/*.prefab Assets/Resources/
+```
+
+**3. Load Prefabs in Start() Methods**
+
+```csharp
+void Start()
+{
+    // Load from Resources folder (path without "Assets/Resources/" or ".prefab")
+    bulletPrefab = Resources.Load<GameObject>("Bullet");
+    bloodEffect = Resources.Load<GameObject>("BloodEffect");
+}
+```
+
+**4. Recreate Prefabs Using MCP Tools**
+
+- Delete old prefabs: `rm Assets/Resources/Bullet.prefab`
+- Create fresh with correct particle settings
+- Save using `unity_save_prefab`
+- Delete template GameObject from scene
+- Compile and test
+
+**5. Verify in Logs**
+
+```
+[Hero] Loaded bulletPrefab: Bullet
+[Enemy] Loaded bloodEffect: BloodEffect
+[EnemySpawner] Loaded enemyPrefab: Enemy
+```
+
+---
+
+### Why Manual YAML Editing Doesn't Work
+
+**The Problem:**
+```bash
+# Manually edit prefab YAML
+sed -i '' 's/minColor: {r: 1, g: 1, b: 1}/minColor: {r: 1, g: 1, b: 0}/' Bullet.prefab
+```
+
+**What Happens:**
+1. Unity has cached version in memory
+2. Your YAML edit changes disk file
+3. Unity may or may not reload the file
+4. If Unity reloads, it might overwrite your changes with cached version
+5. Circular issue: You edit → Unity overwrites → You edit again → ...
+
+**The Solution:**
+- Use MCP tools to recreate prefabs from scratch
+- `[System.NonSerialized]` prevents caching
+- `Resources.Load()` always loads fresh
+- Prefab file is the ONLY source of truth
+
+---
+
+### Particle System Troubleshooting Checklist
+
+If particles aren't showing:
+
+- [ ] Check particle color (should be yellow `#FFFF00`, not white)
+- [ ] Check simulation space (should be `World`, not `Local`)
+- [ ] Check render mode (should be `Stretched Billboard`, not `Billboard`)
+- [ ] Check velocity scale (should be `0.5`, not `0`)
+- [ ] Check start size (should be `1.0`, not tiny like `0.08`)
+- [ ] Check emission rate (should be `500`, not low like `10`)
+- [ ] Check prefab is in `Resources/` folder
+- [ ] Check script loads prefab with `Resources.Load()`
+- [ ] Check all public fields have `[System.NonSerialized]`
+- [ ] Recreate prefab using MCP tools (not manual YAML edits)
+- [ ] Compile scripts after changes
+- [ ] Delete any template GameObjects from scene
+
+---
+
+### Key Takeaways
+
+1. **Unity's serialization system caches values** - This is the root of all evil!
+2. **`[System.NonSerialized]` disables caching** - Values only come from script defaults
+3. **`Resources.Load()` loads fresh every time** - No cached Inspector assignments
+4. **Prefab files become source of truth** - Edit prefabs, not scene objects
+5. **Use MCP tools, not manual YAML edits** - Ensures clean, consistent prefabs
+6. **Always recreate prefabs when debugging** - Don't try to patch, start fresh
+7. **Verify with debug logs** - Check that assets load with correct names
+
+**The Golden Rule:**
+> When particle settings don't stick, the problem is **serialization**, not your settings.
+> Fix serialization first, then settings will work!
+

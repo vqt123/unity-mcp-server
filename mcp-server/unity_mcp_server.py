@@ -141,7 +141,7 @@ TOOLS = [
                 "includeStackTrace": {
                     "type": "boolean",
                     "description": "Include file and line number information",
-                    "default": false
+                    "default": False
                 }
             },
             "required": []
@@ -310,7 +310,7 @@ TOOLS = [
                 "returnBase64": {
                     "type": "boolean",
                     "description": "Include base64-encoded image data in response",
-                    "default": true
+                    "default": True
                 }
             },
             "required": []
@@ -342,7 +342,7 @@ TOOLS = [
                 "pixelPerfect": {
                     "type": "boolean",
                     "description": "Enable pixel perfect rendering",
-                    "default": false
+                    "default": False
                 },
                 "preset": {
                     "type": "string",

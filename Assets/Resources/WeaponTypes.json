@@ -1,0 +1,29 @@
+{
+  "weapons": [
+    {
+      "name": "Bow",
+      "damage": 15,
+      "shootCooldown": 0.8,
+      "bulletSpeed": 8,
+      "bulletColor": { "r": 0.8, "g": 0.6, "b": 0.2, "a": 1.0 },
+      "description": "Fast and accurate ranged weapon"
+    },
+    {
+      "name": "Fireball Staff",
+      "damage": 25,
+      "shootCooldown": 1.5,
+      "bulletSpeed": 6,
+      "bulletColor": { "r": 1.0, "g": 0.3, "b": 0.0, "a": 1.0 },
+      "description": "Powerful magical projectiles"
+    },
+    {
+      "name": "Sword",
+      "damage": 20,
+      "shootCooldown": 1.2,
+      "bulletSpeed": 5,
+      "bulletColor": { "r": 0.7, "g": 0.7, "b": 0.7, "a": 1.0 },
+      "description": "Balanced melee-range weapon"
+    }
+  ]
+}
+

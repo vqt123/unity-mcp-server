@@ -1,0 +1,32 @@
+{
+  "heroes": [
+    {
+      "type": "Archer",
+      "maxHealth": 80,
+      "damage": 15,
+      "shootCooldown": 0.8,
+      "bulletSpeed": 8,
+      "startingWeapon": "Bow",
+      "color": { "r": 0.0, "g": 1.0, "b": 0.0, "a": 1.0 }
+    },
+    {
+      "type": "Mage",
+      "maxHealth": 60,
+      "damage": 25,
+      "shootCooldown": 1.5,
+      "bulletSpeed": 6,
+      "startingWeapon": "Fireball Staff",
+      "color": { "r": 0.5, "g": 0.0, "b": 1.0, "a": 1.0 }
+    },
+    {
+      "type": "Warrior",
+      "maxHealth": 120,
+      "damage": 20,
+      "shootCooldown": 1.2,
+      "bulletSpeed": 5,
+      "startingWeapon": "Sword",
+      "color": { "r": 1.0, "g": 0.0, "b": 0.0, "a": 1.0 }
+    }
+  ]
+}
+
