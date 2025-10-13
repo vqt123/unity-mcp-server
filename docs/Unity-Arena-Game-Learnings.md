@@ -1,5 +1,83 @@
 # Unity Arena Game - Development Learnings
 
+## ✅ MVP Config System Complete (v0.3.0)
+
+**Status:** Fully implemented JSON-based configuration system using Newtonsoft.Json
+
+### What Was Built
+
+1. **JSON Configuration Files**
+   - `HeroTypes.json` - 3 hero types (Archer, Mage, Warrior)
+   - `WeaponTypes.json` - 3 weapon types (Bow, Fireball Staff, Sword)
+
+2. **Config System Architecture**
+   - `ConfigManager.cs` - Singleton that loads and provides config data
+   - Uses Newtonsoft.Json for parsing
+   - Data-driven design (no hardcoded stats)
+
+3. **Hero-Weapon Integration**
+   - Heroes load base stats (health, color) from HeroTypes.json
+   - Heroes load weapon stats (damage, speed, cooldown, color) from WeaponTypes.json
+   - Bullets inherit weapon properties (damage, speed, color)
+
+### Key Features
+
+**3 Hero Types:**
+- **Archer** - 80 HP, uses Bow, green color
+- **Mage** - 60 HP, uses Fireball Staff, purple color
+- **Warrior** - 120 HP, uses Sword, red color
+
+**3 Weapon Types:**
+- **Bow** - 15 dmg, 0.8s cooldown, 8 speed, gold bullets (18.75 DPS)
+- **Fireball Staff** - 25 dmg, 1.5s cooldown, 6 speed, orange bullets (16.67 DPS)
+- **Sword** - 20 dmg, 1.2s cooldown, 5 speed, gray bullets (16.67 DPS)
+
+### Technical Implementation
+
+**ConfigManager Pattern:**
+```csharp
+public class ConfigManager : MonoBehaviour
+{
+    private static ConfigManager _instance;
+    public static ConfigManager Instance { get; }
+    
+    public HeroData GetHeroData(string heroType);
+    public WeaponData GetWeaponData(string weaponName);
+}
+```
+
+**Hero Initialization:**
+```csharp
+public void Initialize(string type)
+{
+    HeroData heroData = ConfigManager.Instance.GetHeroData(type);
+    WeaponData weaponData = ConfigManager.Instance.GetWeaponData(heroData.startingWeapon);
+    
+    // Apply hero stats
+    maxHealth = heroData.maxHealth;
+    
+    // Apply weapon stats
+    weaponDamage = weaponData.damage;
+    weaponShootCooldown = weaponData.shootCooldown;
+    weaponBulletSpeed = weaponData.bulletSpeed;
+    weaponBulletColor = weaponData.bulletColor.ToColor();
+}
+```
+
+**Benefits:**
+- Easy balance tweaks (edit JSON, no recompile)
+- Extensible (add heroes/weapons without code changes)
+- Single source of truth (JSON, not Inspector)
+- Visual distinction (each hero/weapon has unique colors)
+
+### Documentation
+
+Full guide created: `docs/MVP-Game-Config-System.md`
+
+---
+
+# Unity Arena Game - Development Learnings
+
 ## Critical Unity UI Radial Fill Issues
 
 ### Problem: Radial Fill Not Animating

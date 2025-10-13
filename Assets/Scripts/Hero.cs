@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Hero : MonoBehaviour
 {
@@ -21,10 +22,13 @@ public class Hero : MonoBehaviour
     
     private float lastShootTime;
     private Renderer heroRenderer;
+    private UnityEngine.UI.Image cooldownRadial;
+    private int heroIndex; // 0=left, 1=center, 2=right
     
-    public void Initialize(string type)
+    public void Initialize(string type, int index)
     {
         heroType = type;
+        heroIndex = index;
         HeroData data = ConfigManager.Instance.GetHeroData(type);
         
         if (data != null)
@@ -69,11 +73,77 @@ public class Hero : MonoBehaviour
         // Load bullet prefab from Resources folder (non-serialized fields must be loaded in code)
         bulletPrefab = Resources.Load<GameObject>("Bullet");
         
-        Debug.Log($"[Hero] Started {heroType} - bulletPrefab: {(bulletPrefab != null ? bulletPrefab.name : "NULL")}, weapon: {weaponName}");
+        // Create cooldown UI in Canvas
+        CreateCooldownUI();
+        
+        Debug.Log($"[Hero] Started {heroType} - bulletPrefab: {(bulletPrefab != null ? bulletPrefab.name : "NULL")}, weapon: {weaponName}, cooldownUI: {(cooldownRadial != null ? "Created" : "NULL")}");
+    }
+    
+    void CreateCooldownUI()
+    {
+        // Find the Canvas
+        Canvas canvas = GameObject.Find("Canvas")?.GetComponent<Canvas>();
+        if (canvas == null)
+        {
+            Debug.LogError($"[Hero] Canvas not found for {heroType}!");
+            return;
+        }
+        
+        // Create a white sprite for the UI
+        Texture2D tex = new Texture2D(256, 256);
+        for (int y = 0; y < 256; y++)
+        {
+            for (int x = 0; x < 256; x++)
+            {
+                float dx = (x - 128f) / 128f;
+                float dy = (y - 128f) / 128f;
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                tex.SetPixel(x, y, dist <= 1f ? Color.white : Color.clear);
+            }
+        }
+        tex.Apply();
+        Sprite circleSprite = Sprite.Create(tex, new Rect(0, 0, 256, 256), new Vector2(0.5f, 0.5f));
+        
+        // Create UI GameObject
+        GameObject uiObj = new GameObject($"Cooldown_{heroType}");
+        uiObj.transform.SetParent(canvas.transform, false);
+        
+        // Add Image component
+        cooldownRadial = uiObj.AddComponent<Image>();
+        cooldownRadial.sprite = circleSprite;
+        cooldownRadial.color = weaponBulletColor;
+        cooldownRadial.type = Image.Type.Filled;
+        cooldownRadial.fillMethod = Image.FillMethod.Radial360;
+        cooldownRadial.fillOrigin = (int)Image.Origin360.Top;
+        cooldownRadial.fillAmount = 0f;
+        
+        // Position at bottom of screen
+        RectTransform rectTransform = uiObj.GetComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(80, 80);
+        
+        // Count how many heroes exist to determine horizontal position
+        int heroCount = GameObject.FindGameObjectsWithTag("Player").Length;
+        float spacing = 120f;
+        float totalWidth = (heroCount - 1) * spacing;
+        float xPos = -totalWidth / 2f + heroIndex * spacing;
+        
+        // Anchor to bottom-center
+        rectTransform.anchorMin = new Vector2(0.5f, 0f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0f);
+        rectTransform.anchoredPosition = new Vector2(xPos, 60f);
+        
+        Debug.Log($"[Hero] Created cooldown UI for {heroType} at position {xPos}, heroCount: {heroCount}, index: {heroIndex}");
     }
     
     void Update()
     {
+        // Update cooldown UI
+        if (cooldownRadial != null)
+        {
+            float percent = GetCooldownPercent();
+            cooldownRadial.fillAmount = percent;
+        }
+        
         // Check if can shoot
         if (Time.time - lastShootTime >= weaponShootCooldown)
         {

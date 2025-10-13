@@ -33,7 +33,7 @@ public class Main : MonoBehaviour
             
             // Add Hero component and initialize
             Hero hero = heroCube.AddComponent<Hero>();
-            hero.Initialize(heroTypes[i].type);
+            hero.Initialize(heroTypes[i].type, i); // Pass index (0, 1, 2)
             
             Debug.Log($"[Main] Spawned {heroTypes[i].type} at {position}");
         }
