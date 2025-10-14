@@ -15,7 +15,7 @@
       "damage": 25,
       "shootCooldown": 1.5,
       "bulletSpeed": 6,
-      "startingWeapon": "Fireball Staff",
+      "startingWeapon": "Firewand",
       "color": { "r": 0.5, "g": 0.0, "b": 1.0, "a": 1.0 }
     },
     {

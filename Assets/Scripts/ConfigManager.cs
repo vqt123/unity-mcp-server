@@ -35,16 +35,19 @@ public class HeroTypesConfig
     public List<HeroData> heroes;
 }
 
-[System.Serializable]
-public class WeaponTierData
-{
-    public int tier;
-    public string name;
-    public float damage;
-    public float shootCooldown;
-    public float bulletSpeed;
-    public string description;
-}
+    [System.Serializable]
+    public class WeaponTierData
+    {
+        public int tier;
+        public string name;
+        public float damage;
+        public float shootCooldown;
+        public float bulletSpeed;
+        public int projectileCount;
+        public float aoeRadius;
+        public bool piercing;
+        public string description;
+    }
 
 [System.Serializable]
 public class WeaponData

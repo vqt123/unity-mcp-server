@@ -20,6 +20,9 @@ public class Hero : MonoBehaviour
     private float weaponBulletSpeed;
     private Color weaponBulletColor;
     private int weaponTier = 1; // Current weapon tier
+    private int weaponProjectileCount = 1;
+    private float weaponAoeRadius = 0f;
+    private bool weaponPiercing = false;
     
     private float lastShootTime;
     private Renderer heroRenderer;
@@ -65,8 +68,11 @@ public class Hero : MonoBehaviour
             weaponShootCooldown = tierData.shootCooldown;
             weaponBulletSpeed = tierData.bulletSpeed;
             weaponBulletColor = weaponData.bulletColor.ToColor();
+            weaponProjectileCount = tierData.projectileCount;
+            weaponAoeRadius = tierData.aoeRadius;
+            weaponPiercing = tierData.piercing;
             
-            Debug.Log($"[Hero] {heroType} equipped {tierData.name} (Tier {tier}): {weaponDamage} dmg, {weaponShootCooldown}s cooldown");
+            Debug.Log($"[Hero] {heroType} equipped {tierData.name} (Tier {tier}): {weaponDamage} dmg, {weaponProjectileCount}x projectiles, AOE: {weaponAoeRadius}");
         }
         else
         {
@@ -205,24 +211,27 @@ public class Hero : MonoBehaviour
         if (closest != null)
         {
             // Shoot bullet toward closest enemy
-            Vector3 direction = (closest.transform.position - transform.position).normalized;
+            Vector3 baseDirection = (closest.transform.position - transform.position).normalized;
             
-            if (bulletPrefab != null)
+            // Fire multiple projectiles based on weapon tier
+            for (int i = 0; i < weaponProjectileCount; i++)
             {
-                GameObject bullet = Instantiate(bulletPrefab, transform.position, Quaternion.identity);
-                
-                // Set bullet color based on weapon
-                Renderer bulletRenderer = bullet.GetComponent<Renderer>();
-                if (bulletRenderer != null)
+                // Calculate spread angle for multiple projectiles
+                float spreadAngle = 0f;
+                if (weaponProjectileCount > 1)
                 {
-                    bulletRenderer.material.color = weaponBulletColor;
+                    float totalSpread = 30f; // Total spread angle in degrees
+                    float angleStep = totalSpread / (weaponProjectileCount - 1);
+                    spreadAngle = -totalSpread / 2f + (angleStep * i);
                 }
                 
-                Bullet bulletScript = bullet.GetComponent<Bullet>();
-                if (bulletScript != null)
-                {
-                    bulletScript.Initialize(direction, weaponBulletSpeed, weaponDamage, "Enemy", gameObject);
-                }
+                // Rotate direction by spread angle (around Y axis)
+                Quaternion rotation = Quaternion.Euler(0, spreadAngle, 0);
+                Vector3 direction = rotation * baseDirection;
+                
+                // Slight delay between projectiles for visual effect
+                float delay = i * 0.05f;
+                StartCoroutine(FireProjectile(direction, delay));
             }
             
             lastShootTime = Time.time;
@@ -245,6 +254,34 @@ public class Hero : MonoBehaviour
         Debug.Log("Hero died! Game Over");
         // Game over logic
         Time.timeScale = 0;
+    }
+    
+    System.Collections.IEnumerator FireProjectile(Vector3 direction, float delay)
+    {
+        if (delay > 0)
+        {
+            yield return new WaitForSeconds(delay);
+        }
+        
+        if (bulletPrefab != null)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, transform.position, Quaternion.identity);
+            
+            // Set bullet color based on weapon
+            Renderer bulletRenderer = bullet.GetComponent<Renderer>();
+            if (bulletRenderer != null)
+            {
+                bulletRenderer.material.color = weaponBulletColor;
+            }
+            
+            Bullet bulletScript = bullet.GetComponent<Bullet>();
+            if (bulletScript != null)
+            {
+                bulletScript.Initialize(direction, weaponBulletSpeed, weaponDamage, "Enemy", gameObject);
+                bulletScript.aoeRadius = weaponAoeRadius;
+                bulletScript.piercing = weaponPiercing;
+            }
+        }
     }
     
     public float GetCooldownPercent()
