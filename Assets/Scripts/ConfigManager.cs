@@ -36,14 +36,22 @@ public class HeroTypesConfig
 }
 
 [System.Serializable]
-public class WeaponData
+public class WeaponTierData
 {
+    public int tier;
     public string name;
     public float damage;
     public float shootCooldown;
     public float bulletSpeed;
-    public ColorData bulletColor;
     public string description;
+}
+
+[System.Serializable]
+public class WeaponData
+{
+    public string name;
+    public ColorData bulletColor;
+    public List<WeaponTierData> tiers;
 }
 
 [System.Serializable]
@@ -122,6 +130,12 @@ public class ConfigManager : MonoBehaviour
     public WeaponData GetWeaponData(string weaponName)
     {
         return weaponTypes?.weapons.FirstOrDefault(w => w.name == weaponName);
+    }
+    
+    public WeaponTierData GetWeaponTier(string weaponName, int tier)
+    {
+        WeaponData weapon = GetWeaponData(weaponName);
+        return weapon?.tiers.FirstOrDefault(t => t.tier == tier);
     }
     
     public List<HeroData> GetAllHeroes()

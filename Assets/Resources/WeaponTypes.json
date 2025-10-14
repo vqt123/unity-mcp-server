@@ -2,27 +2,117 @@
   "weapons": [
     {
       "name": "Bow",
-      "damage": 15,
-      "shootCooldown": 0.8,
-      "bulletSpeed": 8,
       "bulletColor": { "r": 0.8, "g": 0.6, "b": 0.2, "a": 1.0 },
-      "description": "Fast and accurate ranged weapon"
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Wooden Bow",
+          "damage": 15,
+          "shootCooldown": 0.8,
+          "bulletSpeed": 8,
+          "description": "Basic hunting bow"
+        },
+        {
+          "tier": 2,
+          "name": "Composite Bow",
+          "damage": 25,
+          "shootCooldown": 0.7,
+          "bulletSpeed": 10,
+          "description": "Faster and stronger"
+        },
+        {
+          "tier": 3,
+          "name": "Longbow",
+          "damage": 40,
+          "shootCooldown": 0.6,
+          "bulletSpeed": 12,
+          "description": "Devastating piercing power"
+        },
+        {
+          "tier": 4,
+          "name": "Elven Bow",
+          "damage": 60,
+          "shootCooldown": 0.5,
+          "bulletSpeed": 15,
+          "description": "Legendary swift strikes"
+        }
+      ]
     },
     {
       "name": "Fireball Staff",
-      "damage": 25,
-      "shootCooldown": 1.5,
-      "bulletSpeed": 6,
       "bulletColor": { "r": 1.0, "g": 0.3, "b": 0.0, "a": 1.0 },
-      "description": "Powerful magical projectiles"
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Apprentice Staff",
+          "damage": 25,
+          "shootCooldown": 1.5,
+          "bulletSpeed": 6,
+          "description": "Basic fire magic"
+        },
+        {
+          "tier": 2,
+          "name": "Adept Staff",
+          "damage": 40,
+          "shootCooldown": 1.3,
+          "bulletSpeed": 7,
+          "description": "Enhanced flames"
+        },
+        {
+          "tier": 3,
+          "name": "Master Staff",
+          "damage": 65,
+          "shootCooldown": 1.1,
+          "bulletSpeed": 8,
+          "description": "Inferno unleashed"
+        },
+        {
+          "tier": 4,
+          "name": "Archmage Staff",
+          "damage": 100,
+          "shootCooldown": 0.9,
+          "bulletSpeed": 10,
+          "description": "Catastrophic fireballs"
+        }
+      ]
     },
     {
       "name": "Sword",
-      "damage": 20,
-      "shootCooldown": 1.2,
-      "bulletSpeed": 5,
       "bulletColor": { "r": 0.7, "g": 0.7, "b": 0.7, "a": 1.0 },
-      "description": "Balanced melee-range weapon"
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Iron Sword",
+          "damage": 20,
+          "shootCooldown": 1.2,
+          "bulletSpeed": 5,
+          "description": "Reliable blade"
+        },
+        {
+          "tier": 2,
+          "name": "Steel Sword",
+          "damage": 35,
+          "shootCooldown": 1.0,
+          "bulletSpeed": 6,
+          "description": "Tempered excellence"
+        },
+        {
+          "tier": 3,
+          "name": "Rune Sword",
+          "damage": 55,
+          "shootCooldown": 0.8,
+          "bulletSpeed": 7,
+          "description": "Magically enhanced"
+        },
+        {
+          "tier": 4,
+          "name": "Mythril Blade",
+          "damage": 85,
+          "shootCooldown": 0.6,
+          "bulletSpeed": 9,
+          "description": "Legendary weapon"
+        }
+      ]
     }
   ]
 }

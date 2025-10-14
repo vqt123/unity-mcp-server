@@ -19,6 +19,7 @@ public class Hero : MonoBehaviour
     private float weaponShootCooldown;
     private float weaponBulletSpeed;
     private Color weaponBulletColor;
+    private int weaponTier = 1; // Current weapon tier
     
     private float lastShootTime;
     private Renderer heroRenderer;
@@ -43,26 +44,56 @@ public class Hero : MonoBehaviour
                 heroRenderer.material.color = data.color.ToColor();
             }
             
-            // Load weapon stats from WeaponTypes.json
-            WeaponData weaponData = ConfigManager.Instance.GetWeaponData(weaponName);
-            if (weaponData != null)
-            {
-                weaponDamage = weaponData.damage;
-                weaponShootCooldown = weaponData.shootCooldown;
-                weaponBulletSpeed = weaponData.bulletSpeed;
-                weaponBulletColor = weaponData.bulletColor.ToColor();
-                
-                Debug.Log($"[Hero] Initialized {type} with weapon '{weaponName}' - Damage: {weaponDamage}, Speed: {weaponBulletSpeed}, Cooldown: {weaponShootCooldown}s");
-            }
-            else
-            {
-                Debug.LogError($"[Hero] Failed to find weapon data for: {weaponName}");
-            }
+            // Load weapon tier 1 stats
+            LoadWeaponTier(1);
         }
         else
         {
             Debug.LogError($"[Hero] Failed to find hero data for type: {type}");
         }
+    }
+    
+    void LoadWeaponTier(int tier)
+    {
+        weaponTier = tier;
+        WeaponData weaponData = ConfigManager.Instance.GetWeaponData(weaponName);
+        WeaponTierData tierData = ConfigManager.Instance.GetWeaponTier(weaponName, tier);
+        
+        if (weaponData != null && tierData != null)
+        {
+            weaponDamage = tierData.damage;
+            weaponShootCooldown = tierData.shootCooldown;
+            weaponBulletSpeed = tierData.bulletSpeed;
+            weaponBulletColor = weaponData.bulletColor.ToColor();
+            
+            Debug.Log($"[Hero] {heroType} equipped {tierData.name} (Tier {tier}): {weaponDamage} dmg, {weaponShootCooldown}s cooldown");
+        }
+        else
+        {
+            Debug.LogError($"[Hero] Failed to load weapon tier: {weaponName} tier {tier}");
+        }
+    }
+    
+    public void UpgradeWeaponTier()
+    {
+        if (weaponTier < 4)
+        {
+            LoadWeaponTier(weaponTier + 1);
+        }
+        else
+        {
+            Debug.LogWarning($"[Hero] {heroType} weapon already at max tier!");
+        }
+    }
+    
+    public int GetWeaponTier()
+    {
+        return weaponTier;
+    }
+    
+    public bool CanUpgradeWeapon()
+    {
+        return weaponTier < 4;
     }
     
     void Start()
@@ -225,5 +256,33 @@ public class Hero : MonoBehaviour
     {
         weaponDamage += bonus;
         Debug.Log($"[Hero] {heroType} weapon damage increased by {bonus}! New damage: {weaponDamage}");
+    }
+    
+    public string GetWeaponTierName()
+    {
+        WeaponTierData tierData = ConfigManager.Instance.GetWeaponTier(weaponName, weaponTier);
+        return tierData?.name ?? weaponName;
+    }
+    
+    public void ApplyStatUpgrade(StatType statType, float value)
+    {
+        switch (statType)
+        {
+            case StatType.Health:
+                maxHealth += value;
+                currentHealth += value; // Also heal by the bonus amount
+                Debug.Log($"[Hero] {heroType} max health increased by {value}! New max: {maxHealth}");
+                break;
+                
+            case StatType.AttackSpeed:
+                weaponShootCooldown *= (1f - value); // Reduce cooldown = faster attacks
+                Debug.Log($"[Hero] {heroType} attack speed increased by {value * 100}%! New cooldown: {weaponShootCooldown}s");
+                break;
+                
+            case StatType.MovementSpeed:
+                // Movement speed not implemented yet, but we can store it for future
+                Debug.Log($"[Hero] {heroType} movement speed increased by {value * 100}%! (Not yet implemented)");
+                break;
+        }
     }
 }
