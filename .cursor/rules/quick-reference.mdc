@@ -31,6 +31,7 @@ alwaysApply: true
 - Test manually with curl or Claude Desktop
 - Use try-catch around all Unity operations
 - Cleanup resources (DestroyImmediate, Release)
+- **Assign sprites to UI Images immediately after creation** (Images are invisible without sprites!)
 
 ## File Locations
 
@@ -342,6 +343,7 @@ Tool is successful when:
 - Test manually with curl or Claude Desktop
 - Use try-catch around all Unity operations
 - Cleanup resources (DestroyImmediate, Release)
+- **Assign sprites to UI Images immediately after creation** (Images are invisible without sprites!)
 
 ## File Locations
 

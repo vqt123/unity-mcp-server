@@ -63,6 +63,16 @@ This folder contains rules and guidelines for AI assistants working on the Unity
 - Publishing package
 - Writing changelogs
 
+### 🎨 [unity-ui-best-practices.mdc](unity-ui-best-practices.mdc)
+**Unity UI development rules.** Critical: UI Images MUST have sprites! UI patterns, common issues.
+
+**Use when:**
+- Creating any UI elements
+- Working with Unity Canvas/Image components
+- Debugging invisible UI
+- Creating progress bars, buttons, panels
+- Using fill animations
+
 ## Quick Navigation
 
 ### I want to...
@@ -71,6 +81,11 @@ This folder contains rules and guidelines for AI assistants working on the Unity
 1. Read: [quick-reference.mdc](quick-reference.mdc) - "Adding a New Tool (Fast)"
 2. Details: [tool-development-workflow.mdc](tool-development-workflow.mdc)
 3. Test: [no-automated-testing.mdc](no-automated-testing.mdc)
+
+#### Create UI elements
+1. Read: [unity-ui-best-practices.mdc](unity-ui-best-practices.mdc) - "CRITICAL: Sprites"
+2. Patterns: [unity-ui-best-practices.mdc](unity-ui-best-practices.mdc) - "Common UI Patterns"
+3. Debug: [unity-ui-best-practices.mdc](unity-ui-best-practices.mdc) - "Debugging Invisible UI"
 
 #### Understand architecture
 1. Read: [unity-mcp-core.mdc](unity-mcp-core.mdc)
@@ -147,14 +162,15 @@ When you learn something important working on the project:
 
 ### File Sizes
 
-- quick-reference.mdc: ~3 KB (fast to read)
-- unity-mcp-core.mdc: ~8 KB (comprehensive)
+- quick-reference.mdc: ~16 KB (fast to read)
+- unity-mcp-core.mdc: ~6 KB (comprehensive)
 - visual-feedback-tools.mdc: ~6 KB (detailed)
 - tool-development-workflow.mdc: ~10 KB (step-by-step)
-- no-automated-testing.mdc: ~5 KB (philosophy)
-- git-and-deployment.mdc: ~7 KB (procedures)
+- no-automated-testing.mdc: ~7 KB (philosophy)
+- git-and-deployment.mdc: ~9 KB (procedures)
+- unity-ui-best-practices.mdc: ~4 KB (UI patterns) ⭐ NEW
 
-Total: ~39 KB of guidelines
+Total: ~58 KB of guidelines
 
 ## Using These Rules
 
@@ -203,8 +219,9 @@ If rules are unclear:
 
 ## Summary
 
-- **6 rule files** covering all aspects of development
+- **7 rule files** covering all aspects of development
 - **quick-reference.mdc** - Start here every time
+- **unity-ui-best-practices.mdc** - UI Images MUST have sprites!
 - **No automated tests** - Manual testing only
 - **Tools need C# + Python** - Always update both
 - **Main thread execution** - Critical architecture rule

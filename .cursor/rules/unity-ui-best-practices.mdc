@@ -1,0 +1,145 @@
+---
+alwaysApply: true
+---
+
+# Unity UI Development - Critical Best Practices
+
+## ⚠️ CRITICAL: Unity UI Images MUST Have Sprites
+
+### The Problem
+**Unity UI `Image` components are INVISIBLE without a sprite assigned**, regardless of:
+- Color settings
+- Fill amount settings  
+- Canvas hierarchy
+- Any other properties
+
+This is the #1 cause of "invisible UI" issues.
+
+### The Rule
+**ALWAYS assign sprites to UI Images immediately after creation.**
+
+### Correct Workflow
+
+#### ✅ DO THIS:
+```
+1. Create UI Image with unity_ui_create_image
+2. IMMEDIATELY assign sprite with unity_ui_set_sprite
+3. Then configure other properties (fill, color, anchors)
+```
+
+**Example:**
+```python
+# Step 1: Create Image
+unity_ui_create_image(name="HealthBar", parent="Canvas", size=[200, 30])
+
+# Step 2: IMMEDIATELY assign sprite (REQUIRED!)
+unity_ui_set_sprite(objectPath="Canvas/HealthBar", spritePath="Assets/2D Casual UI/Sprite/GUI.png")
+
+# Step 3: Configure other properties
+unity_set_image_fill(name="HealthBar", fillMethod="Horizontal", fillOrigin=0)
+```
+
+#### ❌ NEVER DO THIS:
+```python
+# Create Image
+unity_ui_create_image(name="HealthBar", parent="Canvas", size=[200, 30])
+
+# Configure fill (image is still invisible!)
+unity_set_image_fill(name="HealthBar", fillMethod="Horizontal", fillOrigin=0)
+
+# ❌ Forgot to assign sprite - UI is INVISIBLE!
+```
+
+## Available Sprite Resources
+
+### Project-Specific Sprites
+This project uses **2D Casual UI** package:
+- Path: `Assets/2D Casual UI/Sprite/GUI.png`
+- Contains multiple 9-sliceable sprites
+- Use `GUI_12` for buttons, panels, bars (9-slice enabled)
+- Use `GUI_0` for general UI elements
+
+### Default Sprite Assignment
+**When in doubt, use this:**
+```python
+unity_ui_set_sprite(
+    objectPath="Canvas/YourUIElement",
+    spritePath="Assets/2D Casual UI/Sprite/GUI.png"
+)
+```
+
+The tool will automatically select an appropriate sprite from the sheet.
+
+## Common UI Patterns
+
+### Pattern 1: Progress/Health Bar
+```python
+# 1. Create background
+unity_ui_create_image(name="HealthBarBG", parent="Canvas", size=[200, 30], color="#000000CC")
+unity_ui_set_sprite(objectPath="Canvas/HealthBarBG", spritePath="Assets/2D Casual UI/Sprite/GUI.png")
+
+# 2. Create fill (child of background)
+unity_ui_create_image(name="HealthBarFill", parent="HealthBarBG", size=[200, 30], color="#00FF00")
+unity_ui_set_sprite(objectPath="Canvas/HealthBarBG/HealthBarFill", spritePath="Assets/2D Casual UI/Sprite/GUI.png")
+
+# 3. Configure fill properties
+unity_set_image_fill(name="HealthBarFill", fillMethod="Horizontal", fillOrigin=0)
+```
+
+### Pattern 2: Button
+```python
+# unity_ui_create_button automatically includes sprite for button background
+# But if you modify it:
+unity_ui_set_sprite(objectPath="Canvas/MyButton", spritePath="Assets/2D Casual UI/Sprite/GUI.png")
+```
+
+### Pattern 3: Radial Cooldown Indicator
+```python
+# 1. Create image
+unity_ui_create_image(name="CooldownIcon", parent="Canvas", size=[80, 80], color="#FFFFFF")
+
+# 2. ASSIGN SPRITE (REQUIRED!)
+unity_ui_set_sprite(objectPath="Canvas/CooldownIcon", spritePath="Assets/2D Casual UI/Sprite/GUI.png")
+
+# 3. Configure radial fill
+unity_set_image_fill(name="CooldownIcon", fillMethod="Radial360", fillOrigin=2)
+```
+
+## UI Component Checklist
+
+When creating ANY UI element, verify:
+- ✅ Image component has sprite assigned
+- ✅ RectTransform has proper anchors
+- ✅ Parent Canvas exists and is active
+- ✅ Color is visible (not transparent)
+- ✅ Size is appropriate (not 0x0)
+
+## Debugging Invisible UI
+
+If UI is not visible, check in this order:
+1. **Does the Image have a sprite?** (Most common issue)
+2. Is the GameObject active?
+3. Is the parent Canvas active?
+4. Is the color alpha > 0?
+5. Are anchors/position on-screen?
+6. Is the Image type correct for fill operations?
+
+## Memory Reference
+
+Remember: For Unity UI elements that need a GUI sprite (buttons, panels, images), use "GUI_12" from the 2D Casual UI package. This sprite is 9-sliceable, which allows it to scale properly without distortion at corners. Path is "Assets/2D Casual UI/Sprite/GUI.png" with spriteName "GUI_12".
+
+When using sprites for radial fill animations (cooldowns, progress bars), the Image component's type property MUST be set to "Filled" (not "Sliced") for fillAmount to work correctly.
+
+## Quick Reference
+
+### Every Time You Create UI:
+1. `unity_ui_create_image` → Creates the Image
+2. `unity_ui_set_sprite` → Makes it VISIBLE (REQUIRED!)
+3. Other configuration → Fill, anchors, color, etc.
+
+### Tool Order Matters:
+```
+Create → Assign Sprite → Configure Properties
+```
+
+**Never skip step 2!**

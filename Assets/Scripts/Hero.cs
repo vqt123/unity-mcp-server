@@ -220,4 +220,10 @@ public class Hero : MonoBehaviour
     {
         return Mathf.Clamp01((Time.time - lastShootTime) / weaponShootCooldown);
     }
+    
+    public void AddWeaponDamage(float bonus)
+    {
+        weaponDamage += bonus;
+        Debug.Log($"[Hero] {heroType} weapon damage increased by {bonus}! New damage: {weaponDamage}");
+    }
 }
