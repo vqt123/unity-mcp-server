@@ -11,6 +11,7 @@ public class Bullet : MonoBehaviour
     
     public float aoeRadius = 0f; // Set by Hero for AOE weapons
     public bool piercing = false; // Set by Hero for piercing weapons
+    public Color bulletColor = Color.white; // For particle effects
     
     public void Initialize(Vector3 dir, float spd, float dmg, string tag, GameObject shooter)
     {
@@ -108,6 +109,9 @@ public class Bullet : MonoBehaviour
     
     void DealAoeDamage(Vector3 impactPoint)
     {
+        // Create visual AOE effect
+        CreateAoeParticleEffect(impactPoint);
+        
         Collider[] hitColliders = Physics.OverlapSphere(impactPoint, aoeRadius);
         
         Debug.Log($"[Bullet] AOE explosion! Radius: {aoeRadius}, hit {hitColliders.Length} colliders");
@@ -125,5 +129,123 @@ public class Bullet : MonoBehaviour
                 }
             }
         }
+    }
+    
+    void CreateAoeParticleEffect(Vector3 position)
+    {
+        // Create particle system GameObject
+        GameObject particleObj = new GameObject("AOE_Effect");
+        particleObj.transform.position = position;
+        
+        // Add ParticleSystem component
+        ParticleSystem ps = particleObj.AddComponent<ParticleSystem>();
+        
+        // Stop the system first so we can configure it
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        
+        // Configure main module
+        var main = ps.main;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 3f;
+        main.startSize = 0.3f;
+        main.startColor = bulletColor;
+        main.maxParticles = 50;
+        main.loop = false;
+        main.duration = 0.3f;
+        
+        // Configure emission module (burst)
+        var emission = ps.emission;
+        emission.rateOverTime = 0;
+        emission.SetBursts(new ParticleSystem.Burst[] {
+            new ParticleSystem.Burst(0f, 30)
+        });
+        
+        // Configure shape module (sphere matching AOE radius)
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = aoeRadius;
+        shape.radiusThickness = 1f; // Emit from surface
+        
+        // Configure renderer
+        var renderer = ps.GetComponent<ParticleSystemRenderer>();
+        renderer.material = new Material(Shader.Find("Sprites/Default"));
+        
+        // Start the particle system after configuration
+        ps.Play();
+        
+        // Add glow ring effect at ground level
+        CreateAoeRing(position, aoeRadius, bulletColor);
+        
+        // Auto-destroy after effect finishes
+        Destroy(particleObj, 1f);
+        
+        Debug.Log($"[Bullet] Created AOE particle effect at {position} with radius {aoeRadius}");
+    }
+    
+    void CreateAoeRing(Vector3 position, float radius, Color color)
+    {
+        // Create a ring to show AOE radius on ground
+        GameObject ring = new GameObject("AOE_Ring");
+        ring.transform.position = position;
+        
+        // Create line renderer for the ring
+        LineRenderer lr = ring.AddComponent<LineRenderer>();
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.startColor = color;
+        lr.endColor = new Color(color.r, color.g, color.b, 0f); // Fade out
+        lr.startWidth = 0.2f;
+        lr.endWidth = 0.2f;
+        lr.useWorldSpace = false;
+        
+        // Create circle points
+        int segments = 32;
+        lr.positionCount = segments + 1;
+        
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = (float)i / segments * Mathf.PI * 2f;
+            float x = Mathf.Cos(angle) * radius;
+            float z = Mathf.Sin(angle) * radius;
+            lr.SetPosition(i, new Vector3(x, 0.1f, z));
+        }
+        
+        // Animate ring expanding and fading
+        StartCoroutine(AnimateRing(ring, radius));
+    }
+    
+    System.Collections.IEnumerator AnimateRing(GameObject ring, float finalRadius)
+    {
+        LineRenderer lr = ring.GetComponent<LineRenderer>();
+        float duration = 0.4f;
+        float elapsed = 0f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            // Expand ring
+            float currentRadius = Mathf.Lerp(0f, finalRadius, t);
+            
+            // Update ring points
+            int segments = lr.positionCount - 1;
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = (float)i / segments * Mathf.PI * 2f;
+                float x = Mathf.Cos(angle) * currentRadius;
+                float z = Mathf.Sin(angle) * currentRadius;
+                lr.SetPosition(i, new Vector3(x, 0.1f, z));
+            }
+            
+            // Fade out
+            Color startColor = lr.startColor;
+            startColor.a = 1f - t;
+            lr.startColor = startColor;
+            lr.endColor = startColor;
+            
+            yield return null;
+        }
+        
+        Destroy(ring);
     }
 }
