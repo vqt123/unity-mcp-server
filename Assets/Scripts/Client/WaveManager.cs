@@ -5,6 +5,7 @@ using ArenaGame.Shared.Commands;
 using ArenaGame.Shared.Systems;
 using ArenaGame.Shared.Data;
 using ArenaGame.Shared.Math;
+using EnemyConfig = ArenaGame.Shared.Data.EnemyConfig;
 
 namespace ArenaGame.Client
 {
@@ -34,6 +35,23 @@ namespace ArenaGame.Client
         
         void Start()
         {
+            // Don't auto-start if hero selection is active
+            HeroSelectionManager heroSelection = FindFirstObjectByType<HeroSelectionManager>();
+            if (heroSelection == null)
+            {
+                // No hero selection, start immediately
+                Invoke(nameof(StartNextWave), 2f);
+            }
+            else
+            {
+                Debug.Log("[Wave] Waiting for hero selection...");
+            }
+        }
+        
+        public void OnHeroSelected()
+        {
+            // Hero selected, start first wave
+            Debug.Log("[Wave] Hero selected, starting first wave...");
             Invoke(nameof(StartNextWave), 2f);
         }
         
@@ -46,7 +64,7 @@ namespace ArenaGame.Client
                 // Check if wave is complete
                 if (GameSimulation.Instance != null)
                 {
-                    int enemyCount = GameSimulation.Instance.Simulation.World.Enemies.Count;
+                    int enemyCount = GameSimulation.Instance.Simulation.World.EnemyIds.Count;
                     if (enemyCount == 0 && enemiesSpawnedThisWave >= enemiesPerWave)
                     {
                         EndWave();
@@ -101,22 +119,15 @@ namespace ArenaGame.Client
         
         private void SpawnEnemy(string enemyType, FixV2 position)
         {
-            // Get enemy data
-            EnemyData data = enemyType switch
-            {
-                "Fast" => EnemyData.FastEnemy,
-                "Tank" => EnemyData.TankEnemy,
-                "MiniBoss" => EnemyData.MiniBoss,
-                "Boss" => EnemyData.Boss,
-                _ => EnemyData.BasicEnemy
-            };
+            // Get enemy config
+            EnemyConfig config = ArenaGame.Shared.Data.EnemyData.GetConfig(enemyType);
             
             // Spawn directly in simulation world
             if (GameSimulation.Instance != null)
             {
                 SpawnSystem.SpawnEnemy(
                     GameSimulation.Instance.Simulation.World,
-                    data,
+                    config,
                     position
                 );
             }
@@ -139,11 +150,11 @@ namespace ArenaGame.Client
             // Mix of enemy types
             if (currentWave > 3)
             {
-                if (enemyIndex % 3 == 0) return "Fast";
+                if (enemyIndex % 3 == 0) return "FastRunner";
                 if (enemyIndex % 3 == 1) return "Tank";
             }
             
-            return "Basic";
+            return "BasicGrunt";
         }
         
         private void EndWave()

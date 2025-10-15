@@ -12,9 +12,10 @@ namespace ArenaGame.Shared.Systems
     {
         public static void UpdateEnemies(SimulationWorld world)
         {
-            foreach (var enemyKvp in world.Enemies)
+            // Iterate over deterministic list
+            foreach (var enemyId in world.EnemyIds)
             {
-                Enemy enemy = enemyKvp.Value;
+                if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                 if (!enemy.IsAlive) continue;
                 
                 // Find or update target
@@ -45,7 +46,7 @@ namespace ArenaGame.Shared.Systems
                     enemy.Velocity = FixV2.Zero;
                 }
                 
-                world.UpdateEnemy(enemyKvp.Key, enemy);
+                world.UpdateEnemy(enemyId, enemy);
             }
         }
         
@@ -62,16 +63,17 @@ namespace ArenaGame.Shared.Systems
             EntityId nearest = EntityId.Invalid;
             Fix64 nearestDist = Fix64.MaxValue;
             
-            foreach (var heroKvp in world.Heroes)
+            // Iterate over deterministic list
+            foreach (var heroId in world.HeroIds)
             {
-                Hero hero = heroKvp.Value;
+                if (!world.TryGetHero(heroId, out Hero hero)) continue;
                 if (!hero.IsAlive) continue;
                 
                 Fix64 dist = FixV2.SqrDistance(position, hero.Position);
                 if (dist < nearestDist)
                 {
                     nearestDist = dist;
-                    nearest = heroKvp.Key;
+                    nearest = heroId;
                 }
             }
             

@@ -10,7 +10,7 @@ namespace ArenaGame.Shared.Systems
     /// </summary>
     public static class SpawnSystem
     {
-        public static EntityId SpawnHero(SimulationWorld world, HeroData data, FixV2 position)
+        public static EntityId SpawnHero(SimulationWorld world, HeroConfig data, FixV2 position)
         {
             // Calculate shot cooldown ticks from attacks per second
             Fix64 ticksPerAttack = SimulationConfig.TICKS_PER_SECOND / data.AttackSpeed;
@@ -54,7 +54,7 @@ namespace ArenaGame.Shared.Systems
             return id;
         }
         
-        public static EntityId SpawnEnemy(SimulationWorld world, EnemyData data, FixV2 position)
+        public static EntityId SpawnEnemy(SimulationWorld world, EnemyConfig data, FixV2 position)
         {
             Enemy enemy = new Enemy
             {
@@ -67,8 +67,8 @@ namespace ArenaGame.Shared.Systems
                 Damage = data.Damage,
                 TargetId = EntityId.Invalid,
                 AttackRange = data.AttackRange,
-                LastAttackTick = -data.AttackCooldownTicks, // Can attack immediately
-                AttackCooldownTicks = data.AttackCooldownTicks,
+                LastAttackTick = 0,
+                AttackCooldownTicks = (int)(SimulationConfig.TICKS_PER_SECOND / data.AttackSpeed).ToLong(),
                 IsAlive = true,
                 IsBoss = data.IsBoss,
                 IsMiniBoss = data.IsMiniBoss

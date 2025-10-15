@@ -132,27 +132,27 @@ namespace ArenaGame.Client
         
         private void SyncPositions(SimulationWorld world)
         {
-            foreach (var kvp in world.Heroes)
+            foreach (var heroId in world.HeroIds)
             {
-                if (entityViews.TryGetValue(kvp.Key, out GameObject obj))
+                if (world.TryGetHero(heroId, out var hero) && entityViews.TryGetValue(heroId, out GameObject obj))
                 {
-                    obj.transform.position = ToVector3(kvp.Value.Position);
+                    obj.transform.position = ToVector3(hero.Position);
                 }
             }
             
-            foreach (var kvp in world.Enemies)
+            foreach (var enemyId in world.EnemyIds)
             {
-                if (entityViews.TryGetValue(kvp.Key, out GameObject obj))
+                if (world.TryGetEnemy(enemyId, out var enemy) && entityViews.TryGetValue(enemyId, out GameObject obj))
                 {
-                    obj.transform.position = ToVector3(kvp.Value.Position);
+                    obj.transform.position = ToVector3(enemy.Position);
                 }
             }
             
-            foreach (var kvp in world.Projectiles)
+            foreach (var projId in world.ProjectileIds)
             {
-                if (entityViews.TryGetValue(kvp.Key, out GameObject obj))
+                if (world.TryGetProjectile(projId, out var proj) && entityViews.TryGetValue(projId, out GameObject obj))
                 {
-                    obj.transform.position = ToVector3(kvp.Value.Position);
+                    obj.transform.position = ToVector3(proj.Position);
                 }
             }
         }

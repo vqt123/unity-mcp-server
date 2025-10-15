@@ -17,9 +17,10 @@ namespace ArenaGame.Shared.Systems
         /// </summary>
         public static void ProcessHeroShooting(SimulationWorld world)
         {
-            foreach (var heroKvp in world.Heroes)
+            // Iterate over deterministic list
+            foreach (var heroId in world.HeroIds)
             {
-                Hero hero = heroKvp.Value;
+                if (!world.TryGetHero(heroId, out Hero hero)) continue;
                 if (!hero.CanShoot(world.CurrentTick)) continue;
                 
                 // Find nearest enemy
@@ -30,7 +31,7 @@ namespace ArenaGame.Shared.Systems
                 {
                     // Calculate direction to enemy
                     FixV2 direction = (target.Position - hero.Position).Normalized;
-                    HeroShoot(world, heroKvp.Key, direction);
+                    HeroShoot(world, heroId, direction);
                 }
             }
         }
@@ -86,20 +87,21 @@ namespace ArenaGame.Shared.Systems
         
         public static void ProcessCollisions(SimulationWorld world)
         {
+            // Iterate over deterministic lists
             List<EntityId> projectilesToRemove = new List<EntityId>();
             List<EntityId> enemiesToRemove = new List<EntityId>();
             
-            foreach (var projKvp in world.Projectiles)
+            foreach (var projId in world.ProjectileIds)
             {
-                Projectile proj = projKvp.Value;
+                if (!world.TryGetProjectile(projId, out Projectile proj)) continue;
                 if (!proj.IsActive) continue;
                 
                 bool hitSomething = false;
                 
                 // Check collision with enemies
-                foreach (var enemyKvp in world.Enemies)
+                foreach (var enemyId in world.EnemyIds)
                 {
-                    Enemy enemy = enemyKvp.Value;
+                    if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                     if (!enemy.IsAlive) continue;
                     
                     // Simple circle collision (enemy has implicit radius)
@@ -111,13 +113,13 @@ namespace ArenaGame.Shared.Systems
                         // Apply damage
                         Fix64 healthBefore = enemy.Health;
                         enemy.TakeDamage(proj.Damage);
-                        world.UpdateEnemy(enemyKvp.Key, enemy);
+                        world.UpdateEnemy(enemyId, enemy);
                         
                         // Generate damage event
                         world.AddEvent(new Events.EnemyDamagedEvent
                         {
                             Tick = world.CurrentTick,
-                            EnemyId = enemyKvp.Key,
+                            EnemyId = enemyId,
                             AttackerId = proj.OwnerId,
                             Damage = proj.Damage,
                             RemainingHealth = enemy.Health
@@ -125,11 +127,11 @@ namespace ArenaGame.Shared.Systems
                         
                         if (!enemy.IsAlive)
                         {
-                            enemiesToRemove.Add(enemyKvp.Key);
+                            enemiesToRemove.Add(enemyId);
                             world.AddEvent(new Events.EnemyKilledEvent
                             {
                                 Tick = world.CurrentTick,
-                                EnemyId = enemyKvp.Key,
+                                EnemyId = enemyId,
                                 KillerId = proj.OwnerId
                             });
                         }
@@ -143,7 +145,7 @@ namespace ArenaGame.Shared.Systems
                 
                 if (hitSomething && !proj.Piercing)
                 {
-                    projectilesToRemove.Add(projKvp.Key);
+                    projectilesToRemove.Add(projId);
                 }
             }
             
@@ -170,9 +172,10 @@ namespace ArenaGame.Shared.Systems
         
         public static void ProcessEnemyAttacks(SimulationWorld world)
         {
-            foreach (var enemyKvp in world.Enemies)
+            // Iterate over deterministic list
+            foreach (var enemyId in world.EnemyIds)
             {
-                Enemy enemy = enemyKvp.Value;
+                if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                 if (!enemy.CanAttack(world.CurrentTick)) continue;
                 if (!enemy.TargetId.IsValid) continue;
                 
@@ -192,14 +195,14 @@ namespace ArenaGame.Shared.Systems
                         {
                             Tick = world.CurrentTick,
                             HeroId = enemy.TargetId,
-                            AttackerId = enemyKvp.Key,
+                            AttackerId = enemyId,
                             Damage = enemy.Damage,
                             RemainingHealth = target.Health
                         });
                         
                         // Update enemy cooldown
                         enemy.LastAttackTick = world.CurrentTick;
-                        world.UpdateEnemy(enemyKvp.Key, enemy);
+                        world.UpdateEnemy(enemyId, enemy);
                         
                         if (!target.IsAlive)
                         {
@@ -207,7 +210,7 @@ namespace ArenaGame.Shared.Systems
                             {
                                 Tick = world.CurrentTick,
                                 HeroId = enemy.TargetId,
-                                KillerId = enemyKvp.Key
+                                KillerId = enemyId
                             });
                         }
                     }
@@ -236,16 +239,17 @@ namespace ArenaGame.Shared.Systems
             EntityId nearest = EntityId.Invalid;
             Fix64 nearestDist = Fix64.MaxValue;
             
-            foreach (var enemyKvp in world.Enemies)
+            // Iterate over deterministic list
+            foreach (var enemyId in world.EnemyIds)
             {
-                Enemy enemy = enemyKvp.Value;
+                if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                 if (!enemy.IsAlive) continue;
                 
                 Fix64 dist = FixV2.SqrDistance(position, enemy.Position);
                 if (dist < nearestDist)
                 {
                     nearestDist = dist;
-                    nearest = enemyKvp.Key;
+                    nearest = enemyId;
                 }
             }
             

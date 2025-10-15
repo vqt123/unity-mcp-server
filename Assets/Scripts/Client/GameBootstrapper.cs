@@ -1,0 +1,109 @@
+using UnityEngine;
+
+namespace ArenaGame.Client
+{
+    /// <summary>
+    /// Automatically sets up the game scene with all required managers
+    /// Add this to an empty GameObject in your scene to auto-start the game
+    /// </summary>
+    public class GameBootstrapper : MonoBehaviour
+    {
+        [Header("Auto-Create Managers")]
+        [SerializeField] private bool autoSetup = true;
+        
+        [Header("Prefabs (Optional)")]
+        [SerializeField] private GameObject heroPrefab;
+        [SerializeField] private GameObject enemyPrefab;
+        [SerializeField] private GameObject projectilePrefab;
+        [SerializeField] private GameObject damageNumberPrefab;
+        
+        void Awake()
+        {
+            if (autoSetup)
+            {
+                SetupGame();
+            }
+        }
+        
+        private void SetupGame()
+        {
+            Debug.Log("[Bootstrap] Setting up game...");
+            
+            // 1. Create GameSimulation (runs the simulation loop)
+            if (GameSimulation.Instance == null)
+            {
+                GameObject simObj = new GameObject("GameSimulation");
+                simObj.AddComponent<GameSimulation>();
+                Debug.Log("[Bootstrap] ✓ Created GameSimulation");
+            }
+            
+            // 2. Create EntityVisualizer (creates GameObjects from events)
+            GameObject visualizerObj = new GameObject("EntityVisualizer");
+            EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();
+            
+            // Assign prefabs if provided
+            if (heroPrefab != null)
+            {
+                typeof(EntityVisualizer).GetField("heroPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.SetValue(visualizer, heroPrefab);
+            }
+            if (enemyPrefab != null)
+            {
+                typeof(EntityVisualizer).GetField("enemyPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.SetValue(visualizer, enemyPrefab);
+            }
+            if (projectilePrefab != null)
+            {
+                typeof(EntityVisualizer).GetField("projectilePrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.SetValue(visualizer, projectilePrefab);
+            }
+            Debug.Log("[Bootstrap] ✓ Created EntityVisualizer");
+            
+            // 3. Create HeroSelectionManager (shows hero choices)
+            GameObject heroSelectObj = new GameObject("HeroSelectionManager");
+            heroSelectObj.AddComponent<HeroSelectionManager>();
+            Debug.Log("[Bootstrap] ✓ Created HeroSelectionManager");
+            
+            // 4. Create GameInitializer (spawns heroes - disabled until hero selected)
+            GameObject initObj = new GameObject("GameInitializer");
+            initObj.AddComponent<GameInitializer>();
+            Debug.Log("[Bootstrap] ✓ Created GameInitializer");
+            
+            // 5. Create WaveManager (spawns enemies)
+            GameObject waveObj = new GameObject("WaveManager");
+            waveObj.AddComponent<WaveManager>();
+            Debug.Log("[Bootstrap] ✓ Created WaveManager");
+            
+            // 6. Create DamageNumberSpawner (floating damage numbers)
+            if (damageNumberPrefab != null)
+            {
+                GameObject dmgNumObj = new GameObject("DamageNumberSpawner");
+                DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
+                typeof(DamageNumberSpawner).GetField("damageNumberPrefab", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                    ?.SetValue(spawner, damageNumberPrefab);
+                Debug.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
+            }
+            
+            // 7. Create CombatEffectsManager (VFX & audio)
+            GameObject effectsObj = new GameObject("CombatEffectsManager");
+            effectsObj.AddComponent<CombatEffectsManager>();
+            Debug.Log("[Bootstrap] ✓ Created CombatEffectsManager");
+            
+            // 8. Create CameraController if Main Camera exists
+            Camera mainCam = Camera.main;
+            if (mainCam != null && mainCam.GetComponent<CameraController>() == null)
+            {
+                mainCam.gameObject.AddComponent<CameraController>();
+                Debug.Log("[Bootstrap] ✓ Added CameraController to Main Camera");
+            }
+            
+            // 9. Create SimulationDebugger for debug info
+            GameObject debugObj = new GameObject("SimulationDebugger");
+            debugObj.AddComponent<SimulationDebugger>();
+            Debug.Log("[Bootstrap] ✓ Created SimulationDebugger");
+            
+            Debug.Log("[Bootstrap] ✅ Game setup complete! Please select a hero to start...");
+        }
+    }
+}
+

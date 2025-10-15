@@ -104,30 +104,18 @@ namespace ArenaGame.Shared.Core
         
         private void ProcessSpawnHero(SpawnHeroCommand cmd)
         {
-            HeroData data = GetHeroData(cmd.HeroType);
+            HeroConfig data = GetHeroData(cmd.HeroType);
             SpawnSystem.SpawnHero(world, data, cmd.Position);
         }
         
-        private HeroData GetHeroData(string heroType)
+        private HeroConfig GetHeroData(string heroType)
         {
-            switch (heroType)
-            {
-                case "Fast": return HeroData.FastHero;
-                case "Tank": return HeroData.TankHero;
-                default: return HeroData.DefaultHero;
-            }
+            return HeroData.GetConfig(heroType);
         }
         
-        private EnemyData GetEnemyData(string enemyType)
+        private EnemyConfig GetEnemyData(string enemyType)
         {
-            switch (enemyType)
-            {
-                case "Fast": return EnemyData.FastEnemy;
-                case "Tank": return EnemyData.TankEnemy;
-                case "MiniBoss": return EnemyData.MiniBoss;
-                case "Boss": return EnemyData.Boss;
-                default: return EnemyData.BasicEnemy;
-            }
+            return EnemyData.GetConfig(enemyType);
         }
     }
 }

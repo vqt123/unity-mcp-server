@@ -44,30 +44,29 @@ namespace ArenaGame.Client
             sb.AppendLine();
             
             // Heroes
-            sb.AppendLine($"<b>Heroes:</b> {world.Heroes.Count}");
-            foreach (var kvp in world.Heroes)
+            sb.AppendLine($"<b>Heroes:</b> {world.HeroIds.Count}");
+            foreach (var heroId in world.HeroIds)
             {
-                var hero = kvp.Value;
-                if (hero.IsAlive)
+                if (world.TryGetHero(heroId, out var hero) && hero.IsAlive)
                 {
-                    sb.AppendLine($"  #{kvp.Key.Value}: HP {hero.Health.ToInt()}/{hero.MaxHealth.ToInt()} " +
+                    sb.AppendLine($"  #{heroId.Value}: HP {hero.Health.ToInt()}/{hero.MaxHealth.ToInt()} " +
                                  $"Pos({hero.Position.X.ToInt()},{hero.Position.Y.ToInt()})");
                 }
             }
             sb.AppendLine();
             
             // Enemies
-            sb.AppendLine($"<b>Enemies:</b> {world.Enemies.Count}");
+            sb.AppendLine($"<b>Enemies:</b> {world.EnemyIds.Count}");
             int aliveEnemies = 0;
-            foreach (var kvp in world.Enemies)
+            foreach (var enemyId in world.EnemyIds)
             {
-                if (kvp.Value.IsAlive) aliveEnemies++;
+                if (world.TryGetEnemy(enemyId, out var enemy) && enemy.IsAlive) aliveEnemies++;
             }
             sb.AppendLine($"  Alive: {aliveEnemies}");
             sb.AppendLine();
             
             // Projectiles
-            sb.AppendLine($"<b>Projectiles:</b> {world.Projectiles.Count}");
+            sb.AppendLine($"<b>Projectiles:</b> {world.ProjectileIds.Count}");
             sb.AppendLine();
             
             // Performance

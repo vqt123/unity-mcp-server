@@ -6,6 +6,7 @@ namespace ArenaGame.Shared.Core
 {
     /// <summary>
     /// The main simulation state - completely deterministic
+    /// Uses separate data structures for fast lookups and deterministic iteration
     /// </summary>
     public class SimulationWorld
     {
@@ -13,10 +14,20 @@ namespace ArenaGame.Shared.Core
         public int CurrentTick { get; private set; }
         public Fix64 FixedDeltaTime => SimulationConfig.FIXED_DELTA_TIME;
         
-        // Entity storage
-        private Dictionary<EntityId, Hero> heroes = new Dictionary<EntityId, Hero>();
-        private Dictionary<EntityId, Enemy> enemies = new Dictionary<EntityId, Enemy>();
-        private Dictionary<EntityId, Projectile> projectiles = new Dictionary<EntityId, Projectile>();
+        // Fast O(1) lookups
+        private Dictionary<EntityId, Hero> heroLookup = new Dictionary<EntityId, Hero>();
+        private Dictionary<EntityId, Enemy> enemyLookup = new Dictionary<EntityId, Enemy>();
+        private Dictionary<EntityId, Projectile> projectileLookup = new Dictionary<EntityId, Projectile>();
+        
+        // Deterministic iteration (maintains insertion order)
+        private List<EntityId> heroList = new List<EntityId>();
+        private List<EntityId> enemyList = new List<EntityId>();
+        private List<EntityId> projectileList = new List<EntityId>();
+        
+        // Public read-only access to lists for iteration
+        public IReadOnlyList<EntityId> HeroIds => heroList;
+        public IReadOnlyList<EntityId> EnemyIds => enemyList;
+        public IReadOnlyList<EntityId> ProjectileIds => projectileList;
         
         // Entity ID generation
         private int nextEntityId = 1;
@@ -29,80 +40,92 @@ namespace ArenaGame.Shared.Core
             CurrentTick = 0;
         }
         
-        // Entity management
+        // Hero management
         public EntityId CreateHero(Hero hero)
         {
             EntityId id = new EntityId(nextEntityId++);
             hero.Id = id;
-            heroes[id] = hero;
-            return id;
-        }
-        
-        public EntityId CreateEnemy(Enemy enemy)
-        {
-            EntityId id = new EntityId(nextEntityId++);
-            enemy.Id = id;
-            enemies[id] = enemy;
-            return id;
-        }
-        
-        public EntityId CreateProjectile(Projectile projectile)
-        {
-            EntityId id = new EntityId(nextEntityId++);
-            projectile.Id = id;
-            projectiles[id] = projectile;
+            heroLookup[id] = hero;
+            heroList.Add(id);
             return id;
         }
         
         public bool TryGetHero(EntityId id, out Hero hero)
         {
-            return heroes.TryGetValue(id, out hero);
-        }
-        
-        public bool TryGetEnemy(EntityId id, out Enemy enemy)
-        {
-            return enemies.TryGetValue(id, out enemy);
-        }
-        
-        public bool TryGetProjectile(EntityId id, out Projectile projectile)
-        {
-            return projectiles.TryGetValue(id, out projectile);
+            return heroLookup.TryGetValue(id, out hero);
         }
         
         public void UpdateHero(EntityId id, Hero hero)
         {
-            heroes[id] = hero;
-        }
-        
-        public void UpdateEnemy(EntityId id, Enemy enemy)
-        {
-            enemies[id] = enemy;
-        }
-        
-        public void UpdateProjectile(EntityId id, Projectile projectile)
-        {
-            projectiles[id] = projectile;
+            if (heroLookup.ContainsKey(id))
+            {
+                heroLookup[id] = hero;
+            }
         }
         
         public void RemoveHero(EntityId id)
         {
-            heroes.Remove(id);
+            heroLookup.Remove(id);
+            heroList.Remove(id);
+        }
+        
+        // Enemy management
+        public EntityId CreateEnemy(Enemy enemy)
+        {
+            EntityId id = new EntityId(nextEntityId++);
+            enemy.Id = id;
+            enemyLookup[id] = enemy;
+            enemyList.Add(id);
+            return id;
+        }
+        
+        public bool TryGetEnemy(EntityId id, out Enemy enemy)
+        {
+            return enemyLookup.TryGetValue(id, out enemy);
+        }
+        
+        public void UpdateEnemy(EntityId id, Enemy enemy)
+        {
+            if (enemyLookup.ContainsKey(id))
+            {
+                enemyLookup[id] = enemy;
+            }
         }
         
         public void RemoveEnemy(EntityId id)
         {
-            enemies.Remove(id);
+            enemyLookup.Remove(id);
+            enemyList.Remove(id);
+        }
+        
+        // Projectile management
+        public EntityId CreateProjectile(Projectile projectile)
+        {
+            EntityId id = new EntityId(nextEntityId++);
+            projectile.Id = id;
+            projectileLookup[id] = projectile;
+            projectileList.Add(id);
+            return id;
+        }
+        
+        public bool TryGetProjectile(EntityId id, out Projectile projectile)
+        {
+            return projectileLookup.TryGetValue(id, out projectile);
+        }
+        
+        public void UpdateProjectile(EntityId id, Projectile projectile)
+        {
+            if (projectileLookup.ContainsKey(id))
+            {
+                projectileLookup[id] = projectile;
+            }
         }
         
         public void RemoveProjectile(EntityId id)
         {
-            projectiles.Remove(id);
+            projectileLookup.Remove(id);
+            projectileList.Remove(id);
         }
-        
-        // Collections
-        public IReadOnlyDictionary<EntityId, Hero> Heroes => heroes;
-        public IReadOnlyDictionary<EntityId, Enemy> Enemies => enemies;
-        public IReadOnlyDictionary<EntityId, Projectile> Projectiles => projectiles;
         
         // Event management
         public void AddEvent(ISimulationEvent evt)
@@ -121,10 +144,6 @@ namespace ArenaGame.Shared.Core
         public void Tick()
         {
             CurrentTick++;
-            eventBuffer.Clear();
-            
-            // Systems will be called here in Phase 2
-            // For now, this is the structure
         }
     }
     
@@ -136,4 +155,3 @@ namespace ArenaGame.Shared.Core
         int Tick { get; }
     }
 }
-

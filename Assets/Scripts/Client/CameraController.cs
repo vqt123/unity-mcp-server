@@ -32,9 +32,9 @@ namespace ArenaGame.Client
             Vector3 center = Vector3.zero;
             int heroCount = 0;
             
-            foreach (var heroKvp in world.Heroes)
+            foreach (var heroId in world.HeroIds)
             {
-                var hero = heroKvp.Value;
+                if (!world.TryGetHero(heroId, out var hero)) continue;
                 if (hero.IsAlive)
                 {
                     center += new Vector3(
@@ -52,9 +52,9 @@ namespace ArenaGame.Client
                 
                 // Calculate distance based on spread
                 float maxDist = 0f;
-                foreach (var heroKvp in world.Heroes)
+                foreach (var heroId in world.HeroIds)
                 {
-                    var hero = heroKvp.Value;
+                    if (!world.TryGetHero(heroId, out var hero)) continue;
                     if (hero.IsAlive)
                     {
                         Vector3 heroPos = new Vector3(

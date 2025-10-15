@@ -13,13 +13,23 @@ namespace ArenaGame.Client
     {
         [Header("Setup")]
         [SerializeField] private int numberOfHeroes = 1;
-        [SerializeField] private string heroType = "Default";
+        [SerializeField] private string heroType = "DefaultHero";
         
         private EntityId playerHeroId;
         
         void Start()
         {
-            InitializeGame();
+            // Don't auto-init if hero selection is active
+            HeroSelectionManager heroSelection = FindFirstObjectByType<HeroSelectionManager>();
+            if (heroSelection == null)
+            {
+                // No hero selection, use default hero
+                InitializeGame();
+            }
+            else
+            {
+                Debug.Log("[GameInit] Waiting for hero selection...");
+            }
         }
         
         private void InitializeGame()
@@ -58,17 +68,8 @@ namespace ArenaGame.Client
         
         private void SpawnTestEnemies()
         {
-            // Spawn 5 test enemies in a circle
-            for (int i = 0; i < 5; i++)
-            {
-                FixV2 spawnPos = FixV2.FromFloat(
-                    Mathf.Cos(i * Mathf.PI * 2f / 5f) * 8f,
-                    Mathf.Sin(i * Mathf.PI * 2f / 5f) * 8f
-                );
-                
-                // Use SpawnSystem directly since we don't have enemy spawn commands
-                // This is for testing only - normally enemies spawn from wave system
-            }
+            // Don't spawn test enemies - let WaveManager handle it
+            // This method is kept for manual testing if needed
         }
         
         private FixV2 GetHeroSpawnPosition(int index, int total)

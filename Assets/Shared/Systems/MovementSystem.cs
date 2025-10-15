@@ -12,9 +12,10 @@ namespace ArenaGame.Shared.Systems
     {
         public static void UpdateHeroes(SimulationWorld world)
         {
-            foreach (var kvp in world.Heroes)
+            // Iterate over deterministic list
+            foreach (var heroId in world.HeroIds)
             {
-                Hero hero = kvp.Value;
+                if (!world.TryGetHero(heroId, out Hero hero)) continue;
                 if (!hero.IsAlive) continue;
                 
                 // Apply velocity
@@ -28,15 +29,16 @@ namespace ArenaGame.Shared.Systems
                     hero.Velocity = FixV2.Zero; // Stop at edge
                 }
                 
-                world.UpdateHero(kvp.Key, hero);
+                world.UpdateHero(heroId, hero);
             }
         }
         
         public static void UpdateEnemies(SimulationWorld world)
         {
-            foreach (var kvp in world.Enemies)
+            // Iterate over deterministic list
+            foreach (var enemyId in world.EnemyIds)
             {
-                Enemy enemy = kvp.Value;
+                if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                 if (!enemy.IsAlive) continue;
                 
                 // Apply velocity
@@ -49,23 +51,24 @@ namespace ArenaGame.Shared.Systems
                     enemy.Position = enemy.Position.Normalized * SimulationConfig.ARENA_RADIUS;
                 }
                 
-                world.UpdateEnemy(kvp.Key, enemy);
+                world.UpdateEnemy(enemyId, enemy);
             }
         }
         
         public static void UpdateProjectiles(SimulationWorld world)
         {
+            // Iterate over deterministic list
             List<EntityId> toRemove = new List<EntityId>();
             
-            foreach (var kvp in world.Projectiles)
+            foreach (var projId in world.ProjectileIds)
             {
-                Projectile proj = kvp.Value;
+                if (!world.TryGetProjectile(projId, out Projectile proj)) continue;
                 if (!proj.IsActive) continue;
                 
                 // Check expiration
                 if (proj.IsExpired(world.CurrentTick))
                 {
-                    toRemove.Add(kvp.Key);
+                    toRemove.Add(projId);
                     continue;
                 }
                 
@@ -76,11 +79,11 @@ namespace ArenaGame.Shared.Systems
                 Fix64 distFromCenter = proj.Position.Magnitude;
                 if (distFromCenter > SimulationConfig.ARENA_RADIUS)
                 {
-                    toRemove.Add(kvp.Key);
+                    toRemove.Add(projId);
                     continue;
                 }
                 
-                world.UpdateProjectile(kvp.Key, proj);
+                world.UpdateProjectile(projId, proj);
             }
             
             // Clean up expired projectiles
