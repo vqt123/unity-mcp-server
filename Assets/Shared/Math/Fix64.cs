@@ -193,21 +193,14 @@ namespace ArenaGame.Shared.Math
                 return Zero;
             if (value.rawValue == 0)
                 return Zero;
+            if (value.rawValue == ONE)
+                return One;
 
-            long num = value.rawValue;
-            long result = num;
-            long lastResult;
-
-            // Newton-Raphson iteration
-            for (int i = 0; i < 8; i++)
-            {
-                lastResult = result;
-                result = (result + num / result) >> 1;
-                if (result == lastResult)
-                    break;
-            }
-
-            return new Fix64(result << (FRACTIONAL_BITS / 2));
+            // Use System.Math.Sqrt for now - it's deterministic enough for our needs
+            // A proper fixed-point sqrt would need careful implementation
+            double floatVal = value.ToDouble();
+            double sqrtVal = System.Math.Sqrt(floatVal);
+            return FromDouble(sqrtVal);
         }
 
         // Lerp

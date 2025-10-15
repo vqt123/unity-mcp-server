@@ -1,4 +1,5 @@
 using UnityEngine;
+using ArenaGame.Shared.Core;
 
 namespace ArenaGame.Client
 {
@@ -27,14 +28,17 @@ namespace ArenaGame.Client
         
         private void SetupGame()
         {
-            Debug.Log("[Bootstrap] Setting up game...");
+            // 0. Initialize logging FIRST
+            GameLogger.Initialize(new UnityLogger());
+            GameLogger.Log("[Bootstrap] ========== GAME SETUP START ==========");
+            GameLogger.Log("[Bootstrap] Logger initialized");
             
             // 1. Create GameSimulation (runs the simulation loop)
             if (GameSimulation.Instance == null)
             {
                 GameObject simObj = new GameObject("GameSimulation");
                 simObj.AddComponent<GameSimulation>();
-                Debug.Log("[Bootstrap] ✓ Created GameSimulation");
+                GameLogger.Log("[Bootstrap] ✓ Created GameSimulation");
             }
             
             // 2. Create EntityVisualizer (creates GameObjects from events)
@@ -43,22 +47,22 @@ namespace ArenaGame.Client
             
             // Assign prefabs using public method
             visualizer.SetPrefabs(heroPrefab, enemyPrefab, projectilePrefab);
-            Debug.Log("[Bootstrap] ✓ Created EntityVisualizer");
+            GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}");
             
             // 3. Create HeroSelectionManager (shows hero choices)
             GameObject heroSelectObj = new GameObject("HeroSelectionManager");
             heroSelectObj.AddComponent<HeroSelectionManager>();
-            Debug.Log("[Bootstrap] ✓ Created HeroSelectionManager");
+            GameLogger.Log("[Bootstrap] ✓ Created HeroSelectionManager");
             
             // 4. Create GameInitializer (spawns heroes - disabled until hero selected)
             GameObject initObj = new GameObject("GameInitializer");
             initObj.AddComponent<GameInitializer>();
-            Debug.Log("[Bootstrap] ✓ Created GameInitializer");
+            GameLogger.Log("[Bootstrap] ✓ Created GameInitializer");
             
-            // 5. Create WaveManager (spawns enemies)
-            GameObject waveObj = new GameObject("WaveManager");
-            waveObj.AddComponent<WaveManager>();
-            Debug.Log("[Bootstrap] ✓ Created WaveManager");
+            // 5. Create TestEnemySpawner (spawns ONE test enemy)
+            GameObject testSpawnerObj = new GameObject("TestEnemySpawner");
+            testSpawnerObj.AddComponent<TestEnemySpawner>();
+            GameLogger.Log("[Bootstrap] ✓ Created TestEnemySpawner");
             
             // 6. Create DamageNumberSpawner (floating damage numbers)
             if (damageNumberPrefab != null)
@@ -67,28 +71,28 @@ namespace ArenaGame.Client
                 DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
                 typeof(DamageNumberSpawner).GetField("damageNumberPrefab", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
                     ?.SetValue(spawner, damageNumberPrefab);
-                Debug.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
+                GameLogger.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
             }
             
             // 7. Create CombatEffectsManager (VFX & audio)
             GameObject effectsObj = new GameObject("CombatEffectsManager");
             effectsObj.AddComponent<CombatEffectsManager>();
-            Debug.Log("[Bootstrap] ✓ Created CombatEffectsManager");
+            GameLogger.Log("[Bootstrap] ✓ Created CombatEffectsManager");
             
             // 8. Create CameraController if Main Camera exists
             Camera mainCam = Camera.main;
             if (mainCam != null && mainCam.GetComponent<CameraController>() == null)
             {
                 mainCam.gameObject.AddComponent<CameraController>();
-                Debug.Log("[Bootstrap] ✓ Added CameraController to Main Camera");
+                GameLogger.Log("[Bootstrap] ✓ Added CameraController to Main Camera");
             }
             
             // 9. Create SimulationDebugger for debug info
             GameObject debugObj = new GameObject("SimulationDebugger");
             debugObj.AddComponent<SimulationDebugger>();
-            Debug.Log("[Bootstrap] ✓ Created SimulationDebugger");
+            GameLogger.Log("[Bootstrap] ✓ Created SimulationDebugger");
             
-            Debug.Log("[Bootstrap] ✅ Game setup complete! Please select a hero to start...");
+            GameLogger.Log("[Bootstrap] ========== GAME SETUP COMPLETE ==========");
         }
     }
 }

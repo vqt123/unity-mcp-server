@@ -114,8 +114,15 @@ namespace ArenaGame.Shared.Core
         
         private void ProcessSpawnEnemy(SpawnEnemyCommand cmd)
         {
+            GameLogger.Log($"[CommandProc] ========== PROCESSING SpawnEnemyCommand ==========");
+            GameLogger.Log($"[CommandProc] EnemyType: {cmd.EnemyType}");
+            GameLogger.Log($"[CommandProc] Position: ({cmd.Position.X.ToInt()}, {cmd.Position.Y.ToInt()})");
+            
             EnemyConfig data = GetEnemyData(cmd.EnemyType);
+            GameLogger.Log($"[CommandProc] Got EnemyConfig for '{data.EnemyType}', calling SpawnSystem.SpawnEnemy...");
+            
             SpawnSystem.SpawnEnemy(world, data, cmd.Position);
+            GameLogger.Log($"[CommandProc] SpawnSystem.SpawnEnemy completed");
         }
         
         private HeroConfig GetHeroData(string heroType)

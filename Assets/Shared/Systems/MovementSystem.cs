@@ -41,14 +41,25 @@ namespace ArenaGame.Shared.Systems
                 if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                 if (!enemy.IsAlive) continue;
                 
+                FixV2 oldPos = enemy.Position;
+                
                 // Apply velocity
                 enemy.Position += enemy.Velocity * world.FixedDeltaTime;
                 
+                Core.GameLogger.Log($"[MovementSystem] Tick {world.CurrentTick} - Enemy {enemyId.Value}: pos ({oldPos.X.ToInt()},{oldPos.Y.ToInt()}) -> ({enemy.Position.X.ToInt()},{enemy.Position.Y.ToInt()}), vel ({enemy.Velocity.X.ToFloat():F2},{enemy.Velocity.Y.ToFloat():F2})");
+                
                 // Clamp to arena bounds
                 Fix64 distFromCenter = enemy.Position.Magnitude;
-                if (distFromCenter > SimulationConfig.ARENA_RADIUS)
+                Fix64 arenaRadius = SimulationConfig.ARENA_RADIUS;
+                
+                Core.GameLogger.Log($"[MovementSystem] Enemy {enemyId.Value} - distFromCenter: {distFromCenter.ToFloat():F2}, arenaRadius: {arenaRadius.ToFloat():F2}, needsClamp: {distFromCenter > arenaRadius}");
+                
+                if (distFromCenter > arenaRadius)
                 {
-                    enemy.Position = enemy.Position.Normalized * SimulationConfig.ARENA_RADIUS;
+                    FixV2 normalized = enemy.Position.Normalized;
+                    FixV2 clampedPos = normalized * arenaRadius;
+                    Core.GameLogger.LogWarning($"[MovementSystem] Enemy {enemyId.Value} CLAMPING - pos ({enemy.Position.X.ToFloat():F2},{enemy.Position.Y.ToFloat():F2}) -> normalized ({normalized.X.ToFloat():F2},{normalized.Y.ToFloat():F2}) -> clamped ({clampedPos.X.ToFloat():F2},{clampedPos.Y.ToFloat():F2})");
+                    enemy.Position = clampedPos;
                 }
                 
                 world.UpdateEnemy(enemyId, enemy);
