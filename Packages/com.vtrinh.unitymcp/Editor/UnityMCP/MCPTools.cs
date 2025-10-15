@@ -2127,58 +2127,128 @@ namespace UnityMCP
                 }
                 
                 // Set value based on property type
-                if (valueToken.Type == JTokenType.Object)
+                bool wasSet = false;
+                
+                Debug.Log($"[MCP] Property type: {prop.propertyType}, ValueToken type: {valueToken.Type}");
+                
+                if (prop.propertyType == SerializedPropertyType.ObjectReference)
                 {
-                    // Handle reference objects like {"type": "reference", "path": "Assets/..."}
-                    JObject valueObj = valueToken as JObject;
-                    string refType = valueObj["type"]?.ToString();
-                    string refPath = valueObj["path"]?.ToString();
+                    // Handle object references (prefabs, assets, GameObjects)
+                    JObject valueObj = null;
                     
-                    if (refType == "reference" && !string.IsNullOrEmpty(refPath))
+                    if (valueToken.Type == JTokenType.Object)
                     {
-                        UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
-                        if (asset != null)
+                        valueObj = valueToken as JObject;
+                    }
+                    else if (valueToken.Type == JTokenType.String)
+                    {
+                        // Try to parse as JSON if it looks like JSON
+                        string valueStr = valueToken.ToString();
+                        if (valueStr.StartsWith("{"))
                         {
-                            prop.objectReferenceValue = asset;
-                            Debug.Log($"[MCP] Loaded asset from '{refPath}': {asset.name}");
+                            try
+                            {
+                                valueObj = JObject.Parse(valueStr);
+                                Debug.Log($"[MCP] Parsed JSON string into object");
+                            }
+                            catch
+                            {
+                                // Not valid JSON, treat as GameObject name
+                            }
                         }
-                        else
+                    }
+                    
+                    if (valueObj != null)
+                    {
+                        string refType = valueObj["type"]?.ToString();
+                        string refPath = valueObj["path"]?.ToString();
+                        
+                        if (refType == "reference" && !string.IsNullOrEmpty(refPath))
                         {
-                            Debug.LogWarning($"[MCP] Could not load asset from path: {refPath}");
+                            Debug.Log($"[MCP] Attempting to load asset from: {refPath}");
+                            UnityEngine.Object asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(refPath);
+                            if (asset != null)
+                            {
+                                prop.objectReferenceValue = asset;
+                                wasSet = true;
+                                Debug.Log($"[MCP] ✓ Loaded asset: {asset.name} (type: {asset.GetType().Name})");
+                            }
+                            else
+                            {
+                                Debug.LogError($"[MCP] ✗ Could not load asset from path: {refPath}");
+                                return new JObject
+                                {
+                                    ["success"] = false,
+                                    ["error"] = $"Could not load asset from path: {refPath}"
+                                };
+                            }
+                        }
+                    }
+                    else if (valueToken.Type == JTokenType.String)
+                    {
+                        // Try to find GameObject by name
+                        string valueStr = valueToken.ToString();
+                        GameObject refObj = GameObject.Find(valueStr);
+                        if (refObj != null)
+                        {
+                            prop.objectReferenceValue = refObj;
+                            wasSet = true;
                         }
                     }
                 }
                 else if (valueToken.Type == JTokenType.String)
                 {
-                    string valueStr = valueToken.ToString();
-                    
-                    // Check if it's a GameObject reference
-                    GameObject refObj = GameObject.Find(valueStr);
-                    if (refObj != null && prop.propertyType == SerializedPropertyType.ObjectReference)
-                    {
-                        prop.objectReferenceValue = refObj;
-                    }
-                    else
-                    {
-                        prop.stringValue = valueStr;
-                    }
+                    prop.stringValue = valueToken.ToString();
+                    wasSet = true;
                 }
                 else if (valueToken.Type == JTokenType.Integer)
                 {
                     prop.intValue = valueToken.ToObject<int>();
+                    wasSet = true;
                 }
                 else if (valueToken.Type == JTokenType.Float)
                 {
                     prop.floatValue = valueToken.ToObject<float>();
+                    wasSet = true;
                 }
                 else if (valueToken.Type == JTokenType.Boolean)
                 {
                     prop.boolValue = valueToken.ToObject<bool>();
+                    wasSet = true;
+                }
+                
+                if (!wasSet)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Could not set property '{propertyName}' - incompatible types"
+                    };
                 }
                 
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(component);
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                
+                // Verify the property was actually set
+                so.Update();
+                SerializedProperty verifyProp = so.FindProperty(propertyName);
+                if (verifyProp != null && verifyProp.propertyType == SerializedPropertyType.ObjectReference)
+                {
+                    if (verifyProp.objectReferenceValue == null)
+                    {
+                        Debug.LogError($"[MCP] ✗ Property '{propertyName}' is still null after setting!");
+                        return new JObject
+                        {
+                            ["success"] = false,
+                            ["error"] = $"Property '{propertyName}' is still null after setting"
+                        };
+                    }
+                    else
+                    {
+                        Debug.Log($"[MCP] ✓ Verified property '{propertyName}' = {verifyProp.objectReferenceValue.name}");
+                    }
+                }
                 
                 Debug.Log($"[MCP] Set property '{propertyName}' on '{componentType}' of '{gameObjectName}'");
                 
@@ -3682,6 +3752,62 @@ namespace UnityMCP
                 return color;
             
             return Color.white;
+        }
+        private static JObject CopyAsset(JObject args)
+        {
+            string sourcePath = args["sourcePath"]?.ToString();
+            string destPath = args["destPath"]?.ToString();
+            
+            if (string.IsNullOrEmpty(sourcePath) || string.IsNullOrEmpty(destPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "sourcePath and destPath are required"
+                };
+            }
+            
+            try
+            {
+                // Ensure destination directory exists
+                string destDir = System.IO.Path.GetDirectoryName(destPath);
+                if (!System.IO.Directory.Exists(destDir))
+                {
+                    System.IO.Directory.CreateDirectory(destDir);
+                }
+                
+                // Copy the asset using Unity's AssetDatabase
+                bool success = AssetDatabase.CopyAsset(sourcePath, destPath);
+                
+                if (success)
+                {
+                    AssetDatabase.Refresh();
+                    Debug.Log($"[MCP] Copied asset from {sourcePath} to {destPath}");
+                    
+                    return new JObject
+                    {
+                        ["success"] = true,
+                        ["sourcePath"] = sourcePath,
+                        ["destPath"] = destPath
+                    };
+                }
+                else
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "AssetDatabase.CopyAsset returned false"
+                    };
+                }
+            }
+            catch (Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
         }
     }
 }

@@ -923,6 +923,31 @@ TOOLS = [
             },
             "required": ["buttonName", "action"]
         }
+    },
+    {
+        "name": "unity_set_component_property",
+        "description": "Set a property on a component attached to a GameObject. Supports primitives, strings, and asset references (use {\"type\": \"reference\", \"path\": \"Assets/...\"} for prefabs/assets).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gameObjectName": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "componentType": {
+                    "type": "string",
+                    "description": "Component type name (e.g., 'EntityVisualizer', 'ArenaGame.Client.EntityVisualizer')"
+                },
+                "propertyName": {
+                    "type": "string",
+                    "description": "Name of the property/field to set (e.g., 'heroPrefab', 'speed')"
+                },
+                "value": {
+                    "description": "Value to set. For asset references, use {\"type\": \"reference\", \"path\": \"Assets/Prefabs/Hero.prefab\"}. For primitives, use the value directly."
+                }
+            },
+            "required": ["gameObjectName", "componentType", "propertyName", "value"]
+        }
     }
 ]
 

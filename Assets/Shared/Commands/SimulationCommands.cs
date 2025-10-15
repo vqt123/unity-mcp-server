@@ -53,5 +53,15 @@ namespace ArenaGame.Shared.Commands
         public string HeroType;
         public FixV2 Position;
     }
+    
+    /// <summary>
+    /// Spawn enemy command (wave system)
+    /// </summary>
+    public struct SpawnEnemyCommand : ISimulationCommand
+    {
+        public int Tick { get; set; }
+        public string EnemyType;
+        public FixV2 Position;
+    }
 }
 

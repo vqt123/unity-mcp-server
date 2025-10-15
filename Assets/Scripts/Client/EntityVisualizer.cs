@@ -19,6 +19,15 @@ namespace ArenaGame.Client
         
         private Dictionary<EntityId, GameObject> entityViews = new Dictionary<EntityId, GameObject>();
         
+        // Public setters for GameBootstrapper
+        public void SetPrefabs(GameObject hero, GameObject enemy, GameObject projectile)
+        {
+            heroPrefab = hero;
+            enemyPrefab = enemy;
+            projectilePrefab = projectile;
+            Debug.Log($"[EntityVisualizer] Prefabs set - Hero:{hero!=null}, Enemy:{enemy!=null}, Proj:{projectile!=null}");
+        }
+        
         void OnEnable()
         {
             EventBus.Subscribe<HeroSpawnedEvent>(OnEvent);
@@ -75,7 +84,11 @@ namespace ArenaGame.Client
         
         private void CreateHeroView(HeroSpawnedEvent evt)
         {
-            if (heroPrefab == null) return;
+            if (heroPrefab == null)
+            {
+                Debug.LogError("[EntityVisualizer] Hero prefab is null!");
+                return;
+            }
             
             GameObject obj = Instantiate(heroPrefab, ToVector3(evt.Position), Quaternion.identity);
             obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
@@ -90,7 +103,11 @@ namespace ArenaGame.Client
         
         private void CreateEnemyView(EnemySpawnedEvent evt)
         {
-            if (enemyPrefab == null) return;
+            if (enemyPrefab == null)
+            {
+                Debug.LogError("[EntityVisualizer] Enemy prefab is null!");
+                return;
+            }
             
             GameObject obj = Instantiate(enemyPrefab, ToVector3(evt.Position), Quaternion.identity);
             obj.name = $"Enemy_{evt.EnemyId.Value}_{evt.EnemyType}";
@@ -108,7 +125,11 @@ namespace ArenaGame.Client
         
         private void CreateProjectileView(ProjectileSpawnedEvent evt)
         {
-            if (projectilePrefab == null) return;
+            if (projectilePrefab == null)
+            {
+                Debug.LogError("[EntityVisualizer] Projectile prefab is null!");
+                return;
+            }
             
             GameObject obj = Instantiate(projectilePrefab, ToVector3(evt.Position), Quaternion.identity);
             obj.name = $"Projectile_{evt.ProjectileId.Value}";

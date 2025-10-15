@@ -47,6 +47,10 @@ namespace ArenaGame.Shared.Core
                 case SpawnHeroCommand spawnHero:
                     ProcessSpawnHero(spawnHero);
                     break;
+                    
+                case SpawnEnemyCommand spawnEnemy:
+                    ProcessSpawnEnemy(spawnEnemy);
+                    break;
             }
         }
         
@@ -106,6 +110,12 @@ namespace ArenaGame.Shared.Core
         {
             HeroConfig data = GetHeroData(cmd.HeroType);
             SpawnSystem.SpawnHero(world, data, cmd.Position);
+        }
+        
+        private void ProcessSpawnEnemy(SpawnEnemyCommand cmd)
+        {
+            EnemyConfig data = GetEnemyData(cmd.EnemyType);
+            SpawnSystem.SpawnEnemy(world, data, cmd.Position);
         }
         
         private HeroConfig GetHeroData(string heroType)

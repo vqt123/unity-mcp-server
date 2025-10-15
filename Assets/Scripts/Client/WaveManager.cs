@@ -119,17 +119,15 @@ namespace ArenaGame.Client
         
         private void SpawnEnemy(string enemyType, FixV2 position)
         {
-            // Get enemy config
-            EnemyConfig config = ArenaGame.Shared.Data.EnemyData.GetConfig(enemyType);
-            
-            // Spawn directly in simulation world
             if (GameSimulation.Instance != null)
             {
-                SpawnSystem.SpawnEnemy(
-                    GameSimulation.Instance.Simulation.World,
-                    config,
-                    position
-                );
+                SpawnEnemyCommand cmd = new SpawnEnemyCommand
+                {
+                    EnemyType = enemyType,
+                    Position = position
+                };
+                GameSimulation.Instance.QueueCommand(cmd);
+                Debug.Log($"[Wave] Spawning {enemyType} at {position.X.ToInt()},{position.Y.ToInt()}");
             }
         }
         

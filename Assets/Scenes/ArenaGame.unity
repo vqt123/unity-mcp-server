@@ -1917,9 +1917,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.GameBootstrapper
   autoSetup: 1
-  heroPrefab: {fileID: 0}
-  enemyPrefab: {fileID: 0}
-  projectilePrefab: {fileID: 0}
+  heroPrefab: {fileID: 7565391221540716531, guid: 2eb89d887c507440d8a142b0f0e2e8ab, type: 3}
+  enemyPrefab: {fileID: 3023912661900130780, guid: adf9afd315ff54784956bbb2c9c11877, type: 3}
+  projectilePrefab: {fileID: 975509666638075294, guid: 3d2b2836ec2904bbb9403c54216ce081, type: 3}
   damageNumberPrefab: {fileID: 0}
 --- !u!1 &1261409787
 GameObject:

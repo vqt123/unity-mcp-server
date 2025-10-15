@@ -41,22 +41,8 @@ namespace ArenaGame.Client
             GameObject visualizerObj = new GameObject("EntityVisualizer");
             EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();
             
-            // Assign prefabs if provided
-            if (heroPrefab != null)
-            {
-                typeof(EntityVisualizer).GetField("heroPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(visualizer, heroPrefab);
-            }
-            if (enemyPrefab != null)
-            {
-                typeof(EntityVisualizer).GetField("enemyPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(visualizer, enemyPrefab);
-            }
-            if (projectilePrefab != null)
-            {
-                typeof(EntityVisualizer).GetField("projectilePrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(visualizer, projectilePrefab);
-            }
+            // Assign prefabs using public method
+            visualizer.SetPrefabs(heroPrefab, enemyPrefab, projectilePrefab);
             Debug.Log("[Bootstrap] ✓ Created EntityVisualizer");
             
             // 3. Create HeroSelectionManager (shows hero choices)
