@@ -1,0 +1,593 @@
+{
+  "levels": [
+    {
+      "levelNumber": 1,
+      "levelName": "The Beginning",
+      "difficultyMultiplier": 1.0,
+      "waves": [
+        {
+          "waveNumber": 1,
+          "duration": 30,
+          "spawnInterval": 3.0,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 10,
+              "health": 1.0,
+              "damage": 1.0,
+              "moveSpeed": 1.0
+            }
+          ]
+        },
+        {
+          "waveNumber": 2,
+          "duration": 35,
+          "spawnInterval": 2.5,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 15,
+              "health": 1.1,
+              "damage": 1.0,
+              "moveSpeed": 1.1
+            }
+          ]
+        },
+        {
+          "waveNumber": 3,
+          "duration": 40,
+          "spawnInterval": 2.0,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 12,
+              "health": 1.2,
+              "damage": 1.1,
+              "moveSpeed": 1.2
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 2,
+              "health": 1.5,
+              "damage": 1.2,
+              "moveSpeed": 0.9
+            }
+          ]
+        },
+        {
+          "waveNumber": 4,
+          "duration": 60,
+          "spawnInterval": 3.0,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "basic_boss",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 8,
+              "health": 1.3,
+              "damage": 1.2,
+              "moveSpeed": 1.3
+            },
+            {
+              "enemyType": "boss",
+              "count": 1,
+              "health": 2.0,
+              "damage": 1.5,
+              "moveSpeed": 0.8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "levelNumber": 2,
+      "levelName": "Rising Threat",
+      "difficultyMultiplier": 1.3,
+      "waves": [
+        {
+          "waveNumber": 1,
+          "duration": 35,
+          "spawnInterval": 2.5,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 20,
+              "health": 1.2,
+              "damage": 1.1,
+              "moveSpeed": 1.2
+            }
+          ]
+        },
+        {
+          "waveNumber": 2,
+          "duration": 40,
+          "spawnInterval": 2.0,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 25,
+              "health": 1.3,
+              "damage": 1.2,
+              "moveSpeed": 1.3
+            }
+          ]
+        },
+        {
+          "waveNumber": 3,
+          "duration": 45,
+          "spawnInterval": 1.8,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 18,
+              "health": 1.4,
+              "damage": 1.3,
+              "moveSpeed": 1.4
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 3,
+              "health": 1.6,
+              "damage": 1.4,
+              "moveSpeed": 1.0
+            }
+          ]
+        },
+        {
+          "waveNumber": 4,
+          "duration": 50,
+          "spawnInterval": 2.0,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 30,
+              "health": 1.5,
+              "damage": 1.4,
+              "moveSpeed": 1.5
+            }
+          ]
+        },
+        {
+          "waveNumber": 5,
+          "duration": 70,
+          "spawnInterval": 2.5,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "enhanced_boss",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 15,
+              "health": 1.6,
+              "damage": 1.5,
+              "moveSpeed": 1.6
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 2,
+              "health": 1.7,
+              "damage": 1.5,
+              "moveSpeed": 1.0
+            },
+            {
+              "enemyType": "boss",
+              "count": 1,
+              "health": 2.5,
+              "damage": 1.8,
+              "moveSpeed": 0.9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "levelNumber": 3,
+      "levelName": "The Onslaught",
+      "difficultyMultiplier": 1.6,
+      "waves": [
+        {
+          "waveNumber": 1,
+          "duration": 40,
+          "spawnInterval": 2.0,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 30,
+              "health": 1.5,
+              "damage": 1.4,
+              "moveSpeed": 1.4
+            }
+          ]
+        },
+        {
+          "waveNumber": 2,
+          "duration": 45,
+          "spawnInterval": 1.8,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 25,
+              "health": 1.6,
+              "damage": 1.5,
+              "moveSpeed": 1.5
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 4,
+              "health": 1.8,
+              "damage": 1.6,
+              "moveSpeed": 1.1
+            }
+          ]
+        },
+        {
+          "waveNumber": 3,
+          "duration": 50,
+          "spawnInterval": 1.5,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 40,
+              "health": 1.7,
+              "damage": 1.6,
+              "moveSpeed": 1.6
+            }
+          ]
+        },
+        {
+          "waveNumber": 4,
+          "duration": 55,
+          "spawnInterval": 1.6,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 30,
+              "health": 1.8,
+              "damage": 1.7,
+              "moveSpeed": 1.7
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 5,
+              "health": 2.0,
+              "damage": 1.8,
+              "moveSpeed": 1.2
+            }
+          ]
+        },
+        {
+          "waveNumber": 5,
+          "duration": 80,
+          "spawnInterval": 2.0,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "elite_boss",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 20,
+              "health": 2.0,
+              "damage": 1.8,
+              "moveSpeed": 1.8
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 3,
+              "health": 2.2,
+              "damage": 2.0,
+              "moveSpeed": 1.3
+            },
+            {
+              "enemyType": "boss",
+              "count": 2,
+              "health": 3.0,
+              "damage": 2.2,
+              "moveSpeed": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "levelNumber": 4,
+      "levelName": "Nightmare Realm",
+      "difficultyMultiplier": 2.0,
+      "waves": [
+        {
+          "waveNumber": 1,
+          "duration": 45,
+          "spawnInterval": 1.8,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 40,
+              "health": 1.8,
+              "damage": 1.7,
+              "moveSpeed": 1.6
+            }
+          ]
+        },
+        {
+          "waveNumber": 2,
+          "duration": 50,
+          "spawnInterval": 1.5,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 35,
+              "health": 2.0,
+              "damage": 1.9,
+              "moveSpeed": 1.7
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 6,
+              "health": 2.2,
+              "damage": 2.0,
+              "moveSpeed": 1.3
+            }
+          ]
+        },
+        {
+          "waveNumber": 3,
+          "duration": 55,
+          "spawnInterval": 1.3,
+          "isBossWave": false,
+          "isMiniBossWave": false,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 50,
+              "health": 2.2,
+              "damage": 2.0,
+              "moveSpeed": 1.8
+            }
+          ]
+        },
+        {
+          "waveNumber": 4,
+          "duration": 60,
+          "spawnInterval": 1.4,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 40,
+              "health": 2.4,
+              "damage": 2.2,
+              "moveSpeed": 1.9
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 8,
+              "health": 2.6,
+              "damage": 2.4,
+              "moveSpeed": 1.4
+            }
+          ]
+        },
+        {
+          "waveNumber": 5,
+          "duration": 70,
+          "spawnInterval": 1.5,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 30,
+              "health": 2.6,
+              "damage": 2.4,
+              "moveSpeed": 2.0
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 10,
+              "health": 2.8,
+              "damage": 2.6,
+              "moveSpeed": 1.5
+            }
+          ]
+        },
+        {
+          "waveNumber": 6,
+          "duration": 90,
+          "spawnInterval": 2.0,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "nightmare_lord",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 25,
+              "health": 3.0,
+              "damage": 2.6,
+              "moveSpeed": 2.0
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 5,
+              "health": 3.2,
+              "damage": 2.8,
+              "moveSpeed": 1.6
+            },
+            {
+              "enemyType": "boss",
+              "count": 3,
+              "health": 4.0,
+              "damage": 3.0,
+              "moveSpeed": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "levelNumber": 5,
+      "levelName": "Apocalypse",
+      "difficultyMultiplier": 2.5,
+      "waves": [
+        {
+          "waveNumber": 1,
+          "duration": 50,
+          "spawnInterval": 1.5,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 50,
+              "health": 2.5,
+              "damage": 2.3,
+              "moveSpeed": 1.9
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 8,
+              "health": 2.8,
+              "damage": 2.5,
+              "moveSpeed": 1.5
+            }
+          ]
+        },
+        {
+          "waveNumber": 2,
+          "duration": 60,
+          "spawnInterval": 1.3,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 45,
+              "health": 3.0,
+              "damage": 2.6,
+              "moveSpeed": 2.0
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 10,
+              "health": 3.2,
+              "damage": 2.8,
+              "moveSpeed": 1.6
+            }
+          ]
+        },
+        {
+          "waveNumber": 3,
+          "duration": 70,
+          "spawnInterval": 1.2,
+          "isBossWave": false,
+          "isMiniBossWave": true,
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 40,
+              "health": 3.5,
+              "damage": 3.0,
+              "moveSpeed": 2.1
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 12,
+              "health": 3.5,
+              "damage": 3.2,
+              "moveSpeed": 1.7
+            }
+          ]
+        },
+        {
+          "waveNumber": 4,
+          "duration": 80,
+          "spawnInterval": 1.5,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "harbinger",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 30,
+              "health": 4.0,
+              "damage": 3.2,
+              "moveSpeed": 2.2
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 8,
+              "health": 4.2,
+              "damage": 3.5,
+              "moveSpeed": 1.8
+            },
+            {
+              "enemyType": "boss",
+              "count": 2,
+              "health": 5.0,
+              "damage": 4.0,
+              "moveSpeed": 1.3
+            }
+          ]
+        },
+        {
+          "waveNumber": 5,
+          "duration": 120,
+          "spawnInterval": 1.8,
+          "isBossWave": true,
+          "isMiniBossWave": false,
+          "bossType": "apocalypse_titan",
+          "enemies": [
+            {
+              "enemyType": "basic",
+              "count": 40,
+              "health": 4.5,
+              "damage": 3.5,
+              "moveSpeed": 2.3
+            },
+            {
+              "enemyType": "miniboss",
+              "count": 10,
+              "health": 5.0,
+              "damage": 4.0,
+              "moveSpeed": 2.0
+            },
+            {
+              "enemyType": "boss",
+              "count": 5,
+              "health": 6.0,
+              "damage": 5.0,
+              "moveSpeed": 1.5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

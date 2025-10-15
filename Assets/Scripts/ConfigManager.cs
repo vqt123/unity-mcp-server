@@ -63,6 +63,43 @@ public class WeaponTypesConfig
     public List<WeaponData> weapons;
 }
 
+[System.Serializable]
+public class EnemySpawnData
+{
+    public string enemyType;           // Type of enemy to spawn
+    public int count;                  // Number of this enemy type to spawn
+    public float health;               // Health multiplier
+    public float damage;               // Damage multiplier
+    public float moveSpeed;            // Move speed multiplier
+}
+
+[System.Serializable]
+public class WaveData
+{
+    public int waveNumber;             // Wave identifier
+    public float duration;             // How long the wave lasts (seconds)
+    public float spawnInterval;        // Time between spawns (seconds)
+    public List<EnemySpawnData> enemies; // Enemies to spawn in this wave
+    public bool isBossWave;            // Is this a boss wave?
+    public bool isMiniBossWave;        // Is this a mini-boss wave?
+    public string bossType;            // Boss type if applicable
+}
+
+[System.Serializable]
+public class LevelData
+{
+    public int levelNumber;            // Level identifier
+    public string levelName;           // Display name
+    public float difficultyMultiplier; // Global difficulty multiplier
+    public List<WaveData> waves;       // All waves in this level
+}
+
+[System.Serializable]
+public class LevelsConfig
+{
+    public List<LevelData> levels;
+}
+
 public class ConfigManager : MonoBehaviour
 {
     private static ConfigManager _instance;
@@ -83,6 +120,7 @@ public class ConfigManager : MonoBehaviour
     
     private HeroTypesConfig heroTypes;
     private WeaponTypesConfig weaponTypes;
+    private LevelsConfig levelsConfig;
     
     private void Awake()
     {
@@ -123,6 +161,18 @@ public class ConfigManager : MonoBehaviour
         {
             Debug.LogError("[ConfigManager] Failed to load WeaponTypes.json");
         }
+        
+        // Load levels
+        TextAsset levelsJson = Resources.Load<TextAsset>("Levels");
+        if (levelsJson != null)
+        {
+            levelsConfig = JsonConvert.DeserializeObject<LevelsConfig>(levelsJson.text);
+            Debug.Log($"[ConfigManager] Loaded {levelsConfig.levels.Count} levels");
+        }
+        else
+        {
+            Debug.LogError("[ConfigManager] Failed to load Levels.json");
+        }
     }
     
     public HeroData GetHeroData(string heroType)
@@ -149,6 +199,16 @@ public class ConfigManager : MonoBehaviour
     public List<WeaponData> GetAllWeapons()
     {
         return weaponTypes?.weapons ?? new List<WeaponData>();
+    }
+    
+    public LevelData GetLevelData(int levelNumber)
+    {
+        return levelsConfig?.levels.FirstOrDefault(l => l.levelNumber == levelNumber);
+    }
+    
+    public List<LevelData> GetAllLevels()
+    {
+        return levelsConfig?.levels ?? new List<LevelData>();
     }
 }
 
