@@ -90,12 +90,8 @@ namespace ArenaGame.Client
                 return;
             }
             
-            Vector3 unityPos = ToVector3(evt.Position);
-            GameObject obj = Instantiate(heroPrefab, unityPos, Quaternion.identity);
+            GameObject obj = Instantiate(heroPrefab, ToVector3(evt.Position), Quaternion.identity);
             obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
-            
-            // Log screen space position
-            LogScreenSpacePosition($"Hero_{evt.HeroId.Value}", unityPos);
             
             // Store entity ID for reference
             var view = obj.AddComponent<EntityView>();
@@ -113,12 +109,8 @@ namespace ArenaGame.Client
                 return;
             }
             
-            Vector3 unityPos = ToVector3(evt.Position);
-            GameObject obj = Instantiate(enemyPrefab, unityPos, Quaternion.identity);
+            GameObject obj = Instantiate(enemyPrefab, ToVector3(evt.Position), Quaternion.identity);
             obj.name = $"Enemy_{evt.EnemyId.Value}_{evt.EnemyType}";
-            
-            // Log screen space position
-            LogScreenSpacePosition($"Enemy_{evt.EnemyId.Value}", unityPos);
             
             if (evt.IsBoss) obj.transform.localScale *= 2f;
             else if (evt.IsMiniBoss) obj.transform.localScale *= 1.5f;
@@ -189,31 +181,6 @@ namespace ArenaGame.Client
         private Vector3 ToVector3(FixV2 pos)
         {
             return new Vector3((float)pos.X.ToDouble(), 0f, (float)pos.Y.ToDouble());
-        }
-        
-        private void LogScreenSpacePosition(string entityName, Vector3 worldPos)
-        {
-            Camera cam = Camera.main;
-            if (cam == null) return;
-            
-            // Convert world position to screen space
-            Vector3 screenPos = cam.WorldToScreenPoint(worldPos);
-            
-            // Screen center
-            Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, 0f);
-            
-            // Distance from center in screen pixels
-            float pixelDistFromCenter = Vector2.Distance(
-                new Vector2(screenPos.x, screenPos.y),
-                new Vector2(screenCenter.x, screenCenter.y)
-            );
-            
-            Debug.Log($"[Visualizer] {entityName} SPAWNED:" +
-                      $"\n  Unity World Pos: {worldPos}" +
-                      $"\n  Screen Pos: ({screenPos.x:F0}, {screenPos.y:F0})" +
-                      $"\n  Screen Center: ({screenCenter.x:F0}, {screenCenter.y:F0})" +
-                      $"\n  Pixel Distance from Center: {pixelDistFromCenter:F0} px" +
-                      $"\n  Screen Resolution: {Screen.width}x{Screen.height}");
         }
     }
 }

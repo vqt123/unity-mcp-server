@@ -59,10 +59,10 @@ namespace ArenaGame.Client
             initObj.AddComponent<GameInitializer>();
             GameLogger.Log("[Bootstrap] ✓ Created GameInitializer");
             
-            // 5. Create TestEnemySpawner (spawns ONE test enemy)
-            GameObject testSpawnerObj = new GameObject("TestEnemySpawner");
-            testSpawnerObj.AddComponent<TestEnemySpawner>();
-            GameLogger.Log("[Bootstrap] ✓ Created TestEnemySpawner");
+            // 5. Create WaveManager (spawns enemies)
+            GameObject waveObj = new GameObject("WaveManager");
+            waveObj.AddComponent<WaveManager>();
+            GameLogger.Log("[Bootstrap] ✓ Created WaveManager");
             
             // 6. Create DamageNumberSpawner (floating damage numbers)
             if (damageNumberPrefab != null)

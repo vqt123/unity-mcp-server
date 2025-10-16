@@ -56,12 +56,6 @@ namespace ArenaGame.Shared.Systems
         
         public static EntityId SpawnEnemy(SimulationWorld world, EnemyConfig data, FixV2 position)
         {
-            Core.GameLogger.Log($"[SpawnSystem] ========== SPAWNING ENEMY ==========");
-            Core.GameLogger.Log($"[SpawnSystem] Type: {data.EnemyType}");
-            Core.GameLogger.Log($"[SpawnSystem] Position: ({position.X.ToInt()}, {position.Y.ToInt()})");
-            Core.GameLogger.Log($"[SpawnSystem] MoveSpeed: {data.MoveSpeed.ToFloat()}");
-            Core.GameLogger.Log($"[SpawnSystem] AttackRange: {data.AttackRange.ToFloat()}");
-            
             Enemy enemy = new Enemy
             {
                 EnemyType = data.EnemyType,
@@ -81,7 +75,6 @@ namespace ArenaGame.Shared.Systems
             };
             
             EntityId id = world.CreateEnemy(enemy);
-            Core.GameLogger.Log($"[SpawnSystem] Enemy created with ID: {id.Value}");
             
             // Generate spawn event
             world.AddEvent(new Events.EnemySpawnedEvent
@@ -96,8 +89,6 @@ namespace ArenaGame.Shared.Systems
                 IsBoss = data.IsBoss,
                 IsMiniBoss = data.IsMiniBoss
             });
-            
-            Core.GameLogger.Log($"[SpawnSystem] EnemySpawnedEvent added to event queue");
             
             return id;
         }
