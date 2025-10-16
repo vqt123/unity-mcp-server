@@ -1,0 +1,75 @@
+---
+alwaysApply: true
+---
+# Project Index - Always Consult Main.md
+
+## Critical Rule for AI Agents
+
+**ALWAYS read `Main.md` at the start of any task** to understand:
+- Project architecture
+- System organization  
+- File locations
+- Key documentation references
+
+## Quick Context
+
+This is a Unity 2D Arena Survivor game with:
+- **Deterministic client-server architecture**
+- **MCP server integration** for AI automation
+- **Event-driven simulation** at 30 tps
+- **Clean assembly separation** (Shared vs Client)
+
+## Main.md Location
+
+**Path**: `/Users/vinhtrinh/code/mcptest/Main.md`
+
+Or from workspace root: `./Main.md`
+
+## When to Read Main.md
+
+- ✅ Starting any new task
+- ✅ Need to understand architecture
+- ✅ Looking for specific system
+- ✅ Finding documentation
+- ✅ Understanding file structure
+- ✅ Before making architectural changes
+
+## What's in Main.md
+
+1. **Architecture Overview** - Client-server model
+2. **MCP Server System** - Tool organization
+3. **Game Systems** - Simulation & visualization
+4. **Project Structure** - Complete file tree
+5. **Configuration** - JSON config files
+6. **Scenes** - Unity scenes explained
+7. **Quick Reference** - Common tasks
+8. **Recent Changes** - Cleanup summary
+
+## Other Rules
+
+This project has additional rules in `.cursor/rules/`:
+- `unity-mcp-core.mdc` - MCP server usage
+- `unity-ui-best-practices.mdc` - UI creation
+- `main-index.mdc` - This file
+
+## Workflow
+
+```
+1. Read Main.md (project overview)
+2. Check relevant system section
+3. Follow documentation links as needed
+4. Use MCP tools (port 8765)
+5. Test with Unity Editor
+```
+
+## Key Principles
+
+- **Deterministic**: Fixed-point math, no floating point
+- **Event-driven**: Emit events for state changes
+- **Command-driven**: Player inputs are commands
+- **Separated**: Simulation (Shared) independent of rendering (Client)
+- **Clean**: No circular dependencies
+
+---
+
+**Remember**: Main.md is your map. Start there!
