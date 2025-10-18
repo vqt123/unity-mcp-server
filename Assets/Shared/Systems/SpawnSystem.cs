@@ -31,6 +31,9 @@ namespace ArenaGame.Shared.Systems
                 ShotCooldownTicks = cooldownTicks,
                 WeaponType = data.WeaponType,
                 WeaponTier = data.WeaponTier,
+                Level = 1,
+                CurrentXP = 0,
+                XPToNextLevel = 100,
                 IsAlive = true
             };
             

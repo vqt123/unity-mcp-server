@@ -28,6 +28,11 @@ namespace ArenaGame.Shared.Entities
         public string WeaponType;
         public int WeaponTier;
         
+        // Progression
+        public int Level;
+        public int CurrentXP;
+        public int XPToNextLevel;
+        
         // State
         public bool IsAlive;
         
@@ -49,6 +54,24 @@ namespace ArenaGame.Shared.Entities
         public void Heal(Fix64 amount)
         {
             Health = Fix64.Min(Health + amount, MaxHealth);
+        }
+
+        public bool GainXP(int xp, out bool leveledUp)
+        {
+            CurrentXP += xp;
+            leveledUp = false;
+            
+            while (CurrentXP >= XPToNextLevel)
+            {
+                CurrentXP -= XPToNextLevel;
+                Level++;
+                leveledUp = true;
+                
+                // XP requirement increases by 20% per level
+                XPToNextLevel = (XPToNextLevel * 12) / 10;
+            }
+            
+            return leveledUp;
         }
     }
 }

@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 252817320}
   - component: {fileID: 252817319}
   - component: {fileID: 252817321}
+  - component: {fileID: 252817322}
   m_Layer: 0
   m_Name: CooldownPanel
   m_TagString: Untagged
@@ -212,6 +213,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.CooldownUIController
   cooldownFill: {fileID: 1946173338}
   cooldownText: {fileID: 2123504556}
+--- !u!114 &252817322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252817317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c0c0711d927a4714a5e96349e446def, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.CooldownUIController
+  cooldownFill: {fileID: 0}
+  cooldownText: {fileID: 0}
 --- !u!1 &274786824
 GameObject:
   m_ObjectHideFlags: 0
@@ -449,6 +464,8 @@ GameObject:
   - component: {fileID: 407763461}
   - component: {fileID: 407763460}
   - component: {fileID: 407763459}
+  - component: {fileID: 407763463}
+  - component: {fileID: 407763464}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -543,6 +560,32 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &407763463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407763458}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c5c49ed6bd974f46966a3b52c8a0f11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.XPBarController
+  xpBarFill: {fileID: 0}
+  xpText: {fileID: 0}
+--- !u!114 &407763464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407763458}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ea830c17fc1841ee89a2a9a81d07a56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.UIAutoWirer
 --- !u!21 &426818252
 Material:
   serializedVersion: 8

@@ -18,24 +18,41 @@ namespace ArenaGame.Client
         
         private EntityId heroId;
         private bool trackingHero = false;
+        private float lastFillAmount = -1f;
         
         void Start()
         {
+            Debug.Log($"[CooldownUI] Start - cooldownFill: {(cooldownFill != null ? "OK" : "NULL")}, cooldownText: {(cooldownText != null ? "OK" : "NULL")}");
+            
             // Try to find hero after a delay
             Invoke(nameof(FindHero), 1f);
         }
         
         private void FindHero()
         {
+            Debug.Log($"[CooldownUI] FindHero - GameSimulation exists: {GameSimulation.Instance != null}");
+            
             if (GameSimulation.Instance != null)
             {
                 var world = GameSimulation.Instance.Simulation.World;
+                Debug.Log($"[CooldownUI] World has {world.HeroIds.Count} heroes");
+                
                 if (world.HeroIds.Count > 0)
                 {
                     heroId = world.HeroIds[0];
                     trackingHero = true;
-                    Debug.Log($"[CooldownUI] Tracking hero {heroId.Value}");
+                    Debug.Log($"[CooldownUI] Now tracking hero {heroId.Value}");
                 }
+                else
+                {
+                    Debug.LogWarning("[CooldownUI] No heroes found, retrying in 1 second");
+                    Invoke(nameof(FindHero), 1f);
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[CooldownUI] GameSimulation not ready, retrying in 1 second");
+                Invoke(nameof(FindHero), 1f);
             }
         }
         
@@ -52,6 +69,8 @@ namespace ArenaGame.Client
         
         private void UpdateCooldownDisplay(Hero hero)
         {
+            var world = GameSimulation.Instance.Simulation.World;
+            
             // Calculate cooldown percentage
             int ticksSinceLastShot = world.CurrentTick - hero.LastShotTick;
             float cooldownPercent = Mathf.Clamp01((float)ticksSinceLastShot / hero.ShotCooldownTicks);
@@ -59,10 +78,23 @@ namespace ArenaGame.Client
             // Update fill
             if (cooldownFill != null)
             {
-                cooldownFill.fillAmount = 1f - cooldownPercent; // Drain as cooldown completes
+                float newFillAmount = 1f - cooldownPercent; // Drain as cooldown completes
+                
+                // Log when it changes significantly
+                if (Mathf.Abs(newFillAmount - lastFillAmount) > 0.1f)
+                {
+                    Debug.Log($"[CooldownUI] fillAmount: {newFillAmount:F2}, percent: {cooldownPercent:F2}, visible: {cooldownFill.gameObject.activeInHierarchy}");
+                    lastFillAmount = newFillAmount;
+                }
+                
+                cooldownFill.fillAmount = newFillAmount;
                 
                 // Color: red when on cooldown, green when ready
                 cooldownFill.color = cooldownPercent >= 1f ? Color.green : Color.red;
+            }
+            else if (Time.frameCount % 300 == 0) // Log every ~5 seconds at 60fps
+            {
+                Debug.LogWarning("[CooldownUI] cooldownFill is NULL - please assign in Inspector!");
             }
             
             // Update text
@@ -87,8 +119,6 @@ namespace ArenaGame.Client
             heroId = id;
             trackingHero = true;
         }
-        
-        private SimulationWorld world => GameSimulation.Instance.Simulation.World;
     }
 }
 

@@ -95,37 +95,7 @@ CORE_TOOLS = [
             "properties": {},
             "required": []
         }
-    },
-    {
-        "name": "unity_capture_screenshot",
-        "description": "Capture a screenshot of the Unity Editor view. Returns base64-encoded PNG image that can be analyzed by AI vision. ESSENTIAL for visual verification of created content.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "viewType": {
-                    "type": "string",
-                    "enum": ["game", "scene"],
-                    "description": "Which view to capture: 'game' (Game View/Camera) or 'scene' (Scene View)",
-                    "default": "game"
-                },
-                "width": {
-                    "type": "number",
-                    "description": "Screenshot width in pixels",
-                    "default": 1920
-                },
-                "height": {
-                    "type": "number",
-                    "description": "Screenshot height in pixels",
-                    "default": 1080
-                },
-                "returnBase64": {
-                    "type": "boolean",
-                    "description": "Include base64-encoded image data in response",
-                    "default": True
-                }
-            },
-            "required": []
-        }
     }
 ]
+
 

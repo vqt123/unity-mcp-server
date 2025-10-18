@@ -316,7 +316,6 @@ Claude:
 - 🔄 Add components
 - 🔄 Modify properties
 - 🔄 UI creation (buttons, text, canvases)
-- 🔄 Screenshot capture
 - 🔄 Visual testing
 
 ---

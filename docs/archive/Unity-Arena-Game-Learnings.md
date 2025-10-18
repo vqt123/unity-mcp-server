@@ -341,14 +341,6 @@ Debug.Log($"[ComponentName] Message with {variable}");
 {"tool": "unity_get_logs", "args": {"count": 50}}
 ```
 
-### Screenshot Verification
-
-```json
-{"tool": "unity_capture_screenshot", "args": {"viewType": "game"}}
-```
-
-Screenshots saved to: `/Screenshots/screenshot_YYYY-MM-DD_HH-MM-SS.png`
-
 ---
 
 ## Common Pitfalls

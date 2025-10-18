@@ -261,8 +261,7 @@ Wave-based level design:
 
 **Port**: 8765  
 **Test Connection**: `unity_ping`  
-**Get Logs**: `unity_get_logs`  
-**Screenshot**: `unity_capture_screenshot`
+**Get Logs**: `unity_get_logs`
 
 **Full Tool List**: See `.cursor/rules/unity-mcp-core.mdc`
 
@@ -342,4 +341,5 @@ Wave-based level design:
 ---
 
 **For detailed information on any system, refer to the linked documents above.**
+
 

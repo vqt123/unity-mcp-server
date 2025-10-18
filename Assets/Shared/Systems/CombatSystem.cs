@@ -128,6 +128,35 @@ namespace ArenaGame.Shared.Systems
                         if (!enemy.IsAlive)
                         {
                             enemiesToRemove.Add(enemyId);
+                            
+                            // Grant XP to killer
+                            if (world.TryGetHero(proj.OwnerId, out Hero killer))
+                            {
+                                int xpGrant = enemy.IsBoss ? 100 : (enemy.IsMiniBoss ? 50 : 10);
+                                killer.GainXP(xpGrant, out bool leveledUp);
+                                world.UpdateHero(proj.OwnerId, killer);
+                                
+                                // Generate XP gained event
+                                world.AddEvent(new Events.XPGainedEvent
+                                {
+                                    Tick = world.CurrentTick,
+                                    HeroId = proj.OwnerId,
+                                    XPGained = xpGrant,
+                                    CurrentXP = killer.CurrentXP,
+                                    Level = killer.Level
+                                });
+                                
+                                if (leveledUp)
+                                {
+                                    world.AddEvent(new Events.HeroLevelUpEvent
+                                    {
+                                        Tick = world.CurrentTick,
+                                        HeroId = proj.OwnerId,
+                                        NewLevel = killer.Level
+                                    });
+                                }
+                            }
+                            
                             world.AddEvent(new Events.EnemyKilledEvent
                             {
                                 Tick = world.CurrentTick,

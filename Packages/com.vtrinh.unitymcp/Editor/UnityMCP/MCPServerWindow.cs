@@ -228,8 +228,7 @@ namespace UnityMCP
                 "- unity_force_compile\n" +
                 "- unity_is_compiling\n" +
                 "- unity_wait_for_compile\n" +
-                "- unity_get_logs\n" +
-                "- unity_capture_screenshot\n\n" +
+                "- unity_get_logs\n\n" +
                 "Scene Management 🎬 NEW:\n" +
                 "- unity_create_scene\n" +
                 "- unity_save_scene\n" +

@@ -94,6 +94,22 @@ namespace ArenaGame.Shared.Events
         public EntityId KillerId;
     }
     
+    // === Progression Events ===
+    
+    public class XPGainedEvent : SimulationEvent
+    {
+        public EntityId HeroId;
+        public int XPGained;
+        public int CurrentXP;
+        public int Level;
+    }
+    
+    public class HeroLevelUpEvent : SimulationEvent
+    {
+        public EntityId HeroId;
+        public int NewLevel;
+    }
+    
     // === Entity Destruction Events ===
     
     public class ProjectileDestroyedEvent : SimulationEvent
