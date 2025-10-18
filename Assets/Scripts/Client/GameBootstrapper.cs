@@ -92,6 +92,11 @@ namespace ArenaGame.Client
             debugObj.AddComponent<SimulationDebugger>();
             GameLogger.Log("[Bootstrap] ✓ Created SimulationDebugger");
             
+            // 10. Create UpgradeUIManager for level-up upgrades
+            GameObject upgradeObj = new GameObject("UpgradeUIManager");
+            upgradeObj.AddComponent<UpgradeUIManager>();
+            GameLogger.Log("[Bootstrap] ✓ Created UpgradeUIManager");
+            
             GameLogger.Log("[Bootstrap] ========== GAME SETUP COMPLETE ==========");
         }
     }

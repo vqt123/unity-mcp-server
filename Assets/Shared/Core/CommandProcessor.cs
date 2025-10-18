@@ -62,7 +62,7 @@ namespace ArenaGame.Shared.Core
             switch (cmd.UpgradeType)
             {
                 case "Damage":
-                    hero.Damage += Fix64.FromInt(5);
+                    hero.Damage += Fix64.FromInt(10);
                     break;
                 case "AttackSpeed":
                     hero.AttackSpeed += Fix64.FromFloat(0.5f);
@@ -72,8 +72,8 @@ namespace ArenaGame.Shared.Core
                     hero.MoveSpeed += Fix64.FromInt(1);
                     break;
                 case "Health":
-                    hero.MaxHealth += Fix64.FromInt(20);
-                    hero.Health = Fix64.Min(hero.Health + Fix64.FromInt(20), hero.MaxHealth);
+                    hero.MaxHealth += Fix64.FromInt(30);
+                    hero.Health = Fix64.Min(hero.Health + Fix64.FromInt(30), hero.MaxHealth);
                     break;
             }
             
