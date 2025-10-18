@@ -49,15 +49,18 @@ namespace ArenaGame.Client
             visualizer.SetPrefabs(heroPrefab, enemyPrefab, projectilePrefab);
             GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}");
             
-            // 3. Create HeroSelectionManager (shows hero choices)
-            GameObject heroSelectObj = new GameObject("HeroSelectionManager");
-            heroSelectObj.AddComponent<HeroSelectionManager>();
-            GameLogger.Log("[Bootstrap] ✓ Created HeroSelectionManager");
+            // 3. Create PlayerDataManager if not already present (persistent)
+            if (PlayerDataManager.Instance == null)
+            {
+                GameObject dataObj = new GameObject("PlayerDataManager");
+                dataObj.AddComponent<PlayerDataManager>();
+                GameLogger.Log("[Bootstrap] ✓ Created PlayerDataManager");
+            }
             
-            // 4. Create GameInitializer (spawns heroes - disabled until hero selected)
-            GameObject initObj = new GameObject("GameInitializer");
-            initObj.AddComponent<GameInitializer>();
-            GameLogger.Log("[Bootstrap] ✓ Created GameInitializer");
+            // 4. Create PartySpawner (spawns heroes from party)
+            GameObject partySpawnerObj = new GameObject("PartySpawner");
+            partySpawnerObj.AddComponent<PartySpawner>();
+            GameLogger.Log("[Bootstrap] ✓ Created PartySpawner");
             
             // 5. Create WaveManager (spawns enemies)
             GameObject waveObj = new GameObject("WaveManager");
