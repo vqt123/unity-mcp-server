@@ -28,7 +28,14 @@ namespace ArenaGame.Client
             }
             
             RefreshHeroCards();
+            
+            if (panel != null)
+            {
+                panel.SetActive(true);
+            }
             gameObject.SetActive(true);
+            
+            Debug.Log("[HeroInventory] Inventory UI shown");
         }
         
         private void CreateInventoryUI()
@@ -252,8 +259,14 @@ namespace ArenaGame.Client
         private void OnBackClicked()
         {
             Debug.Log("[HeroInventory] Back clicked");
-            gameObject.SetActive(false);
             
+            if (panel != null)
+            {
+                panel.SetActive(false);
+            }
+            
+            // Don't deactivate the GameObject, just hide the panel
+            // If homeMenu is null, we're being called from HomeMenuManager
             if (homeMenu != null)
             {
                 homeMenu.Show();

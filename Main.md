@@ -41,6 +41,21 @@
 ### Purpose
 Unity Editor control via Model Context Protocol for AI agent automation.
 
+### Known Issues & Workarounds
+
+#### Adding Namespaced Components
+**Issue**: `unity_add_script_component` fails with namespaced scripts  
+**Workaround**: Use `unity_add_component` with fully qualified name:
+```
+✅ unity_add_component(gameObjectName="Obj", componentType="Namespace.ClassName")
+❌ unity_add_script_component(gameObjectName="Obj", scriptName="ClassName")
+```
+
+#### Button onClick Events  
+**Issue**: `unity_set_button_onclick` cannot find existing SceneLoader script  
+**Status**: Tool bug - needs fix in mcp-server  
+**Temporary**: Wire buttons in Start() method of controller script
+
 ### Structure
 ```
 mcp-server/
