@@ -7,9 +7,19 @@ namespace ArenaGame.Shared.Data
     {
         public static Dictionary<string, EnemyConfig> Configs = new Dictionary<string, EnemyConfig>
         {
+            { "basic", new EnemyConfig {
+                EnemyType = "BasicGrunt",
+                MaxHealth = Fix64.FromInt(30),
+                MoveSpeed = Fix64.FromInt(2),
+                Damage = Fix64.FromInt(5),
+                AttackRange = Fix64.FromFloat(1.0f),
+                AttackSpeed = Fix64.FromFloat(0.8f), // 0.8 attacks per second
+                IsBoss = false,
+                IsMiniBoss = false
+            }},
             { "BasicGrunt", new EnemyConfig {
                 EnemyType = "BasicGrunt",
-                MaxHealth = Fix64.FromInt(50),
+                MaxHealth = Fix64.FromInt(30),
                 MoveSpeed = Fix64.FromInt(2),
                 Damage = Fix64.FromInt(5),
                 AttackRange = Fix64.FromFloat(1.0f),
@@ -37,6 +47,16 @@ namespace ArenaGame.Shared.Data
                 IsBoss = false,
                 IsMiniBoss = false
             }},
+            { "miniboss", new EnemyConfig {
+                EnemyType = "MiniBoss",
+                MaxHealth = Fix64.FromInt(500),
+                MoveSpeed = Fix64.FromInt(2),
+                Damage = Fix64.FromInt(25),
+                AttackRange = Fix64.FromFloat(1.5f),
+                AttackSpeed = Fix64.FromFloat(0.7f),
+                IsBoss = false,
+                IsMiniBoss = true
+            }},
             { "MiniBoss", new EnemyConfig {
                 EnemyType = "MiniBoss",
                 MaxHealth = Fix64.FromInt(500),
@@ -46,6 +66,16 @@ namespace ArenaGame.Shared.Data
                 AttackSpeed = Fix64.FromFloat(0.7f),
                 IsBoss = false,
                 IsMiniBoss = true
+            }},
+            { "boss", new EnemyConfig {
+                EnemyType = "Boss",
+                MaxHealth = Fix64.FromInt(2000),
+                MoveSpeed = Fix64.FromInt(1),
+                Damage = Fix64.FromInt(50),
+                AttackRange = Fix64.FromFloat(2.0f),
+                AttackSpeed = Fix64.FromFloat(0.4f),
+                IsBoss = true,
+                IsMiniBoss = false
             }},
             { "Boss", new EnemyConfig {
                 EnemyType = "Boss",

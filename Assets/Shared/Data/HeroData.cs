@@ -9,29 +9,56 @@ namespace ArenaGame.Shared.Data
         {
             { "DefaultHero", new HeroConfig {
                 HeroType = "DefaultHero",
-                MaxHealth = Fix64.FromInt(100),
+                MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(5),
-                Damage = Fix64.FromInt(10),
-                AttackSpeed = Fix64.FromFloat(2.0f),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(3.3f),
                 WeaponType = "Pistol",
                 WeaponTier = 1
             }},
             { "FastHero", new HeroConfig {
                 HeroType = "FastHero",
-                MaxHealth = Fix64.FromInt(80),
+                MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(7),
-                Damage = Fix64.FromInt(8),
-                AttackSpeed = Fix64.FromFloat(3.0f),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(3.3f),
                 WeaponType = "SMG",
                 WeaponTier = 1
             }},
             { "TankHero", new HeroConfig {
                 HeroType = "TankHero",
-                MaxHealth = Fix64.FromInt(150),
-                MoveSpeed = Fix64.FromInt(3),
-                Damage = Fix64.FromInt(15),
-                AttackSpeed = Fix64.FromFloat(1.0f),
+                MaxHealth = Fix64.FromInt(200),
+                MoveSpeed = Fix64.FromInt(5),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(2.0f),
                 WeaponType = "Shotgun",
+                WeaponTier = 1
+            }},
+            { "Archer", new HeroConfig {
+                HeroType = "Archer",
+                MaxHealth = Fix64.FromInt(150),
+                MoveSpeed = Fix64.FromInt(5),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(3.3f),
+                WeaponType = "Bow",
+                WeaponTier = 1
+            }},
+            { "Mage", new HeroConfig {
+                HeroType = "Mage",
+                MaxHealth = Fix64.FromInt(120),
+                MoveSpeed = Fix64.FromInt(5),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(1.67f),
+                WeaponType = "Firewand",
+                WeaponTier = 1
+            }},
+            { "Warrior", new HeroConfig {
+                HeroType = "Warrior",
+                MaxHealth = Fix64.FromInt(200),
+                MoveSpeed = Fix64.FromInt(5),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(2.0f),
+                WeaponType = "Sword",
                 WeaponTier = 1
             }},
         };
