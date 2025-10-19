@@ -22,6 +22,7 @@ namespace ArenaGame.Client
         private EntityId playerHeroId;
         private bool isInitialized = false;
         private bool hasSelectedInitialHero = false;
+        private List<string> spawnedHeroTypes = new List<string>();
         
         void Start()
         {
@@ -255,6 +256,7 @@ namespace ArenaGame.Client
             Debug.Log($"[UpgradeUI] Hero selected: {heroType}");
             
             hasSelectedInitialHero = true;
+            spawnedHeroTypes.Add(heroType);
             
             // Hide panel
             if (upgradePanel != null)
@@ -276,6 +278,34 @@ namespace ArenaGame.Client
             // Unpause game
             Time.timeScale = 1f;
             Debug.Log("[UpgradeUI] Game started");
+        }
+        
+        private void SpawnAdditionalHero(string heroType)
+        {
+            Debug.Log($"[UpgradeUI] Spawning additional hero: {heroType}");
+            
+            spawnedHeroTypes.Add(heroType);
+            
+            // Hide panel
+            if (upgradePanel != null)
+            {
+                upgradePanel.SetActive(false);
+            }
+            
+            // Spawn hero via PartySpawner
+            PartySpawner spawner = PartySpawner.Instance;
+            if (spawner != null)
+            {
+                spawner.SpawnAdditionalHero(heroType);
+            }
+            else
+            {
+                Debug.LogError("[UpgradeUI] PartySpawner not found!");
+            }
+            
+            // Resume game
+            Time.timeScale = 1f;
+            Debug.Log("[UpgradeUI] Additional hero spawned, game resumed");
         }
         
         private void OnHeroLevelUp(ISimulationEvent evt)
@@ -317,7 +347,23 @@ namespace ArenaGame.Client
                 }
             }
             
-            // Show upgrade choices
+            // Check if there are unspawned heroes from party
+            PlayerDataManager dataManager = PlayerDataManager.Instance;
+            List<string> unspawnedHeroes = new List<string>();
+            
+            if (dataManager != null)
+            {
+                var party = dataManager.HeroInventory.partyHeroes;
+                foreach (string heroType in party)
+                {
+                    if (!spawnedHeroTypes.Contains(heroType))
+                    {
+                        unspawnedHeroes.Add(heroType);
+                    }
+                }
+            }
+            
+            // Show upgrade choices (2 stat upgrades + 1 hero if available)
             string[] upgradeTypes = { "Damage", "AttackSpeed", "Health" };
             string[] upgradeLabels = { 
                 "Increase Damage\n+10 DMG", 
@@ -325,19 +371,69 @@ namespace ArenaGame.Client
                 "Increase Max Health\n+30 HP"
             };
             
-            for (int i = 0; i < upgradeButtons.Length; i++)
+            // Decide which 2 stat upgrades to show (randomize)
+            List<int> statIndices = new List<int> { 0, 1, 2 };
+            for (int i = 0; i < statIndices.Count; i++)
             {
+                int randomIndex = Random.Range(i, statIndices.Count);
+                int temp = statIndices[i];
+                statIndices[i] = statIndices[randomIndex];
+                statIndices[randomIndex] = temp;
+            }
+            
+            // Show 2 stat upgrades
+            for (int i = 0; i < 2; i++)
+            {
+                int statIndex = statIndices[i];
                 upgradeButtons[i].gameObject.SetActive(true);
                 
                 var buttonText = upgradeButtons[i].GetComponentInChildren<TextMeshProUGUI>();
                 if (buttonText != null)
                 {
-                    buttonText.text = upgradeLabels[i];
+                    buttonText.text = upgradeLabels[statIndex];
                 }
                 
-                string upgradeType = upgradeTypes[i];
+                string upgradeType = upgradeTypes[statIndex];
                 upgradeButtons[i].onClick.RemoveAllListeners();
                 upgradeButtons[i].onClick.AddListener(() => OnUpgradeSelected(upgradeType));
+            }
+            
+            // Show hero choice if available
+            if (unspawnedHeroes.Count > 0)
+            {
+                // Pick random unspawned hero
+                string randomHeroType = unspawnedHeroes[Random.Range(0, unspawnedHeroes.Count)];
+                
+                upgradeButtons[2].gameObject.SetActive(true);
+                var buttonText = upgradeButtons[2].GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    HeroConfig config = HeroData.GetConfig(randomHeroType);
+                    buttonText.text = $"Add Hero: {randomHeroType}\nHP: {config.MaxHealth.ToInt()} | DMG: {config.Damage.ToInt()}";
+                }
+                
+                upgradeButtons[2].onClick.RemoveAllListeners();
+                upgradeButtons[2].onClick.AddListener(() => SpawnAdditionalHero(randomHeroType));
+                
+                Debug.Log($"[UpgradeUI] Offering hero choice: {randomHeroType}");
+            }
+            else
+            {
+                // No more heroes, show 3rd stat upgrade
+                int statIndex = statIndices[2];
+                upgradeButtons[2].gameObject.SetActive(true);
+                
+                var buttonText = upgradeButtons[2].GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    buttonText.text = upgradeLabels[statIndex];
+                }
+                
+                string upgradeType = upgradeTypes[statIndex];
+                upgradeButtons[2].onClick.RemoveAllListeners();
+                upgradeButtons[2].onClick.AddListener(() => OnUpgradeSelected(upgradeType));
+                
+                Debug.Log("[UpgradeUI] All heroes spawned - showing 3 stat upgrades");
             }
             
             upgradePanel.SetActive(true);

@@ -14,12 +14,12 @@ namespace ArenaGame.Client
         [Header("Spawn Settings")]
         [SerializeField] private float spawnRadius = 2f;
         
-        private List<EntityId> partyHeroIds = new List<EntityId>();
+        private List<string> spawnedHeroTypes = new List<string>();
         private bool heroesSpawned = false;
         
         public static PartySpawner Instance { get; private set; }
         public bool HeroesSpawned => heroesSpawned;
-        public List<EntityId> PartyHeroIds => partyHeroIds;
+        public List<string> SpawnedHeroTypes => spawnedHeroTypes;
         
         void Awake()
         {
@@ -49,44 +49,47 @@ namespace ArenaGame.Client
             
             // Spawn hero at center
             SpawnHero(heroType, FixV2.Zero);
+            spawnedHeroTypes.Add(heroType);
             
-            // Wait for hero to spawn then start game
-            StartCoroutine(WaitForHeroSpawn(heroType));
+            // Start waves immediately - hero will spawn on next simulation tick
+            WaveManager waveManager = FindFirstObjectByType<WaveManager>();
+            if (waveManager != null)
+            {
+                Debug.Log("[PartySpawner] Starting waves");
+                waveManager.OnHeroSelected();
+            }
+            else
+            {
+                Debug.LogError("[PartySpawner] WaveManager not found!");
+            }
+            
+            // Track that we've spawned the first hero
+            heroesSpawned = true;
+            
+            Debug.Log($"[PartySpawner] Hero {heroType} spawn command queued, game started");
         }
         
-        private System.Collections.IEnumerator WaitForHeroSpawn(string heroType)
+        public void SpawnAdditionalHero(string heroType)
         {
-            yield return null;
-            yield return null;
-            
-            if (GameSimulation.Instance != null)
+            if (GameSimulation.Instance == null)
             {
-                var world = GameSimulation.Instance.Simulation.World;
-                
-                if (world.HeroIds.Count > 0)
-                {
-                    partyHeroIds.Clear();
-                    partyHeroIds.Add(world.HeroIds[0]);
-                    heroesSpawned = true;
-                    
-                    Debug.Log($"[PartySpawner] Hero {heroType} spawned, starting game");
-                    
-                    // Notify UpgradeUIManager
-                    UpgradeUIManager upgradeUI = FindFirstObjectByType<UpgradeUIManager>();
-                    if (upgradeUI != null)
-                    {
-                        upgradeUI.SetPlayerHero(partyHeroIds[0]);
-                    }
-                    
-                    // Start waves
-                    WaveManager waveManager = FindFirstObjectByType<WaveManager>();
-                    if (waveManager != null)
-                    {
-                        waveManager.OnHeroSelected();
-                    }
-                }
+                Debug.LogError("[PartySpawner] GameSimulation not found!");
+                return;
             }
+            
+            Debug.Log($"[PartySpawner] Spawning additional hero: {heroType}");
+            
+            // Calculate spawn position based on number of spawned heroes
+            int heroCount = spawnedHeroTypes.Count;
+            FixV2 spawnPos = CalculateSpawnPosition(heroCount, heroCount + 1);
+            
+            // Spawn hero
+            SpawnHero(heroType, spawnPos);
+            spawnedHeroTypes.Add(heroType);
+            
+            Debug.Log($"[PartySpawner] Additional hero {heroType} spawn command queued at position {spawnPos}");
         }
+        
         
         private FixV2 CalculateSpawnPosition(int index, int totalHeroes)
         {
@@ -117,57 +120,6 @@ namespace ArenaGame.Client
             Debug.Log($"[PartySpawner] Spawning {heroType} at {position}");
         }
         
-        private void SpawnDefaultHero()
-        {
-            SpawnHero("DefaultHero", FixV2.Zero);
-            StartCoroutine(WaitForHeroesSpawn(1));
-        }
-        
-        private System.Collections.IEnumerator WaitForHeroesSpawn(int expectedCount)
-        {
-            yield return null; // Wait one frame
-            yield return null; // Wait another frame for simulation to process
-            
-            if (GameSimulation.Instance != null)
-            {
-                var world = GameSimulation.Instance.Simulation.World;
-                
-                if (world.HeroIds.Count >= expectedCount)
-                {
-                    partyHeroIds.Clear();
-                    
-                    // Get all spawned heroes
-                    foreach (var heroId in world.HeroIds)
-                    {
-                        partyHeroIds.Add(heroId);
-                    }
-                    
-                    heroesSpawned = true;
-                    Debug.Log($"[PartySpawner] {partyHeroIds.Count} heroes spawned successfully");
-                    
-                    // Notify UpgradeUIManager about the first hero (for level-up events)
-                    if (partyHeroIds.Count > 0)
-                    {
-                        UpgradeUIManager upgradeUI = FindFirstObjectByType<UpgradeUIManager>();
-                        if (upgradeUI != null)
-                        {
-                            upgradeUI.SetPlayerHero(partyHeroIds[0]);
-                        }
-                    }
-                    
-                    // Notify WaveManager to start waves
-                    WaveManager waveManager = FindFirstObjectByType<WaveManager>();
-                    if (waveManager != null)
-                    {
-                        waveManager.OnHeroSelected();
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[PartySpawner] Expected {expectedCount} heroes but found {world.HeroIds.Count}");
-                }
-            }
-        }
     }
 }
 
