@@ -56,6 +56,39 @@ Unity Editor control via Model Context Protocol for AI agent automation.
 **Status**: Tool bug - needs fix in mcp-server  
 **Temporary**: Wire buttons in Start() method of controller script
 
+#### UI Image Sprites for Radial Fills
+**Issue**: Programmatically created Image components need sprites for filled images  
+**Best Solution**: Reuse sprites from existing scene UI elements:
+```csharp
+// Find an existing Image with a sprite (like XPBarFill)
+Image[] allImages = FindObjectsByType<Image>(FindObjectsSortMode.None);
+Image sourceImage = null;
+foreach (Image img in allImages) {
+    if (img.sprite != null) {
+        sourceImage = img;
+        break;
+    }
+}
+
+// Reuse the sprite for new UI elements!
+newImage.sprite = sourceImage.sprite;
+newImage.type = Image.Type.Filled;
+newImage.fillMethod = Image.FillMethod.Radial360;
+```
+
+**Alternative**: Create procedural sprite if no scene UI exists:
+```csharp
+// Create a white circle texture programmatically (256x256)
+Texture2D texture = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+// ... (draw circle pixels) ...
+Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 256, 256), 
+    new Vector2(0.5f, 0.5f), 100f);
+```
+
+**Why**: `Resources.GetBuiltinResource<Sprite>()` doesn't work at runtime for built-in UI sprites. Scene-created UI has sprites assigned by Unity Editor, but runtime-created UI needs explicit assignment.
+
+**Note**: Always cache sprites! Find/create once, reuse for all UI elements.
+
 ### Structure
 ```
 mcp-server/

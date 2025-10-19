@@ -100,6 +100,16 @@ namespace ArenaGame.Client
             upgradeObj.AddComponent<UpgradeUIManager>();
             GameLogger.Log("[Bootstrap] ✓ Created UpgradeUIManager");
             
+            // 11. Create CooldownUIManager for hero cooldown displays
+            GameObject cooldownMgrObj = new GameObject("CooldownUIManager");
+            cooldownMgrObj.AddComponent<CooldownUIManager>();
+            GameLogger.Log("[Bootstrap] ✓ Created CooldownUIManager");
+            
+            // 12. Create WaveProgressUI for wave completion progress
+            GameObject waveProgressObj = new GameObject("WaveProgressUI");
+            waveProgressObj.AddComponent<WaveProgressUI>();
+            GameLogger.Log("[Bootstrap] ✓ Created WaveProgressUI");
+            
             GameLogger.Log("[Bootstrap] ========== GAME SETUP COMPLETE ==========");
         }
     }
