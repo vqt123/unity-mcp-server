@@ -19,17 +19,9 @@ namespace ArenaGame.Client
         
         void Start()
         {
-            // Don't auto-init if hero selection is active
-            HeroSelectionManager heroSelection = FindFirstObjectByType<HeroSelectionManager>();
-            if (heroSelection == null)
-            {
-                // No hero selection, use default hero
-                InitializeGame();
-            }
-            else
-            {
-                Debug.Log("[GameInit] Waiting for hero selection...");
-            }
+            // GameInitializer is now obsolete - PartySpawner handles hero spawning
+            // This script is kept for backwards compatibility/manual testing only
+            Debug.Log("[GameInit] GameInitializer is obsolete - use PartySpawner instead");
         }
         
         private void InitializeGame()

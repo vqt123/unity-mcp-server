@@ -4,28 +4,30 @@ using TMPro;
 using ArenaGame.Shared.Commands;
 using ArenaGame.Shared.Core;
 using ArenaGame.Shared.Events;
+using ArenaGame.Shared.Data;
+using System.Collections.Generic;
 using EntityId = ArenaGame.Shared.Entities.EntityId;
 
 namespace ArenaGame.Client
 {
     /// <summary>
-    /// Manages upgrade UI and sends upgrade commands
+    /// Manages upgrade UI and initial hero selection
     /// </summary>
     public class UpgradeUIManager : MonoBehaviour
     {
         [Header("UI References")]
         [SerializeField] private GameObject upgradePanel;
-        [SerializeField] private Button damageUpgradeButton;
-        [SerializeField] private Button attackSpeedUpgradeButton;
-        [SerializeField] private Button moveSpeedUpgradeButton;
-        [SerializeField] private Button healthUpgradeButton;
+        [SerializeField] private Button[] upgradeButtons = new Button[3];
         
         private EntityId playerHeroId;
-        private bool upgradeAvailable = false;
+        private bool isInitialized = false;
+        private bool hasSelectedInitialHero = false;
         
         void Start()
         {
-            // If no panel assigned, create one programmatically
+            Debug.Log("[UpgradeUI] Starting UpgradeUIManager");
+            
+            // Create UI if not assigned
             if (upgradePanel == null)
             {
                 CreateUpgradePanel();
@@ -35,20 +37,14 @@ namespace ArenaGame.Client
                 upgradePanel.SetActive(false);
             }
             
-            // Wire up buttons
-            if (damageUpgradeButton != null)
-                damageUpgradeButton.onClick.AddListener(() => ChooseUpgrade("Damage"));
-            if (attackSpeedUpgradeButton != null)
-                attackSpeedUpgradeButton.onClick.AddListener(() => ChooseUpgrade("AttackSpeed"));
-            if (moveSpeedUpgradeButton != null)
-                moveSpeedUpgradeButton.onClick.AddListener(() => ChooseUpgrade("MoveSpeed"));
-            if (healthUpgradeButton != null)
-                healthUpgradeButton.onClick.AddListener(() => ChooseUpgrade("Health"));
-            
-            // Subscribe to level up events
+            // Subscribe to level-up events
             EventBus.Subscribe<HeroLevelUpEvent>(OnHeroLevelUp);
             
-            Debug.Log("[UpgradeUI] Subscribed to HeroLevelUpEvent");
+            isInitialized = true;
+            Debug.Log("[UpgradeUI] Initialized and subscribed to HeroLevelUpEvent");
+            
+            // Show hero selection at game start
+            Invoke(nameof(ShowInitialHeroSelection), 0.2f);
         }
         
         private void CreateUpgradePanel()
@@ -82,7 +78,7 @@ namespace ArenaGame.Client
             layoutRect.anchorMax = new Vector2(0.5f, 0.5f);
             layoutRect.sizeDelta = new Vector2(400, 500);
             
-            UnityEngine.UI.VerticalLayoutGroup layout = layoutObj.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+            VerticalLayoutGroup layout = layoutObj.AddComponent<VerticalLayoutGroup>();
             layout.spacing = 20;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlHeight = false;
@@ -91,23 +87,21 @@ namespace ArenaGame.Client
             layout.childForceExpandWidth = true;
             
             // Create title
-            CreateText(layoutObj.transform, "LEVEL UP!", 40);
-            CreateText(layoutObj.transform, "Choose an upgrade:", 24);
+            CreateText(layoutObj.transform, "LEVEL UP!", 40, "TitleText");
+            CreateText(layoutObj.transform, "Choose an upgrade:", 24, "SubtitleText");
             
-            // Create 3 buttons (stat upgrades + weapon upgrade option)
-            damageUpgradeButton = CreateButton(layoutObj.transform, "Increase Damage (+10)");
-            attackSpeedUpgradeButton = CreateButton(layoutObj.transform, "Increase Attack Speed (+0.5)");
-            healthUpgradeButton = CreateButton(layoutObj.transform, "Increase Max Health (+30)");
-            
-            // TODO: Add weapon upgrade button dynamically based on current weapon tier
+            // Create 3 buttons
+            upgradeButtons[0] = CreateButton(layoutObj.transform, "Choice 1");
+            upgradeButtons[1] = CreateButton(layoutObj.transform, "Choice 2");
+            upgradeButtons[2] = CreateButton(layoutObj.transform, "Choice 3");
             
             upgradePanel.SetActive(false);
-            Debug.Log("[UpgradeUI] Created upgrade panel programmatically with 3 choices");
+            Debug.Log("[UpgradeUI] Created upgrade panel programmatically");
         }
         
-        private GameObject CreateText(Transform parent, string text, float fontSize)
+        private GameObject CreateText(Transform parent, string text, float fontSize, string objName = "Text")
         {
-            GameObject textObj = new GameObject("Text");
+            GameObject textObj = new GameObject(objName);
             textObj.transform.SetParent(parent, false);
             
             RectTransform rect = textObj.AddComponent<RectTransform>();
@@ -128,7 +122,7 @@ namespace ArenaGame.Client
             buttonObj.transform.SetParent(parent, false);
             
             RectTransform rect = buttonObj.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(400, 60);
+            rect.sizeDelta = new Vector2(400, 80);
             
             Image image = buttonObj.AddComponent<Image>();
             image.color = new Color(0.2f, 0.4f, 0.8f, 1f);
@@ -146,7 +140,7 @@ namespace ArenaGame.Client
             
             TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
             tmp.text = label;
-            tmp.fontSize = 24;
+            tmp.fontSize = 22;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.white;
             
@@ -155,52 +149,204 @@ namespace ArenaGame.Client
         
         void OnDestroy()
         {
-            // Unsubscribe from events
             EventBus.Unsubscribe<HeroLevelUpEvent>(OnHeroLevelUp);
         }
         
-        private void OnHeroLevelUp(ISimulationEvent evt)
+        private void ShowInitialHeroSelection()
         {
-            if (evt is HeroLevelUpEvent levelUpEvent)
+            if (hasSelectedInitialHero) return;
+            
+            PlayerDataManager dataManager = PlayerDataManager.Instance;
+            if (dataManager == null || dataManager.HeroInventory.partyHeroes.Count == 0)
             {
-                Debug.Log($"[UpgradeUI] ===== LEVEL UP EVENT RECEIVED =====");
-                Debug.Log($"[UpgradeUI] Hero {levelUpEvent.HeroId.Value} leveled up to level {levelUpEvent.NewLevel}");
-                Debug.Log($"[UpgradeUI] Player hero ID: {playerHeroId.Value}");
-                Debug.Log($"[UpgradeUI] IDs equal: {levelUpEvent.HeroId.Equals(playerHeroId)}");
-                
-                // Show upgrade panel for ANY hero (for now, since we only have one)
-                Debug.Log($"[UpgradeUI] Showing upgrade panel!");
-                ShowUpgradePanel(levelUpEvent.HeroId);
+                Debug.LogError("[UpgradeUI] No heroes in party!");
+                return;
             }
+            
+            var party = dataManager.HeroInventory.partyHeroes;
+            Debug.Log($"[UpgradeUI] Showing initial hero selection from party of {party.Count}");
+            
+            // Get 3 random heroes from party (or less if party is smaller)
+            List<string> heroChoices = new List<string>();
+            List<string> shuffledParty = new List<string>(party);
+            
+            // Shuffle the party list
+            for (int i = 0; i < shuffledParty.Count; i++)
+            {
+                int randomIndex = Random.Range(i, shuffledParty.Count);
+                string temp = shuffledParty[i];
+                shuffledParty[i] = shuffledParty[randomIndex];
+                shuffledParty[randomIndex] = temp;
+            }
+            
+            // Take up to 3 heroes
+            for (int i = 0; i < Mathf.Min(3, shuffledParty.Count); i++)
+            {
+                heroChoices.Add(shuffledParty[i]);
+            }
+            
+            ShowHeroSelectionPanel(heroChoices);
         }
         
-        public void ShowUpgradePanel(EntityId heroId)
+        private void ShowHeroSelectionPanel(List<string> heroChoices)
         {
-            Debug.Log($"[UpgradeUI] ShowUpgradePanel called for hero {heroId.Value}");
-            Debug.Log($"[UpgradeUI] upgradePanel null? {upgradePanel == null}");
-            
-            playerHeroId = heroId;
-            upgradeAvailable = true;
-            
-            if (upgradePanel != null)
+            if (upgradePanel == null)
             {
-                upgradePanel.SetActive(true);
-                Debug.Log($"[UpgradeUI] Upgrade panel activated! timeScale set to 0");
-            }
-            else
-            {
-                Debug.LogError("[UpgradeUI] upgradePanel is NULL!");
+                Debug.LogError("[UpgradeUI] Upgrade panel is null!");
+                return;
             }
             
             // Pause game
             Time.timeScale = 0f;
+            
+            // Update panel title
+            Transform titleTransform = upgradePanel.transform.Find("ButtonLayout/TitleText");
+            if (titleTransform != null)
+            {
+                var titleText = titleTransform.GetComponent<TextMeshProUGUI>();
+                if (titleText != null)
+                {
+                    titleText.text = "Choose Your Hero";
+                }
+            }
+            
+            Transform subtitleTransform = upgradePanel.transform.Find("ButtonLayout/SubtitleText");
+            if (subtitleTransform != null)
+            {
+                var subtitleText = subtitleTransform.GetComponent<TextMeshProUGUI>();
+                if (subtitleText != null)
+                {
+                    subtitleText.text = "Select a hero to begin battle:";
+                }
+            }
+            
+            // Update buttons with hero choices
+            for (int i = 0; i < upgradeButtons.Length; i++)
+            {
+                if (i < heroChoices.Count)
+                {
+                    string heroType = heroChoices[i];
+                    upgradeButtons[i].gameObject.SetActive(true);
+                    
+                    // Update button text
+                    var buttonText = upgradeButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+                    if (buttonText != null)
+                    {
+                        HeroConfig config = HeroData.GetConfig(heroType);
+                        buttonText.text = $"{heroType}\nHP: {config.MaxHealth.ToInt()} | DMG: {config.Damage.ToInt()} | ATK SPD: {config.AttackSpeed.ToFloat():F1}";
+                    }
+                    
+                    // Wire up button click
+                    upgradeButtons[i].onClick.RemoveAllListeners();
+                    upgradeButtons[i].onClick.AddListener(() => OnHeroSelected(heroType));
+                }
+                else
+                {
+                    upgradeButtons[i].gameObject.SetActive(false);
+                }
+            }
+            
+            upgradePanel.SetActive(true);
+            Debug.Log("[UpgradeUI] Hero selection panel shown");
         }
         
-        private void ChooseUpgrade(string upgradeType)
+        private void OnHeroSelected(string heroType)
         {
-            if (!upgradeAvailable) return;
+            Debug.Log($"[UpgradeUI] Hero selected: {heroType}");
             
-            Debug.Log($"[UpgradeUI] Player chose upgrade: {upgradeType}");
+            hasSelectedInitialHero = true;
+            
+            // Hide panel
+            if (upgradePanel != null)
+            {
+                upgradePanel.SetActive(false);
+            }
+            
+            // Spawn hero via PartySpawner
+            PartySpawner spawner = PartySpawner.Instance;
+            if (spawner != null)
+            {
+                spawner.SpawnSelectedHero(heroType);
+            }
+            else
+            {
+                Debug.LogError("[UpgradeUI] PartySpawner not found!");
+            }
+            
+            // Unpause game
+            Time.timeScale = 1f;
+            Debug.Log("[UpgradeUI] Game started");
+        }
+        
+        private void OnHeroLevelUp(ISimulationEvent evt)
+        {
+            if (hasSelectedInitialHero && evt is HeroLevelUpEvent levelUpEvent)
+            {
+                Debug.Log($"[UpgradeUI] Hero leveled up to {levelUpEvent.NewLevel}");
+                ShowUpgradePanel(levelUpEvent.HeroId);
+            }
+        }
+        
+        private void ShowUpgradePanel(EntityId heroId)
+        {
+            if (upgradePanel == null) return;
+            
+            playerHeroId = heroId;
+            
+            // Pause game
+            Time.timeScale = 0f;
+            
+            // Update panel title
+            Transform titleTransform = upgradePanel.transform.Find("ButtonLayout/TitleText");
+            if (titleTransform != null)
+            {
+                var titleText = titleTransform.GetComponent<TextMeshProUGUI>();
+                if (titleText != null)
+                {
+                    titleText.text = "LEVEL UP!";
+                }
+            }
+            
+            Transform subtitleTransform = upgradePanel.transform.Find("ButtonLayout/SubtitleText");
+            if (subtitleTransform != null)
+            {
+                var subtitleText = subtitleTransform.GetComponent<TextMeshProUGUI>();
+                if (subtitleText != null)
+                {
+                    subtitleText.text = "Choose an upgrade:";
+                }
+            }
+            
+            // Show upgrade choices
+            string[] upgradeTypes = { "Damage", "AttackSpeed", "Health" };
+            string[] upgradeLabels = { 
+                "Increase Damage\n+10 DMG", 
+                "Increase Attack Speed\n+0.5 ATK/SEC",
+                "Increase Max Health\n+30 HP"
+            };
+            
+            for (int i = 0; i < upgradeButtons.Length; i++)
+            {
+                upgradeButtons[i].gameObject.SetActive(true);
+                
+                var buttonText = upgradeButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+                if (buttonText != null)
+                {
+                    buttonText.text = upgradeLabels[i];
+                }
+                
+                string upgradeType = upgradeTypes[i];
+                upgradeButtons[i].onClick.RemoveAllListeners();
+                upgradeButtons[i].onClick.AddListener(() => OnUpgradeSelected(upgradeType));
+            }
+            
+            upgradePanel.SetActive(true);
+            Debug.Log("[UpgradeUI] Upgrade panel shown");
+        }
+        
+        private void OnUpgradeSelected(string upgradeType)
+        {
+            Debug.Log($"[UpgradeUI] Upgrade selected: {upgradeType}");
             
             ChooseUpgradeCommand cmd = new ChooseUpgradeCommand
             {
@@ -211,7 +357,6 @@ namespace ArenaGame.Client
             
             GameSimulation.Instance.QueueCommand(cmd);
             
-            upgradeAvailable = false;
             if (upgradePanel != null)
             {
                 upgradePanel.SetActive(false);
@@ -219,7 +364,7 @@ namespace ArenaGame.Client
             
             // Resume game
             Time.timeScale = 1f;
-            Debug.Log($"[UpgradeUI] Upgrade chosen, resuming game (timeScale = 1)");
+            Debug.Log("[UpgradeUI] Upgrade chosen, game resumed");
         }
         
         public void SetPlayerHero(EntityId heroId)
@@ -229,4 +374,3 @@ namespace ArenaGame.Client
         }
     }
 }
-

@@ -35,17 +35,8 @@ namespace ArenaGame.Client
         
         void Start()
         {
-            // Don't auto-start if hero selection is active
-            HeroSelectionManager heroSelection = FindFirstObjectByType<HeroSelectionManager>();
-            if (heroSelection == null)
-            {
-                // No hero selection, start immediately
-                Invoke(nameof(StartNextWave), 2f);
-            }
-            else
-            {
-                Debug.Log("[Wave] Waiting for hero selection...");
-            }
+            // Wait for hero selection - PartySpawner will call OnHeroSelected()
+            Debug.Log("[Wave] Waiting for hero selection...");
         }
         
         public void OnHeroSelected()
