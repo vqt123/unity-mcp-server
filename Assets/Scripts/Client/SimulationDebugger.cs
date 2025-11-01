@@ -92,18 +92,24 @@ namespace ArenaGame.Client
             var camera = Camera.main;
             if (camera == null) return;
             
-            Fix64 radius = ArenaGame.Shared.Core.SimulationConfig.ARENA_RADIUS;
-            float r = (float)radius.ToDouble();
+            // Draw arena bounds (inner yellow circle)
+            Fix64 arenaRadius = ArenaGame.Shared.Core.SimulationConfig.ARENA_RADIUS;
+            float arenaR = (float)arenaRadius.ToDouble();
             
-            // Draw circle (approximated with line segments)
+            // Draw projectile max radius (outer circle)
+            Fix64 projRadius = ArenaGame.Shared.Core.SimulationConfig.PROJECTILE_MAX_RADIUS;
+            float projR = (float)projRadius.ToDouble();
+            
+            // Draw circles (approximated with line segments)
             int segments = 32;
             for (int i = 0; i < segments; i++)
             {
                 float angle1 = (i / (float)segments) * Mathf.PI * 2f;
                 float angle2 = ((i + 1) / (float)segments) * Mathf.PI * 2f;
                 
-                Vector3 p1 = new Vector3(Mathf.Cos(angle1) * r, 0, Mathf.Sin(angle1) * r);
-                Vector3 p2 = new Vector3(Mathf.Cos(angle2) * r, 0, Mathf.Sin(angle2) * r);
+                // Inner circle (arena bounds) - yellow
+                Vector3 p1 = new Vector3(Mathf.Cos(angle1) * arenaR, 0, Mathf.Sin(angle1) * arenaR);
+                Vector3 p2 = new Vector3(Mathf.Cos(angle2) * arenaR, 0, Mathf.Sin(angle2) * arenaR);
                 
                 Vector3 screen1 = camera.WorldToScreenPoint(p1);
                 Vector3 screen2 = camera.WorldToScreenPoint(p2);
@@ -111,6 +117,18 @@ namespace ArenaGame.Client
                 if (screen1.z > 0 && screen2.z > 0)
                 {
                     Drawing.DrawLine(screen1, screen2, Color.yellow, 2f);
+                }
+                
+                // Outer circle (projectile max radius) - different color
+                Vector3 p3 = new Vector3(Mathf.Cos(angle1) * projR, 0, Mathf.Sin(angle1) * projR);
+                Vector3 p4 = new Vector3(Mathf.Cos(angle2) * projR, 0, Mathf.Sin(angle2) * projR);
+                
+                Vector3 screen3 = camera.WorldToScreenPoint(p3);
+                Vector3 screen4 = camera.WorldToScreenPoint(p4);
+                
+                if (screen3.z > 0 && screen4.z > 0)
+                {
+                    Drawing.DrawLine(screen3, screen4, Color.cyan, 2f);
                 }
             }
         }

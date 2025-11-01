@@ -18,16 +18,8 @@ namespace ArenaGame.Client
         [SerializeField] private GameObject enemyPrefab;
         [SerializeField] private GameObject projectilePrefab;
         
-        [Header("Particle Settings")]
-        [Tooltip("Configure projectile particle trail effects. Edit in Inspector to tune appearance.")]
-        [SerializeField] private ProjectileParticleSettings particleSettings = new ProjectileParticleSettings();
-        
         private Dictionary<EntityId, GameObject> entityViews = new Dictionary<EntityId, GameObject>();
-        private Dictionary<EntityId, ParticleSystem> projectileParticleSystems = new Dictionary<EntityId, ParticleSystem>();
-        private Dictionary<EntityId, GameObject> projectileParticleGameObjects = new Dictionary<EntityId, GameObject>(); // For orbiting emitters
-        private Dictionary<EntityId, float> emitterStartTimes = new Dictionary<EntityId, float>(); // Track when emitter started for orbit angle
-        private Dictionary<EntityId, Vector3> projectileLastPositions = new Dictionary<EntityId, Vector3>(); // Store last position when projectile destroyed
-        private Dictionary<EntityId, Quaternion> projectileLastRotations = new Dictionary<EntityId, Quaternion>(); // Store last rotation when projectile destroyed
+        private Dictionary<EntityId, GameObject> projectileParticleEmitters = new Dictionary<EntityId, GameObject>(); // Track particle emitters for projectiles
         
         // Public setters for GameBootstrapper
         public void SetPrefabs(GameObject hero, GameObject enemy, GameObject projectile)
@@ -64,89 +56,6 @@ namespace ArenaGame.Client
             if (GameSimulation.Instance != null)
             {
                 SyncPositions(GameSimulation.Instance.Simulation.World);
-                RotateParticleEmitters(); // Rotate emitters for candy cane swirl
-            }
-        }
-        
-        private void RotateParticleEmitters()
-        {
-            // Emitter orbits in a circle around the projectile
-            // 10 rotations per second = 3600 degrees per second
-            float rotationSpeed = 3600f; // Degrees per second - 10 rotations per second
-            float orbitRadius = 0.45f; // Increased by 50% (was 0.3f)
-            
-            foreach (var kvp in projectileParticleGameObjects.ToList())
-            {
-                if (kvp.Value == null || !emitterStartTimes.TryGetValue(kvp.Key, out float startTime)) continue;
-                
-                // CRITICAL: Ensure particle system stays active and emitting for full projectile lifetime
-                if (projectileParticleSystems.TryGetValue(kvp.Key, out ParticleSystem particles) && particles != null)
-                {
-                    // Ensure GameObject is active
-                    if (!kvp.Value.activeSelf)
-                    {
-                        kvp.Value.SetActive(true);
-                    }
-                    
-                    // Ensure particle system is playing and emission is enabled
-                    if (!particles.isPlaying)
-                    {
-                        particles.Play(true);
-                    }
-                    
-                    var emission = particles.emission;
-                    if (!emission.enabled)
-                    {
-                        emission.enabled = true;
-                    }
-                }
-                
-                // Try to get projectile - if it still exists, orbit around it
-                // If projectile destroyed, keep orbiting around last known position for particles to fade
-                Vector3 projectilePosition;
-                Vector3 forward;
-                Vector3 right;
-                Vector3 up;
-                
-                if (entityViews.TryGetValue(kvp.Key, out GameObject projectile) && projectile != null)
-                {
-                    // Projectile still exists - orbit around it
-                    projectilePosition = projectile.transform.position;
-                    forward = projectile.transform.forward;
-                    right = projectile.transform.right;
-                    up = projectile.transform.up;
-                    
-                    // Update last known position/rotation
-                    projectileLastPositions[kvp.Key] = projectilePosition;
-                    projectileLastRotations[kvp.Key] = projectile.transform.rotation;
-                }
-                else if (projectileLastPositions.TryGetValue(kvp.Key, out Vector3 lastPos) 
-                    && projectileLastRotations.TryGetValue(kvp.Key, out Quaternion lastRot))
-                {
-                    // Projectile destroyed but particles still fading - orbit around last position
-                    projectilePosition = lastPos;
-                    forward = lastRot * Vector3.forward;
-                    right = lastRot * Vector3.right;
-                    up = lastRot * Vector3.up;
-                }
-                else
-                {
-                    // No projectile and no stored position - skip
-                    continue;
-                }
-                
-                // Current angle based on time since emitter started
-                float timeSinceStart = Time.time - startTime;
-                float currentAngle = (timeSinceStart * rotationSpeed) % 360f;
-                float angleRad = currentAngle * Mathf.Deg2Rad;
-                
-                // Position emitter in circle around projectile (or last position)
-                Vector3 orbitPosition = projectilePosition + 
-                    (right * Mathf.Cos(angleRad) + up * Mathf.Sin(angleRad)) * orbitRadius;
-                
-                kvp.Value.transform.position = orbitPosition;
-                // Only ONE thing rotates: the emitter orbits (no rotation of emitter itself)
-                kvp.Value.transform.rotation = Quaternion.LookRotation(forward, up);
             }
         }
         
@@ -224,7 +133,7 @@ namespace ArenaGame.Client
                 return;
             }
             
-            // Rotate projectile to face its direction for emitter orbit
+            // Rotate projectile to face its direction
             Vector3 direction = ToVector3(evt.Velocity).normalized;
             Quaternion rotation = direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity;
             
@@ -236,61 +145,27 @@ namespace ArenaGame.Client
             view.EntityId = evt.ProjectileId;
             view.IsHero = false;
             
-            // Add particle system for projectile effects
-            AddProjectileParticles(obj, evt);
+            // Clone ParticleTestObject from scene and parent it to projectile (moves with projectile)
+            GameObject templateObject = GameObject.Find("ParticleTestObject");
+            if (templateObject != null)
+            {
+                GameObject particleObj = Instantiate(templateObject, obj.transform.position, obj.transform.rotation);
+                particleObj.transform.SetParent(obj.transform); // Parented - emitter moves with projectile
+                particleObj.name = $"ParticleEmitter_{evt.ProjectileId.Value}";
+                
+                // Ensure particle system is in world space so particles stay where emitted
+                ParticleSystem particles = particleObj.GetComponent<ParticleSystem>();
+                if (particles != null)
+                {
+                    var main = particles.main;
+                    main.simulationSpace = ParticleSystemSimulationSpace.World; // Particles stay in world space
+                }
+                
+                // Track emitter for cleanup when projectile is destroyed
+                projectileParticleEmitters[evt.ProjectileId] = particleObj;
+            }
             
             entityViews[evt.ProjectileId] = obj;
-        }
-        
-        private void AddProjectileParticles(GameObject projectile, ProjectileSpawnedEvent evt)
-        {
-            // Create SEPARATE GameObject for particle emitter (orbits around projectile)
-            // Don't parent it - it orbits independently
-            GameObject particleObj = new GameObject($"ParticleEmitter_{evt.ProjectileId.Value}");
-            particleObj.transform.SetParent(null); // Separate GameObject, not parented
-            particleObj.transform.position = projectile.transform.position;
-            
-            // For candy cane swirl: emitter orbits in a giant circle around projectile
-            // Set up initial rotation - align forward with projectile direction
-            Vector3 direction = ToVector3(evt.Velocity).normalized;
-            if (direction != Vector3.zero)
-            {
-                particleObj.transform.rotation = Quaternion.LookRotation(direction);
-            }
-            
-            // Add ParticleSystem component to separate object
-            ParticleSystem particles = particleObj.AddComponent<ParticleSystem>();
-            
-            // Ensure GameObject stays active
-            particleObj.SetActive(true);
-            
-            // Get hero type from owner to determine particle effect
-            string heroType = GetHeroTypeFromOwner(evt.OwnerId);
-            ParticleEffectType effectType = ProjectileParticleSettings.GetEffectTypeForHero(heroType);
-            
-            // Stop particle system before applying settings (in case it auto-started)
-            particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            
-            // Apply hero-specific particle preset (configures all settings)
-            ProjectileParticleSettings.ApplyPreset(particles, effectType, direction);
-            
-            // CRITICAL: Ensure emission is enabled and particle system is playing
-            var emission = particles.emission;
-            emission.enabled = true; // Explicitly enable emission
-            
-            // Now start playing after all settings are configured
-            particles.Play(true); // Start emitting continuously (withChildren = true)
-            
-            // Verify it's actually playing
-            if (!particles.isPlaying)
-            {
-                Debug.LogWarning($"[EntityVisualizer] Particle system for projectile {evt.ProjectileId.Value} failed to start playing!");
-            }
-            
-            // Store particle system reference and GameObject for orbiting
-            projectileParticleSystems[evt.ProjectileId] = particles;
-            projectileParticleGameObjects[evt.ProjectileId] = particleObj; // Store for orbiting
-            emitterStartTimes[evt.ProjectileId] = Time.time; // Track start time for orbit angle
         }
         
         private string GetHeroTypeFromOwner(EntityId ownerId)
@@ -328,62 +203,41 @@ namespace ArenaGame.Client
             GameObject obj = null;
             if (entityViews.TryGetValue(id, out obj))
             {
-                // If this is a projectile, detach particle system BEFORE destroying projectile
-                // Store last position/rotation for orbiting after projectile destroyed
-                if (projectileParticleSystems.TryGetValue(id, out ParticleSystem particles))
+                // If this is a projectile, detach particle emitter before destroying projectile
+                if (projectileParticleEmitters.TryGetValue(id, out GameObject emitter))
                 {
-                    // Store last position and rotation before destroying projectile
-                    if (entityViews.TryGetValue(id, out GameObject proj))
+                    // Unparent emitter so it stays in world space after projectile is destroyed
+                    emitter.transform.SetParent(null);
+                    
+                    // Stop emitting new particles
+                    ParticleSystem particles = emitter.GetComponent<ParticleSystem>();
+                    if (particles != null)
                     {
-                        projectileLastPositions[id] = proj.transform.position;
-                        projectileLastRotations[id] = proj.transform.rotation;
+                        var emission = particles.emission;
+                        emission.enabled = false; // Stop emitting, but let existing particles fade
                     }
                     
-                    DetachParticleSystem(particles, id);
-                    projectileParticleSystems.Remove(id); // Remove particle system reference
-                    // DON'T remove emitter GameObject or start time yet - keep orbiting until particles fade
+                    // Get particle lifetime to destroy emitter after all particles fade
+                    float maxLifetime = 5f; // Default
+                    if (particles != null)
+                    {
+                        var main = particles.main;
+                        maxLifetime = main.startLifetime.constantMax;
+                        if (maxLifetime <= 0f) maxLifetime = main.startLifetime.constant;
+                        if (maxLifetime <= 0f) maxLifetime = 5f; // Final fallback
+                    }
+                    
+                    // Destroy emitter after all particles have faded
+                    Destroy(emitter, maxLifetime + 1f);
+                    
+                    // Remove from tracking
+                    projectileParticleEmitters.Remove(id);
                 }
                 
                 // Now safe to destroy projectile
                 Destroy(obj);
                 entityViews.Remove(id);
             }
-        }
-        
-        private void DetachParticleSystem(ParticleSystem particles, EntityId projectileId)
-        {
-            if (particles == null || particles.gameObject == null) return;
-            
-            GameObject particleObj = particles.gameObject;
-            
-            // CRITICAL: Unparent FIRST (before projectile is destroyed)
-            // But keep emitter in dictionaries so it can keep orbiting for particles to fade
-            particleObj.transform.SetParent(null);
-            
-            // Stop emitting new particles
-            var emission = particles.emission;
-            emission.enabled = false;
-            
-            // Rename
-            particleObj.name = $"ParticleTrail_{projectileId.Value}_Fading";
-            
-            // Destroy after particles have completely faded
-            // Keep orbiting until particles fade
-            ParticleSystem.MainModule main = particles.main;
-            float maxLifetime = Mathf.Max(particleSettings.lifetimeMin, particleSettings.lifetimeMax);
-            Destroy(particleObj, maxLifetime + 1f);
-            
-            // Clean up dictionaries after particles fade (but keep orbiting until then)
-            StartCoroutine(CleanupParticleEmitterAfterDelay(projectileId, maxLifetime + 1f));
-        }
-        
-        private System.Collections.IEnumerator CleanupParticleEmitterAfterDelay(EntityId projectileId, float delay)
-        {
-            yield return new WaitForSeconds(delay);
-            projectileParticleGameObjects.Remove(projectileId);
-            emitterStartTimes.Remove(projectileId);
-            projectileLastPositions.Remove(projectileId);
-            projectileLastRotations.Remove(projectileId);
         }
         
         private void SyncPositions(SimulationWorld world)

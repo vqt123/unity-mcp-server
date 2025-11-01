@@ -128,54 +128,35 @@ namespace ArenaGame.Client
         private static void ApplyIceEffect(ParticleSystem particles, Vector3 direction)
         {
             var main = particles.main;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(8f, 12f);
-            // No initial speed - particles trail from emission point
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.15f, 0.35f); // Smaller particles (was 0.3f-0.7f)
+            // Match ParticleTestPrefab settings exactly
+            main.startLifetime = new ParticleSystem.MinMaxCurve(5f); // From prefab: scalar = 5
+            main.startSpeed = new ParticleSystem.MinMaxCurve(5f); // From prefab: scalar = 5
+            main.startSize = new ParticleSystem.MinMaxCurve(1f); // From prefab: scalar = 1
             main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f);
-            main.maxParticles = 5000;
-            main.simulationSpace = ParticleSystemSimulationSpace.World; // World space - particles stay where emitted
-            main.loop = true; // Loop continuously - emit for entire projectile lifetime
-            main.playOnAwake = false; // Don't auto-play - we'll play manually after configuring
-            main.duration = 1f; // Duration doesn't matter when looping - we'll stop manually
-            main.stopAction = ParticleSystemStopAction.None; // Keep particles after emission stops
+            main.useUnscaledTime = false; // From prefab: useUnscaledTime = 0
+            main.maxParticles = 100000; // From prefab
+            main.simulationSpace = ParticleSystemSimulationSpace.World; // From prefab: moveWithTransform = 0
+            main.loop = true; // From prefab: looping = 1
+            main.playOnAwake = true; // From prefab: playOnAwake = 1
+            main.duration = 5f; // From prefab: lengthInSec = 5
+            main.stopAction = ParticleSystemStopAction.None; // From prefab: stopAction = 0
             
-            // Ice colors (cyan/blue/white) - brighter for effervescent
-            var iceGradient = new Gradient();
-            iceGradient.SetKeys(
-                new GradientColorKey[] { 
-                    new GradientColorKey(new Color(0.9f, 1f, 1f, 1f), 0.0f),  // Bright cyan-white
-                    new GradientColorKey(new Color(0.6f, 0.9f, 1f, 1f), 0.03f), // Light blue
-                    new GradientColorKey(new Color(0.3f, 0.7f, 1f, 1f), 0.05f), // Blue
-                    new GradientColorKey(new Color(0.1f, 0.4f, 0.8f, 1f), 1.0f)  // Dark blue
-                },
-                new GradientAlphaKey[] { 
-                    new GradientAlphaKey(1.0f, 0.0f),
-                    new GradientAlphaKey(0.4f, 0.015f),
-                    new GradientAlphaKey(0.15f, 0.03f),
-                    new GradientAlphaKey(0.03f, 0.05f),
-                    new GradientAlphaKey(0.0f, 0.07f)
-                }
-            );
-            main.startColor = new ParticleSystem.MinMaxGradient(iceGradient);
+            // Start color - Match ParticleTestPrefab settings (white)
+            main.startColor = new ParticleSystem.MinMaxGradient(Color.white); // From prefab: white color
             
-            // Emission - CONSTANT steady stream for full projectile lifetime
+            // Emission - Match ParticleTestPrefab settings exactly
             var emission = particles.emission;
             emission.enabled = true;
-            // CRITICAL: Use constant value (single value, not range) for truly steady emission
-            // Create MinMaxCurve with same min/max value for constant rate
-            emission.rateOverTime = new ParticleSystem.MinMaxCurve(100f, 100f); // Constant 100 particles/sec - no variation (same min/max)
-            emission.rateOverDistance = 0f; // Disable rate over distance - emitter moves so this causes uneven emission
+            emission.rateOverTime = new ParticleSystem.MinMaxCurve(10f); // From prefab: scalar = 10
+            emission.rateOverDistance = 0f; // From prefab: scalar = 0
+            emission.SetBursts(new ParticleSystem.Burst[0]); // From prefab: m_Bursts = []
             
-            // CRITICAL: No bursts - only continuous emission for steady stream
-            emission.SetBursts(new ParticleSystem.Burst[0]); // Clear any bursts - must be continuous emission only
-            
-            // Shape - tighter for less volume
+            // Shape - Match ParticleTestPrefab settings exactly
             var shape = particles.shape;
             shape.enabled = true;
-            shape.shapeType = ParticleSystemShapeType.Circle;
-            shape.radius = 0.1f; // Tighter spread
-            shape.radiusThickness = 0f;
+            shape.shapeType = ParticleSystemShapeType.Circle; // From prefab: type = 4
+            shape.radius = 1f; // From prefab: radius.value = 1
+            shape.radiusThickness = 1f; // From prefab: radiusThickness = 1
             
             // Candy cane swirl - emitter spins, particles stay still
             // All velocity disabled - particles just emit and stay where they are
@@ -194,22 +175,13 @@ namespace ArenaGame.Client
             var noise = particles.noise;
             noise.enabled = false;
             
-            // Color over lifetime
+            // Color over lifetime - Disabled to match prefab
             var colorOverLifetime = particles.colorOverLifetime;
-            colorOverLifetime.enabled = true;
-            colorOverLifetime.color = iceGradient;
+            colorOverLifetime.enabled = false; // From prefab: ColorModule enabled = 0
             
-            // Size over lifetime - shrink as they fade
+            // Size over lifetime - Disabled to match prefab
             var sizeOverLifetime = particles.sizeOverLifetime;
-            sizeOverLifetime.enabled = true;
-            var sizeCurve = new AnimationCurve(
-                new Keyframe(0f, 1f, 0f, 0f),
-                new Keyframe(0.015f, 0.5f, -2f, -2f),
-                new Keyframe(0.03f, 0.2f, -0.8f, -0.8f),
-                new Keyframe(0.05f, 0.05f, -0.4f, -0.4f),
-                new Keyframe(0.07f, 0f, -0.1f, -0.1f)
-            );
-            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+            sizeOverLifetime.enabled = false; // From prefab: SizeModule enabled = 0
             
             // Limit velocity
             var limitVelocityOverLifetime = particles.limitVelocityOverLifetime;

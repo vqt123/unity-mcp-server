@@ -13,6 +13,7 @@ namespace ArenaGame.Shared.Core
         
         // Arena
         public static readonly Fix64 ARENA_RADIUS = Fix64.FromInt(10);
+        public static readonly Fix64 PROJECTILE_MAX_RADIUS = ARENA_RADIUS * Fix64.FromInt(2); // Projectiles can travel twice as far
         
         // Entity limits
         public const int MAX_HEROES = 10;

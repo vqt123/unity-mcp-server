@@ -75,9 +75,9 @@ namespace ArenaGame.Shared.Systems
                 // Apply velocity
                 proj.Position += proj.Velocity * world.FixedDeltaTime;
                 
-                // Remove if outside arena
+                // Remove if outside projectile max radius (projectiles can travel further than arena)
                 Fix64 distFromCenter = proj.Position.Magnitude;
-                if (distFromCenter > SimulationConfig.ARENA_RADIUS)
+                if (distFromCenter > SimulationConfig.PROJECTILE_MAX_RADIUS)
                 {
                     toRemove.Add(projId);
                     continue;
