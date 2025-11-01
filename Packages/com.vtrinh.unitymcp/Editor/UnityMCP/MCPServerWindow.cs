@@ -224,7 +224,6 @@ namespace UnityMCP
                 "Core Tools:\n" +
                 "- unity_ping\n" +
                 "- unity_get_scene_info\n" +
-                "- unity_create_cube\n" +
                 "- unity_force_compile\n" +
                 "- unity_is_compiling\n" +
                 "- unity_wait_for_compile\n" +

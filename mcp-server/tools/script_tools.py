@@ -107,6 +107,24 @@ SCRIPT_TOOLS = [
             },
             "required": ["buttonName", "action"]
         }
+    },
+    {
+        "name": "unity_remove_component",
+        "description": "Remove a component from a GameObject. Useful for cleanup and modification.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "gameObjectName": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "componentType": {
+                    "type": "string",
+                    "description": "Type name of the component to remove (e.g., 'Rigidbody', 'BoxCollider', 'EnemyScript')"
+                }
+            },
+            "required": ["gameObjectName", "componentType"]
+        }
     }
 ]
 

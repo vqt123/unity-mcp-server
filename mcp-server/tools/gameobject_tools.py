@@ -2,36 +2,6 @@
 
 GAMEOBJECT_TOOLS = [
     {
-        "name": "unity_create_cube",
-        "description": "Create a cube GameObject in the Unity scene",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Name for the cube",
-                    "default": "Cube"
-                },
-                "x": {
-                    "type": "number",
-                    "description": "X position",
-                    "default": 0
-                },
-                "y": {
-                    "type": "number",
-                    "description": "Y position",
-                    "default": 0
-                },
-                "z": {
-                    "type": "number",
-                    "description": "Z position",
-                    "default": 0
-                }
-            },
-            "required": []
-        }
-    },
-    {
         "name": "unity_create_primitive",
         "description": "Create a primitive GameObject (Sphere, Capsule, Cylinder, Plane, Quad, Cube) in the Unity scene",
         "inputSchema": {
@@ -125,7 +95,7 @@ GAMEOBJECT_TOOLS = [
                 "worldPositionStays": {
                     "type": "boolean",
                     "description": "If true, the GameObject keeps its world position. If false, it keeps its local position relative to the new parent.",
-                    "default": true
+                    "default": True
                 }
             },
             "required": ["name"]
@@ -189,6 +159,75 @@ GAMEOBJECT_TOOLS = [
                 }
             },
             "required": ["name"]
+        }
+    },
+    {
+        "name": "unity_list_all_gameobjects",
+        "description": "List all GameObjects in the current scene (recursive). Returns full hierarchy with position, active state, tag, and layer.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "unity_set_rotation",
+        "description": "Set the rotation of a GameObject in world or local space.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "rotation": {
+                    "type": "array",
+                    "description": "Rotation as [x, y, z] in Euler angles (degrees) or [x, y, z, w] as quaternion",
+                    "items": {"type": "number"},
+                    "minItems": 3,
+                    "maxItems": 4
+                }
+            },
+            "required": ["name", "rotation"]
+        }
+    },
+    {
+        "name": "unity_set_scale",
+        "description": "Set the scale of a GameObject.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "scale": {
+                    "type": "array",
+                    "description": "Scale as [x, y, z] or single value for uniform scale",
+                    "items": {"type": "number"},
+                    "minItems": 1,
+                    "maxItems": 3
+                }
+            },
+            "required": ["name", "scale"]
+        }
+    },
+    {
+        "name": "unity_set_tag",
+        "description": "Set the tag of a GameObject. Tags are useful for finding objects and organizing the scene hierarchy.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the GameObject"
+                },
+                "tag": {
+                    "type": "string",
+                    "description": "Tag name (must be a valid Unity tag)"
+                }
+            },
+            "required": ["name", "tag"]
         }
     }
 ]

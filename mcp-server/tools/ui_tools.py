@@ -411,6 +411,26 @@ UI_TOOLS = [
             },
             "required": ["name", "size"]
         }
+    },
+    {
+        "name": "unity_set_image_fill",
+        "description": "Set the fill amount of a UI Image component (0-1). Used for progress bars, radial fills, etc.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name or path to the UI Image GameObject (e.g., 'Canvas/ProgressBar')"
+                },
+                "fillAmount": {
+                    "type": "number",
+                    "description": "Fill amount from 0 to 1 (0 = empty, 1 = full)",
+                    "minimum": 0,
+                    "maximum": 1
+                }
+            },
+            "required": ["name", "fillAmount"]
+        }
     }
 ]
 

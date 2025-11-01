@@ -30,9 +30,6 @@ namespace UnityMCP
                     case "unity_list_all_gameobjects":
                         return ListAllGameObjects();
 
-                    case "unity_create_cube":
-                        return CreateCube(args);
-                    
                     case "unity_create_primitive":
                         return CreatePrimitive(args);
                     
@@ -254,39 +251,7 @@ namespace UnityMCP
             };
         }
         
-        // Tool 3: Create Cube
-        private static JObject CreateCube(JObject args)
-        {
-            // Parse arguments
-            string name = args["name"]?.ToString() ?? "Cube";
-            float x = args["x"]?.ToObject<float>() ?? 0;
-            float y = args["y"]?.ToObject<float>() ?? 0;
-            float z = args["z"]?.ToObject<float>() ?? 0;
-            
-            // Create cube
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = name;
-            cube.transform.position = new Vector3(x, y, z);
-            
-            // Register undo
-            Undo.RegisterCreatedObjectUndo(cube, $"Create {name}");
-            
-            // Select it
-            Selection.activeGameObject = cube;
-            
-            // Mark scene dirty
-            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-            
-            return new JObject
-            {
-                ["success"] = true,
-                ["name"] = cube.name,
-                ["position"] = new JArray(x, y, z),
-                ["instanceId"] = cube.GetInstanceID()
-            };
-        }
-        
-        // Create Primitive (Sphere, Capsule, Cylinder, etc.)
+        // Create Primitive (Sphere, Capsule, Cylinder, Cube, etc.)
         private static JObject CreatePrimitive(JObject args)
         {
             string name = args["name"]?.ToString() ?? "Primitive";
