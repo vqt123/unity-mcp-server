@@ -33,40 +33,20 @@ UI_TOOLS = [
                     "type": "string",
                     "enum": ["desktop", "mobile_portrait", "mobile_landscape", "tablet", "game_menu"],
                     "description": "Apply a resolution preset"
-                }
-            },
-            "required": []
-        }
-    },
-    {
-        "name": "unity_ui_setup_canvas_scaler",
-        "description": "Configure Canvas Scaler for responsive UI. Adjusts UI scale based on screen size.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "canvas": {
-                    "type": "string",
-                    "description": "Name of the canvas to configure",
-                    "default": "Canvas"
-                },
-                "uiScaleMode": {
-                    "type": "string",
-                    "description": "Scale mode",
-                    "default": "ScaleWithScreenSize"
                 },
                 "referenceResolution": {
                     "type": "array",
                     "items": {"type": "number"},
-                    "description": "Reference resolution [width, height]",
+                    "description": "Canvas Scaler reference resolution [width, height] (overrides preset)",
                     "default": [1920, 1080]
                 },
                 "matchValue": {
                     "type": "number",
-                    "description": "Match width (0) or height (1), or balance (0.5)",
+                    "description": "Canvas Scaler match value: 0 = width, 1 = height, 0.5 = balance (overrides preset)",
                     "default": 0.5
                 }
             },
-            "required": ["canvas"]
+            "required": []
         }
     },
     {
@@ -244,84 +224,39 @@ UI_TOOLS = [
             "required": []
         }
     },
-    # Layout Groups
+    # Layout Groups (Unified)
     {
-        "name": "unity_ui_create_vertical_layout",
-        "description": "Create a Vertical Layout Group that automatically arranges children vertically.",
+        "name": "unity_ui_create_layout",
+        "description": "Create a Layout Group (Vertical, Horizontal, or Grid) that automatically arranges children. Consolidates the three layout tools into one unified tool.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "name": {
                     "type": "string",
                     "description": "Layout group name",
-                    "default": "VerticalLayout"
+                    "default": "LayoutGroup"
                 },
                 "parent": {
                     "type": "string",
                     "description": "Parent object name",
                     "default": "Canvas"
+                },
+                "layoutType": {
+                    "type": "string",
+                    "enum": ["vertical", "horizontal", "grid"],
+                    "description": "Type of layout: 'vertical', 'horizontal', or 'grid'",
+                    "default": "vertical"
                 },
                 "spacing": {
                     "type": "number",
-                    "description": "Space between children",
+                    "description": "Space between children (for vertical/horizontal layouts)",
                     "default": 10
                 },
-                "position": {
+                "cellSize": {
                     "type": "array",
                     "items": {"type": "number"},
-                    "description": "Anchored position [x, y]",
-                    "default": [0, 0]
-                }
-            },
-            "required": []
-        }
-    },
-    {
-        "name": "unity_ui_create_horizontal_layout",
-        "description": "Create a Horizontal Layout Group that automatically arranges children horizontally.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Layout group name",
-                    "default": "HorizontalLayout"
-                },
-                "parent": {
-                    "type": "string",
-                    "description": "Parent object name",
-                    "default": "Canvas"
-                },
-                "spacing": {
-                    "type": "number",
-                    "description": "Space between children",
-                    "default": 10
-                },
-                "position": {
-                    "type": "array",
-                    "items": {"type": "number"},
-                    "description": "Anchored position [x, y]",
-                    "default": [0, 0]
-                }
-            },
-            "required": []
-        }
-    },
-    {
-        "name": "unity_ui_create_grid_layout",
-        "description": "Create a Grid Layout Group that automatically arranges children in a grid pattern.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Layout group name",
-                    "default": "GridLayout"
-                },
-                "parent": {
-                    "type": "string",
-                    "description": "Parent object name",
-                    "default": "Canvas"
+                    "description": "Cell size [width, height] for grid layouts",
+                    "default": [100, 100]
                 },
                 "position": {
                     "type": "array",

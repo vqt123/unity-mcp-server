@@ -89,19 +89,49 @@ Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 256, 256),
 
 **Note**: Always cache sprites! Find/create once, reuse for all UI elements.
 
+#### Compilation Best Practices
+**Issue**: Unity Editor can lock up when blocking on compilation  
+**Solution**: Use non-blocking compilation workflow
+
+**Correct Workflow**:
+1. Call `unity_force_compile` to request compilation
+2. Call `unity_wait_for_compile` to check status (returns immediately)
+3. If still compiling, poll `unity_is_compiling` until it returns `false`
+4. Never use blocking waits on Unity main thread
+
+**Example**:
+```python
+# Request compilation
+unity_force_compile()
+
+# Check status (non-blocking)
+status = unity_wait_for_compile()
+
+# If still compiling, poll until done
+while status["isCompiling"]:
+    time.sleep(0.5)  # Wait on Python side, not Unity side
+    status = unity_is_compiling()
+```
+
+**Why**: Unity compilation runs asynchronously. Blocking the main thread with `Thread.Sleep()` causes Editor lock-ups. The MCP server now uses non-blocking checks - always poll from the Python side, never block Unity's main thread.
+
 ### Structure
 ```
 mcp-server/
 ├── unity_mcp_server.py          # Main server (89 lines)
-└── tools/                        # Organized tool modules
+└── tools/                        # Organized tool modules (42 tools total)
     ├── __init__.py
-    ├── core_tools.py             # Ping, compile, logs
-    ├── scene_tools.py            # Scene management
-    ├── gameobject_tools.py       # GameObject operations
-    ├── prefab_tools.py           # Prefab management
-    ├── script_tools.py           # Script & components
-    └── ui_tools.py               # UI creation
+    ├── core_tools.py             # Ping, compile, logs (8 tools)
+    ├── scene_tools.py            # Scene management (4 tools)
+    ├── gameobject_tools.py       # GameObject operations (11 tools)
+    ├── prefab_tools.py           # Prefab management (2 tools)
+    ├── script_tools.py           # Script & components (6 tools)
+    └── ui_tools.py               # UI creation (11 tools, consolidated from 14)
 ```
+
+**Note**: Tools consolidated from 45 → 42 in Dec 2024:
+- ✅ Merged 3 layout tools (`vertical`, `horizontal`, `grid`) into `unity_ui_create_layout`
+- ✅ Merged `unity_ui_setup_canvas_scaler` into `unity_ui_create_canvas` as optional parameters
 
 ### Unity Package
 ```

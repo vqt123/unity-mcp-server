@@ -30,16 +30,10 @@ CORE_TOOLS = [
     },
     {
         "name": "unity_wait_for_compile",
-        "description": "Wait for Unity to finish compiling. Blocks until compilation is complete or timeout is reached.",
+        "description": "Check if Unity compilation has finished. Returns immediately (non-blocking). If compilation is in progress, use unity_is_compiling to poll until complete. This prevents Unity Editor lock-ups.",
         "inputSchema": {
             "type": "object",
-            "properties": {
-                "maxWaitSeconds": {
-                    "type": "number",
-                    "description": "Maximum seconds to wait for compilation",
-                    "default": 30
-                }
-            },
+            "properties": {},
             "required": []
         }
     },

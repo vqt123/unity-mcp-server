@@ -58,9 +58,6 @@ namespace UnityMCP
                     case "unity_ui_create_canvas":
                         return UI_CreateCanvas(args);
                     
-                    case "unity_ui_setup_canvas_scaler":
-                        return UI_SetupCanvasScaler(args);
-                    
                     case "unity_ui_create_event_system":
                         return UI_CreateEventSystem(args);
                     
@@ -77,15 +74,9 @@ namespace UnityMCP
                     case "unity_ui_create_panel":
                         return UI_CreatePanel(args);
                     
-                    // UI Tools - Layout
-                    case "unity_ui_create_vertical_layout":
-                        return UI_CreateVerticalLayout(args);
-                    
-                    case "unity_ui_create_horizontal_layout":
-                        return UI_CreateHorizontalLayout(args);
-                    
-                    case "unity_ui_create_grid_layout":
-                        return UI_CreateGridLayout(args);
+                    // UI Tools - Layout (Unified)
+                    case "unity_ui_create_layout":
+                        return UI_CreateLayout(args);
                     
                     case "unity_ui_set_sprite":
                         return UI_SetSprite(args);
@@ -327,9 +318,7 @@ namespace UnityMCP
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
                 Debug.Log("[MCP] CompilationPipeline.RequestScriptCompilation() called");
                 
-                // Give Unity a moment to start compilation
-                System.Threading.Thread.Sleep(100);
-                
+                // Check compilation status (no blocking sleep - Unity handles compilation asynchronously)
                 bool isCompiling = EditorApplication.isCompiling;
                 
                 return new JObject
@@ -360,52 +349,35 @@ namespace UnityMCP
             };
         }
         
-        // Tool 6: Wait for Compile
+        // Tool 6: Wait for Compile (Non-blocking)
+        // NOTE: This is now non-blocking to prevent Unity Editor lock-ups.
+        // If compilation is in progress, caller should poll unity_is_compiling.
+        // Unity will automatically continue compilation in the background.
         private static JObject WaitForCompile(JObject args)
         {
-            int maxWaitSeconds = args["maxWaitSeconds"]?.ToObject<int>() ?? 30;
+            // Check current compilation status
+            bool currentlyCompiling = EditorApplication.isCompiling;
             
-            if (!EditorApplication.isCompiling)
+            if (!currentlyCompiling)
             {
                 return new JObject
                 {
                     ["success"] = true,
-                    ["message"] = "Unity is not compiling, no need to wait",
+                    ["message"] = "Unity is not compiling, ready to proceed",
                     ["isCompiling"] = false,
                     ["waitedSeconds"] = 0
                 };
             }
             
-            // Wait for compilation to finish
-            var startTime = System.DateTime.Now;
-            int checkCount = 0;
-            
-            while (EditorApplication.isCompiling)
-            {
-                System.Threading.Thread.Sleep(100); // Check every 100ms
-                checkCount++;
-                
-                var elapsed = (System.DateTime.Now - startTime).TotalSeconds;
-                if (elapsed >= maxWaitSeconds)
-                {
-                    return new JObject
-                    {
-                        ["success"] = false,
-                        ["message"] = $"Compilation did not finish within {maxWaitSeconds} seconds",
-                        ["isCompiling"] = true,
-                        ["waitedSeconds"] = elapsed
-                    };
-                }
-            }
-            
-            var totalWait = (System.DateTime.Now - startTime).TotalSeconds;
-            
+            // Compilation is in progress - return immediately (non-blocking)
+            // Caller should poll unity_is_compiling until it returns false
+            // This prevents blocking the Unity main thread and causing lock-ups
             return new JObject
             {
                 ["success"] = true,
-                ["message"] = "Compilation finished successfully",
-                ["isCompiling"] = false,
-                ["waitedSeconds"] = totalWait
+                ["message"] = "Compilation is in progress. Poll unity_is_compiling to check status.",
+                ["isCompiling"] = true,
+                ["note"] = "This call is non-blocking. Unity will continue compilation in the background. Use unity_is_compiling to check status."
             };
         }
         
@@ -2262,6 +2234,25 @@ namespace UnityMCP
             bool pixelPerfect = args["pixelPerfect"]?.ToObject<bool>() ?? false;
             string preset = args["preset"]?.ToString();
             
+            // Canvas Scaler options (merged from unity_ui_setup_canvas_scaler)
+            Vector2? customReferenceResolution = null;
+            float? customMatchValue = null;
+            if (args["referenceResolution"] != null)
+            {
+                var res = args["referenceResolution"] as JArray;
+                if (res != null && res.Count == 2)
+                {
+                    customReferenceResolution = new Vector2(
+                        res[0].ToObject<float>(),
+                        res[1].ToObject<float>()
+                    );
+                }
+            }
+            if (args["matchValue"] != null)
+            {
+                customMatchValue = args["matchValue"].ToObject<float>();
+            }
+            
             try
             {
                 // Check if canvas already exists
@@ -2298,17 +2289,34 @@ namespace UnityMCP
                 canvas.sortingOrder = sortingOrder;
                 canvas.pixelPerfect = pixelPerfect;
                 
-                // Add CanvasScaler
+                // Add and configure CanvasScaler
                 CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
                 scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920, 1080);
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                scaler.matchWidthOrHeight = 0.5f;
                 
-                // Apply preset if specified
+                // Apply preset or custom values
                 if (!string.IsNullOrEmpty(preset))
                 {
                     ApplyCanvasPreset(scaler, preset);
+                }
+                
+                // Override with custom values if provided
+                if (customReferenceResolution.HasValue)
+                {
+                    scaler.referenceResolution = customReferenceResolution.Value;
+                }
+                else if (string.IsNullOrEmpty(preset))
+                {
+                    scaler.referenceResolution = new Vector2(1920, 1080);
+                }
+                
+                if (customMatchValue.HasValue)
+                {
+                    scaler.matchWidthOrHeight = customMatchValue.Value;
+                }
+                else if (string.IsNullOrEmpty(preset))
+                {
+                    scaler.matchWidthOrHeight = 0.5f;
                 }
                 
                 // Add GraphicRaycaster for UI interaction
@@ -2329,6 +2337,8 @@ namespace UnityMCP
                     ["success"] = true,
                     ["canvasPath"] = GetGameObjectPath(canvasObj),
                     ["renderMode"] = canvas.renderMode.ToString(),
+                    ["referenceResolution"] = new JArray(scaler.referenceResolution.x, scaler.referenceResolution.y),
+                    ["matchValue"] = scaler.matchWidthOrHeight,
                     ["components"] = new JArray("Canvas", "CanvasScaler", "GraphicRaycaster")
                 };
             }
@@ -2364,66 +2374,6 @@ namespace UnityMCP
                     scaler.referenceResolution = new Vector2(1920, 1080);
                     scaler.matchWidthOrHeight = 0.5f;
                     break;
-            }
-        }
-        
-        private static JObject UI_SetupCanvasScaler(JObject args)
-        {
-            string canvasName = args["canvas"]?.ToString() ?? "Canvas";
-            string scaleMode = args["uiScaleMode"]?.ToString() ?? "ScaleWithScreenSize";
-            
-            try
-            {
-                GameObject canvasObj = GameObject.Find(canvasName);
-                if (canvasObj == null)
-                {
-                    throw new System.Exception($"Canvas '{canvasName}' not found");
-                }
-                
-                CanvasScaler scaler = canvasObj.GetComponent<CanvasScaler>();
-                if (scaler == null)
-                {
-                    scaler = canvasObj.AddComponent<CanvasScaler>();
-                }
-                
-                // Set scale mode
-                if (scaleMode == "ScaleWithScreenSize")
-                {
-                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                    
-                    if (args["referenceResolution"] != null)
-                    {
-                        var res = args["referenceResolution"] as JArray;
-                        scaler.referenceResolution = new Vector2(
-                            res[0].ToObject<float>(),
-                            res[1].ToObject<float>()
-                        );
-                    }
-                    
-                    if (args["matchValue"] != null)
-                    {
-                        scaler.matchWidthOrHeight = args["matchValue"].ToObject<float>();
-                    }
-                }
-                
-                EditorUtility.SetDirty(canvasObj);
-                
-                Debug.Log($"[MCP] Configured canvas scaler for: {canvasName}");
-                
-                return new JObject
-                {
-                    ["success"] = true,
-                    ["scaleMode"] = scaler.uiScaleMode.ToString(),
-                    ["referenceResolution"] = new JArray(scaler.referenceResolution.x, scaler.referenceResolution.y)
-                };
-            }
-            catch (System.Exception e)
-            {
-                return new JObject
-                {
-                    ["success"] = false,
-                    ["error"] = e.Message
-                };
             }
         }
         
@@ -2760,10 +2710,12 @@ namespace UnityMCP
         
         // ==================== UI TOOLS - LAYOUT ====================
         
-        private static JObject UI_CreateVerticalLayout(JObject args)
+        // Unified Layout Tool (consolidates vertical, horizontal, and grid layouts)
+        private static JObject UI_CreateLayout(JObject args)
         {
-            string name = args["name"]?.ToString() ?? "VerticalLayout";
+            string name = args["name"]?.ToString() ?? "LayoutGroup";
             string parent = args["parent"]?.ToString() ?? "Canvas";
+            string layoutType = args["layoutType"]?.ToString() ?? "vertical";
             
             try
             {
@@ -2777,145 +2729,110 @@ namespace UnityMCP
                 layoutObj.transform.SetParent(parentObj.transform, false);
                 
                 RectTransform rectTransform = layoutObj.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(200, 400);
                 
-                if (args["position"] != null)
+                // Set default size based on layout type
+                switch (layoutType.ToLower())
                 {
-                    rectTransform.anchoredPosition = new Vector2(
-                        args["position"][0].ToObject<float>(),
-                        args["position"][1].ToObject<float>()
-                    );
+                    case "vertical":
+                        rectTransform.sizeDelta = new Vector2(200, 400);
+                        break;
+                    case "horizontal":
+                        rectTransform.sizeDelta = new Vector2(400, 100);
+                        break;
+                    case "grid":
+                        rectTransform.sizeDelta = new Vector2(400, 400);
+                        break;
                 }
                 
-                VerticalLayoutGroup layout = layoutObj.AddComponent<VerticalLayoutGroup>();
-                layout.spacing = args["spacing"]?.ToObject<float>() ?? 10f;
-                layout.padding = new RectOffset(10, 10, 10, 10);
-                layout.childAlignment = TextAnchor.UpperCenter;
-                layout.childControlWidth = true;
-                layout.childControlHeight = false;
-                layout.childForceExpandWidth = true;
-                layout.childForceExpandHeight = false;
+                // Set position if provided
+                if (args["position"] != null)
+                {
+                    var pos = args["position"] as JArray;
+                    if (pos != null && pos.Count == 2)
+                    {
+                        rectTransform.anchoredPosition = new Vector2(
+                            pos[0].ToObject<float>(),
+                            pos[1].ToObject<float>()
+                        );
+                    }
+                }
                 
-                Undo.RegisterCreatedObjectUndo(layoutObj, "Create Vertical Layout");
+                // Create appropriate layout component
+                string componentType = "";
+                switch (layoutType.ToLower())
+                {
+                    case "vertical":
+                        {
+                            VerticalLayoutGroup layout = layoutObj.AddComponent<VerticalLayoutGroup>();
+                            float spacing = args["spacing"]?.ToObject<float>() ?? 10f;
+                            layout.spacing = spacing;
+                            layout.padding = new RectOffset(10, 10, 10, 10);
+                            layout.childAlignment = TextAnchor.UpperCenter;
+                            layout.childControlWidth = true;
+                            layout.childControlHeight = false;
+                            layout.childForceExpandWidth = true;
+                            layout.childForceExpandHeight = false;
+                            componentType = "VerticalLayoutGroup";
+                        }
+                        break;
+                        
+                    case "horizontal":
+                        {
+                            HorizontalLayoutGroup layout = layoutObj.AddComponent<HorizontalLayoutGroup>();
+                            float spacing = args["spacing"]?.ToObject<float>() ?? 10f;
+                            layout.spacing = spacing;
+                            layout.padding = new RectOffset(10, 10, 10, 10);
+                            layout.childAlignment = TextAnchor.MiddleCenter;
+                            layout.childControlWidth = false;
+                            layout.childControlHeight = true;
+                            layout.childForceExpandWidth = false;
+                            layout.childForceExpandHeight = true;
+                            componentType = "HorizontalLayoutGroup";
+                        }
+                        break;
+                        
+                    case "grid":
+                        {
+                            GridLayoutGroup layout = layoutObj.AddComponent<GridLayoutGroup>();
+                            
+                            // Get cell size if provided
+                            if (args["cellSize"] != null)
+                            {
+                                var cellSize = args["cellSize"] as JArray;
+                                if (cellSize != null && cellSize.Count == 2)
+                                {
+                                    layout.cellSize = new Vector2(
+                                        cellSize[0].ToObject<float>(),
+                                        cellSize[1].ToObject<float>()
+                                    );
+                                }
+                            }
+                            else
+                            {
+                                layout.cellSize = new Vector2(100, 100);
+                            }
+                            
+                            layout.spacing = new Vector2(10, 10);
+                            layout.padding = new RectOffset(10, 10, 10, 10);
+                            layout.childAlignment = TextAnchor.UpperLeft;
+                            componentType = "GridLayoutGroup";
+                        }
+                        break;
+                        
+                    default:
+                        throw new System.Exception($"Unknown layout type: {layoutType}");
+                }
                 
-                Debug.Log($"[MCP] Created vertical layout: {name}");
+                Undo.RegisterCreatedObjectUndo(layoutObj, $"Create {layoutType} Layout");
+                
+                Debug.Log($"[MCP] Created {layoutType} layout: {name}");
                 
                 return new JObject
                 {
                     ["success"] = true,
                     ["layoutPath"] = GetGameObjectPath(layoutObj),
-                    ["components"] = new JArray("VerticalLayoutGroup", "RectTransform")
-                };
-            }
-            catch (System.Exception e)
-            {
-                return new JObject
-                {
-                    ["success"] = false,
-                    ["error"] = e.Message
-                };
-            }
-        }
-        
-        private static JObject UI_CreateHorizontalLayout(JObject args)
-        {
-            string name = args["name"]?.ToString() ?? "HorizontalLayout";
-            string parent = args["parent"]?.ToString() ?? "Canvas";
-            
-            try
-            {
-                GameObject parentObj = GameObject.Find(parent);
-                if (parentObj == null)
-                {
-                    throw new System.Exception($"Parent '{parent}' not found");
-                }
-                
-                GameObject layoutObj = new GameObject(name);
-                layoutObj.transform.SetParent(parentObj.transform, false);
-                
-                RectTransform rectTransform = layoutObj.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(400, 100);
-                
-                if (args["position"] != null)
-                {
-                    rectTransform.anchoredPosition = new Vector2(
-                        args["position"][0].ToObject<float>(),
-                        args["position"][1].ToObject<float>()
-                    );
-                }
-                
-                HorizontalLayoutGroup layout = layoutObj.AddComponent<HorizontalLayoutGroup>();
-                layout.spacing = args["spacing"]?.ToObject<float>() ?? 10f;
-                layout.padding = new RectOffset(10, 10, 10, 10);
-                layout.childAlignment = TextAnchor.MiddleCenter;
-                layout.childControlWidth = false;
-                layout.childControlHeight = true;
-                layout.childForceExpandWidth = false;
-                layout.childForceExpandHeight = true;
-                
-                Undo.RegisterCreatedObjectUndo(layoutObj, "Create Horizontal Layout");
-                
-                Debug.Log($"[MCP] Created horizontal layout: {name}");
-                
-                return new JObject
-                {
-                    ["success"] = true,
-                    ["layoutPath"] = GetGameObjectPath(layoutObj),
-                    ["components"] = new JArray("HorizontalLayoutGroup", "RectTransform")
-                };
-            }
-            catch (System.Exception e)
-            {
-                return new JObject
-                {
-                    ["success"] = false,
-                    ["error"] = e.Message
-                };
-            }
-        }
-        
-        private static JObject UI_CreateGridLayout(JObject args)
-        {
-            string name = args["name"]?.ToString() ?? "GridLayout";
-            string parent = args["parent"]?.ToString() ?? "Canvas";
-            
-            try
-            {
-                GameObject parentObj = GameObject.Find(parent);
-                if (parentObj == null)
-                {
-                    throw new System.Exception($"Parent '{parent}' not found");
-                }
-                
-                GameObject layoutObj = new GameObject(name);
-                layoutObj.transform.SetParent(parentObj.transform, false);
-                
-                RectTransform rectTransform = layoutObj.AddComponent<RectTransform>();
-                rectTransform.sizeDelta = new Vector2(400, 400);
-                
-                if (args["position"] != null)
-                {
-                    rectTransform.anchoredPosition = new Vector2(
-                        args["position"][0].ToObject<float>(),
-                        args["position"][1].ToObject<float>()
-                    );
-                }
-                
-                GridLayoutGroup layout = layoutObj.AddComponent<GridLayoutGroup>();
-                layout.cellSize = new Vector2(100, 100);
-                layout.spacing = new Vector2(10, 10);
-                layout.padding = new RectOffset(10, 10, 10, 10);
-                layout.childAlignment = TextAnchor.UpperLeft;
-                
-                Undo.RegisterCreatedObjectUndo(layoutObj, "Create Grid Layout");
-                
-                Debug.Log($"[MCP] Created grid layout: {name}");
-                
-                return new JObject
-                {
-                    ["success"] = true,
-                    ["layoutPath"] = GetGameObjectPath(layoutObj),
-                    ["components"] = new JArray("GridLayoutGroup", "RectTransform")
+                    ["layoutType"] = layoutType,
+                    ["components"] = new JArray(componentType, "RectTransform")
                 };
             }
             catch (System.Exception e)
