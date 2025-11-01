@@ -15,11 +15,23 @@ namespace ArenaGame.Client
         [SerializeField] private float maxZoom = 30f;
         
         private Vector3 targetPosition;
+        private bool isInitialized = false;
+        
+        private Vector3 initialPosition;
+        private Quaternion initialRotation;
         
         void Start()
         {
-            // Set initial camera angle
-            transform.rotation = Quaternion.Euler(angle, 0, 0);
+            // Store initial camera settings from scene
+            initialPosition = transform.position;
+            initialRotation = transform.rotation;
+            
+            // Only set default angle if rotation is at default (0,0,0)
+            if (Quaternion.Angle(transform.rotation, Quaternion.identity) < 0.01f)
+            {
+                transform.rotation = Quaternion.Euler(angle, 0, 0);
+                initialRotation = transform.rotation;
+            }
         }
         
         void LateUpdate()
@@ -70,11 +82,35 @@ namespace ArenaGame.Client
                 // Adjust height based on spread
                 float adjustedHeight = Mathf.Clamp(height + maxDist * 0.5f, minZoom, maxZoom);
                 
-                // Target position
+                // Target position - offset from center based on initial camera offset
+                Vector3 offsetFromInitial = initialPosition - Vector3.zero; // Offset from origin
                 targetPosition = center + Vector3.up * adjustedHeight - Vector3.forward * adjustedHeight * 0.5f;
                 
-                // Smooth move
-                transform.position = Vector3.Lerp(transform.position, targetPosition, smoothSpeed * Time.deltaTime);
+                // Only start following if camera was already following (not at initial scene position)
+                // This prevents animating from scene-set camera to calculated position
+                if (isInitialized)
+                {
+                    // Smooth move to follow heroes
+                    transform.position = Vector3.Lerp(transform.position, targetPosition, smoothSpeed * Time.deltaTime);
+                }
+                else
+                {
+                    // Check if camera is at its initial scene position
+                    // If so, maintain it; otherwise start following
+                    float distFromInitial = Vector3.Distance(transform.position, initialPosition);
+                    if (distFromInitial < 0.1f)
+                    {
+                        // Camera is still at initial position - maintain scene settings
+                        // Don't animate yet
+                        return;
+                    }
+                    else
+                    {
+                        // Camera has moved (maybe by other system) - start following
+                        isInitialized = true;
+                        transform.position = Vector3.Lerp(transform.position, targetPosition, smoothSpeed * Time.deltaTime);
+                    }
+                }
             }
         }
     }

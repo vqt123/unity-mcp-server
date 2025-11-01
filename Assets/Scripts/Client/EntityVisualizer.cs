@@ -17,7 +17,12 @@ namespace ArenaGame.Client
         [SerializeField] private GameObject enemyPrefab;
         [SerializeField] private GameObject projectilePrefab;
         
+        [Header("Particle Settings")]
+        [Tooltip("Configure projectile particle trail effects. Edit in Inspector to tune appearance.")]
+        [SerializeField] private ProjectileParticleSettings particleSettings = new ProjectileParticleSettings();
+        
         private Dictionary<EntityId, GameObject> entityViews = new Dictionary<EntityId, GameObject>();
+        private Dictionary<EntityId, ParticleSystem> projectileParticleSystems = new Dictionary<EntityId, ParticleSystem>();
         
         // Public setters for GameBootstrapper
         public void SetPrefabs(GameObject hero, GameObject enemy, GameObject projectile)
@@ -139,16 +144,74 @@ namespace ArenaGame.Client
             view.EntityId = evt.ProjectileId;
             view.IsHero = false;
             
+            // Add particle system for projectile effects
+            AddProjectileParticles(obj, evt);
+            
             entityViews[evt.ProjectileId] = obj;
+        }
+        
+        private void AddProjectileParticles(GameObject projectile, ProjectileSpawnedEvent evt)
+        {
+            // Create separate GameObject for particle system (can persist after projectile is destroyed)
+            GameObject particleObj = new GameObject($"ParticleTrail_{evt.ProjectileId.Value}");
+            particleObj.transform.SetParent(projectile.transform);
+            particleObj.transform.localPosition = Vector3.zero;
+            particleObj.transform.localRotation = Quaternion.identity;
+            
+            // Add ParticleSystem component to separate object
+            ParticleSystem particles = particleObj.AddComponent<ParticleSystem>();
+            
+            // Apply configurable settings
+            Vector3 direction = ToVector3(evt.Velocity).normalized;
+            if (direction != Vector3.zero)
+            {
+                particleObj.transform.rotation = Quaternion.LookRotation(direction);
+            }
+            
+            particleSettings.ApplyToParticleSystem(particles, direction);
+            
+            // Store particle system reference so we can detach it when projectile is destroyed
+            projectileParticleSystems[evt.ProjectileId] = particles;
         }
         
         private void DestroyEntityView(EntityId id)
         {
-            if (entityViews.TryGetValue(id, out GameObject obj))
+            GameObject obj = null;
+            if (entityViews.TryGetValue(id, out obj))
             {
+                // If this is a projectile, detach particle system BEFORE destroying projectile
+                if (projectileParticleSystems.TryGetValue(id, out ParticleSystem particles))
+                {
+                    DetachParticleSystem(particles, id);
+                    projectileParticleSystems.Remove(id);
+                }
+                
+                // Now safe to destroy projectile
                 Destroy(obj);
                 entityViews.Remove(id);
             }
+        }
+        
+        private void DetachParticleSystem(ParticleSystem particles, EntityId projectileId)
+        {
+            if (particles == null || particles.gameObject == null) return;
+            
+            GameObject particleObj = particles.gameObject;
+            
+            // CRITICAL: Unparent FIRST (before projectile is destroyed)
+            particleObj.transform.SetParent(null);
+            
+            // Stop emitting new particles
+            var emission = particles.emission;
+            emission.enabled = false;
+            
+            // Rename
+            particleObj.name = $"ParticleTrail_{projectileId.Value}_Fading";
+            
+            // Destroy after particles have completely faded
+            ParticleSystem.MainModule main = particles.main;
+            float maxLifetime = Mathf.Max(particleSettings.lifetimeMin, particleSettings.lifetimeMax);
+            Destroy(particleObj, maxLifetime + 1f);
         }
         
         private void SyncPositions(SimulationWorld world)
