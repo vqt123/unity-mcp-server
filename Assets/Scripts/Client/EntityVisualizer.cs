@@ -18,6 +18,12 @@ namespace ArenaGame.Client
         [SerializeField] private GameObject enemyPrefab;
         [SerializeField] private GameObject projectilePrefab;
         
+        [Header("Projectile FX Prefabs")]
+        [Tooltip("Default projectile FX - used for Bow, Sword, and other default weapons")]
+        [SerializeField] private GameObject projectileFXDefault;
+        [Tooltip("Fireball FX - used for Firewand weapon")]
+        [SerializeField] private GameObject projectileFXFireball;
+        
         private Dictionary<EntityId, GameObject> entityViews = new Dictionary<EntityId, GameObject>();
         private Dictionary<EntityId, GameObject> projectileParticleEmitters = new Dictionary<EntityId, GameObject>(); // Track particle emitters for projectiles
         
@@ -42,6 +48,16 @@ namespace ArenaGame.Client
             enemyPrefab = enemy;
             projectilePrefab = projectile;
             Debug.Log($"[EntityVisualizer] Prefabs set - Hero:{hero!=null}, Enemy:{enemy!=null}, Proj:{projectile!=null}");
+        }
+        
+        /// <summary>
+        /// Sets the ProjectileFX prefab references
+        /// </summary>
+        public void SetProjectileFXPrefabs(GameObject defaultFX, GameObject fireballFX)
+        {
+            projectileFXDefault = defaultFX;
+            projectileFXFireball = fireballFX;
+            Debug.Log($"[EntityVisualizer] ProjectileFX prefabs set - Default:{defaultFX!=null}, Fireball:{fireballFX!=null}");
         }
         
         void OnEnable()
@@ -196,8 +212,11 @@ namespace ArenaGame.Client
             
             obj.transform.position = initialPos;
             
+            // Get weapon type from owner to select appropriate FX
+            string weaponType = GetWeaponTypeFromOwner(evt.OwnerId);
+            GameObject projectileFXTemplate = GetProjectileFXForWeapon(weaponType);
+            
             // Clone ProjectileFX from scene and attach it to the projectile for particles
-            GameObject projectileFXTemplate = GameObject.Find("ProjectileFX");
             if (projectileFXTemplate != null)
             {
                 GameObject projectileFXObj = Instantiate(projectileFXTemplate, obj.transform.position, obj.transform.rotation);
@@ -217,7 +236,7 @@ namespace ArenaGame.Client
             }
             else
             {
-                Debug.LogWarning($"[EntityVisualizer] ProjectileFX not found in scene for projectile {evt.ProjectileId.Value}!");
+                Debug.LogWarning($"[EntityVisualizer] ProjectileFX not found for weapon type '{weaponType}' (projectile {evt.ProjectileId.Value})!");
             }
             
             entityViews[evt.ProjectileId] = obj;
@@ -251,6 +270,60 @@ namespace ArenaGame.Client
             }
             
             return "DefaultHero"; // Default fallback
+        }
+        
+        private string GetWeaponTypeFromOwner(EntityId ownerId)
+        {
+            // Look up weapon type from simulation world
+            if (GameSimulation.Instance != null)
+            {
+                var world = GameSimulation.Instance.Simulation.World;
+                if (world.TryGetHero(ownerId, out var hero))
+                {
+                    return hero.WeaponType;
+                }
+            }
+            
+            return "Bow"; // Default fallback
+        }
+        
+        private GameObject GetProjectileFXForWeapon(string weaponType)
+        {
+            // Map weapon types to ProjectileFX prefabs
+            switch (weaponType)
+            {
+                case "Firewand":
+                    if (projectileFXFireball != null)
+                    {
+                        return projectileFXFireball;
+                    }
+                    Debug.LogWarning($"[EntityVisualizer] ProjectileFXFireball prefab not assigned, falling back to default for weapon '{weaponType}'");
+                    break;
+                case "Bow":
+                case "Sword":
+                default:
+                    // Use default FX
+                    break;
+            }
+            
+            // Fallback to default ProjectileFX
+            if (projectileFXDefault != null)
+            {
+                return projectileFXDefault;
+            }
+            
+            // Last resort: try to find in scene (backward compatibility)
+            GameObject fx = GameObject.Find("ProjectileFX");
+            if (fx != null)
+            {
+                Debug.LogWarning($"[EntityVisualizer] ProjectileFX prefabs not assigned and found '{fx.name}' in scene (consider assigning prefabs in GameBootstrapper)");
+            }
+            else
+            {
+                Debug.LogError($"[EntityVisualizer] No ProjectileFX prefab assigned and none found in scene for weapon '{weaponType}'!");
+            }
+            
+            return fx;
         }
         
         private void DestroyEntityView(EntityId id)

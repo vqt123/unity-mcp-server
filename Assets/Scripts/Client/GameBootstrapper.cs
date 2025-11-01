@@ -18,6 +18,12 @@ namespace ArenaGame.Client
         [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private GameObject damageNumberPrefab;
         
+        [Header("Projectile FX Prefabs")]
+        [Tooltip("Default projectile FX - used for Bow, Sword, and other default weapons")]
+        [SerializeField] private GameObject projectileFXDefault;
+        [Tooltip("Fireball FX - used for Firewand weapon")]
+        [SerializeField] private GameObject projectileFXFireball;
+        
         void Awake()
         {
             if (autoSetup)
@@ -47,7 +53,8 @@ namespace ArenaGame.Client
             
             // Assign prefabs using public method
             visualizer.SetPrefabs(heroPrefab, enemyPrefab, projectilePrefab);
-            GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}");
+            visualizer.SetProjectileFXPrefabs(projectileFXDefault, projectileFXFireball);
+            GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}, FXDefault={projectileFXDefault!=null}, FXFireball={projectileFXFireball!=null}");
             
             // 3. Create PlayerDataManager if not already present (persistent)
             if (PlayerDataManager.Instance == null)
