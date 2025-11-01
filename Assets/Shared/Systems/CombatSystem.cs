@@ -10,7 +10,7 @@ namespace ArenaGame.Shared.Systems
     /// </summary>
     public static class CombatSystem
     {
-        private const int PROJECTILE_LIFETIME_TICKS = 90; // 3 seconds at 30 tps
+        private const int PROJECTILE_LIFETIME_TICKS = 150; // 5 seconds at 30 tps
         
         /// <summary>
         /// Process all heroes - they auto-shoot at nearest enemy
@@ -55,7 +55,7 @@ namespace ArenaGame.Shared.Systems
                 IsActive = true,
                 SpawnTick = world.CurrentTick,
                 MaxLifetimeTicks = PROJECTILE_LIFETIME_TICKS,
-                Piercing = IsPiercing(hero.WeaponType),
+                Piercing = true, // All projectiles pierce through enemies
                 AoeRadius = GetAoeRadius(hero.WeaponType)
             };
             

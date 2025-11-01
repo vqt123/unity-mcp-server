@@ -308,6 +308,45 @@ For projectile trails (current working implementation):
 
 ---
 
+## Hero-Specific Particle Effects ✅
+
+Different hero types now have unique particle effects for their projectiles:
+
+- **Mage**: Fire trail (yellow → orange → red)
+- **DefaultHero**: Ice arrows (cyan → blue)
+- **Warrior**: Rock wall (brown → gray, denser, larger particles)
+
+### Implementation
+
+The system automatically selects particle effects based on hero type:
+```csharp
+// In EntityVisualizer.cs
+string heroType = GetHeroTypeFromOwner(evt.OwnerId);
+ParticleEffectType effectType = ProjectileParticleSettings.GetEffectTypeForHero(heroType);
+ProjectileParticleSettings.ApplyPreset(particles, effectType, direction);
+```
+
+### Effect Types
+
+#### Fire Effect (Mage)
+- Colors: Bright yellow-white → Orange → Deep red
+- Style: Fire trail
+- Same settings as base config
+
+#### Ice Effect (DefaultHero)
+- Colors: Cyan-white → Light blue → Blue → Dark blue
+- Style: Ice arrow trail
+- Same settings as base config
+
+#### Rock Effect (Warrior)
+- Colors: Light brown → Brown → Gray → Dark gray
+- Style: Wall of rocks (denser, larger particles)
+- Larger size: 0.4-0.8 units
+- Higher emission: 1000/sec, 600/unit
+- Wider spread: 0.2 radius
+
+---
+
 ## Current Working Configuration ✅
 
 ### Projectile Trail Settings (Verified Working)

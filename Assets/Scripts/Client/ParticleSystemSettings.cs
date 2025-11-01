@@ -3,6 +3,16 @@ using UnityEngine;
 namespace ArenaGame.Client
 {
     /// <summary>
+    /// Particle effect preset type
+    /// </summary>
+    public enum ParticleEffectType
+    {
+        Fire,   // Mage - fire trail
+        Ice,    // DefaultHero - ice arrows
+        Rock    // Warrior - wall of rocks
+    }
+    
+    /// <summary>
     /// Configurable settings for projectile particle effects.
     /// Adjust these in the Unity Inspector to tune particle appearance.
     /// </summary>
@@ -59,6 +69,267 @@ namespace ArenaGame.Client
         
         [Tooltip("Color at end of particle life")]
         public Color endColorLifetime = new Color(0.8f, 0.1f, 0f, 1f);
+        
+        /// <summary>
+        /// Get particle effect preset for hero type
+        /// </summary>
+        public static ParticleEffectType GetEffectTypeForHero(string heroType)
+        {
+            switch (heroType)
+            {
+                case "Mage":
+                    return ParticleEffectType.Fire;
+                case "DefaultHero":
+                    return ParticleEffectType.Ice;
+                case "Warrior":
+                    return ParticleEffectType.Rock;
+                default:
+                    return ParticleEffectType.Ice; // Default to ice
+            }
+        }
+        
+        /// <summary>
+        /// Apply particle effect preset based on hero type
+        /// </summary>
+        public static void ApplyPreset(ParticleSystem particles, ParticleEffectType effectType, Vector3 direction)
+        {
+            switch (effectType)
+            {
+                case ParticleEffectType.Fire:
+                    ApplyFireEffect(particles, direction);
+                    break;
+                case ParticleEffectType.Ice:
+                    ApplyIceEffect(particles, direction);
+                    break;
+                case ParticleEffectType.Rock:
+                    ApplyRockEffect(particles, direction);
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// Apply fire trail effect (Mage)
+        /// </summary>
+        private static void ApplyFireEffect(ParticleSystem particles, Vector3 direction)
+        {
+            var settings = new ProjectileParticleSettings(); // Use current settings as base
+            
+            // Fire colors
+            settings.startColorLifetime = new Color(1f, 1f, 0.5f, 1f); // Bright yellow-white
+            settings.middleColorLifetime = new Color(1f, 0.4f, 0f, 1f); // Orange
+            settings.endColorLifetime = new Color(0.8f, 0.1f, 0f, 1f); // Deep red
+            
+            settings.ApplyToParticleSystem(particles, direction);
+        }
+        
+        /// <summary>
+        /// Apply ice arrow effect (DefaultHero) - twirly effervescent effect
+        /// </summary>
+        private static void ApplyIceEffect(ParticleSystem particles, Vector3 direction)
+        {
+            var main = particles.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(8f, 12f);
+            // No initial speed - particles trail from emission point
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.15f, 0.35f); // Smaller particles (was 0.3f-0.7f)
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f);
+            main.maxParticles = 5000;
+            main.simulationSpace = ParticleSystemSimulationSpace.World; // World space - particles stay where emitted
+            main.loop = true; // Loop continuously - emit for entire projectile lifetime
+            main.playOnAwake = false; // Don't auto-play - we'll play manually after configuring
+            main.duration = 1f; // Duration doesn't matter when looping - we'll stop manually
+            main.stopAction = ParticleSystemStopAction.None; // Keep particles after emission stops
+            
+            // Ice colors (cyan/blue/white) - brighter for effervescent
+            var iceGradient = new Gradient();
+            iceGradient.SetKeys(
+                new GradientColorKey[] { 
+                    new GradientColorKey(new Color(0.9f, 1f, 1f, 1f), 0.0f),  // Bright cyan-white
+                    new GradientColorKey(new Color(0.6f, 0.9f, 1f, 1f), 0.03f), // Light blue
+                    new GradientColorKey(new Color(0.3f, 0.7f, 1f, 1f), 0.05f), // Blue
+                    new GradientColorKey(new Color(0.1f, 0.4f, 0.8f, 1f), 1.0f)  // Dark blue
+                },
+                new GradientAlphaKey[] { 
+                    new GradientAlphaKey(1.0f, 0.0f),
+                    new GradientAlphaKey(0.4f, 0.015f),
+                    new GradientAlphaKey(0.15f, 0.03f),
+                    new GradientAlphaKey(0.03f, 0.05f),
+                    new GradientAlphaKey(0.0f, 0.07f)
+                }
+            );
+            main.startColor = new ParticleSystem.MinMaxGradient(iceGradient);
+            
+            // Emission - CONSTANT steady stream for full projectile lifetime
+            var emission = particles.emission;
+            emission.enabled = true;
+            // CRITICAL: Use constant value (single value, not range) for truly steady emission
+            // Create MinMaxCurve with same min/max value for constant rate
+            emission.rateOverTime = new ParticleSystem.MinMaxCurve(100f, 100f); // Constant 100 particles/sec - no variation (same min/max)
+            emission.rateOverDistance = 0f; // Disable rate over distance - emitter moves so this causes uneven emission
+            
+            // CRITICAL: No bursts - only continuous emission for steady stream
+            emission.SetBursts(new ParticleSystem.Burst[0]); // Clear any bursts - must be continuous emission only
+            
+            // Shape - tighter for less volume
+            var shape = particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.1f; // Tighter spread
+            shape.radiusThickness = 0f;
+            
+            // Candy cane swirl - emitter spins, particles stay still
+            // All velocity disabled - particles just emit and stay where they are
+            // The emitter GameObject will rotate to create the spiral pattern
+            var velocityOverLifetime = particles.velocityOverLifetime;
+            velocityOverLifetime.enabled = false; // No velocity - particles stay still
+            
+            var inheritVelocity = particles.inheritVelocity;
+            inheritVelocity.enabled = false; // No velocity inheritance
+            
+            // No rotation over lifetime - particles stay still, emitter rotates
+            var rotationOverLifetime = particles.rotationOverLifetime;
+            rotationOverLifetime.enabled = false; // Particles don't rotate, emitter does
+            
+            // No noise - want clean, visible spiral (no interference)
+            var noise = particles.noise;
+            noise.enabled = false;
+            
+            // Color over lifetime
+            var colorOverLifetime = particles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            colorOverLifetime.color = iceGradient;
+            
+            // Size over lifetime - shrink as they fade
+            var sizeOverLifetime = particles.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            var sizeCurve = new AnimationCurve(
+                new Keyframe(0f, 1f, 0f, 0f),
+                new Keyframe(0.015f, 0.5f, -2f, -2f),
+                new Keyframe(0.03f, 0.2f, -0.8f, -0.8f),
+                new Keyframe(0.05f, 0.05f, -0.4f, -0.4f),
+                new Keyframe(0.07f, 0f, -0.1f, -0.1f)
+            );
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+            
+            // Limit velocity
+            var limitVelocityOverLifetime = particles.limitVelocityOverLifetime;
+            limitVelocityOverLifetime.enabled = false;
+            
+            // Renderer
+            SetupRenderer(particles);
+        }
+        
+        /// <summary>
+        /// Apply rock wall effect (Warrior)
+        /// </summary>
+        private static void ApplyRockEffect(ParticleSystem particles, Vector3 direction)
+        {
+            var main = particles.main;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(8f, 12f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0f, 0f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.4f, 0.8f); // Larger rocks
+            main.maxParticles = 5000;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.loop = true;
+            main.playOnAwake = true;
+            
+            // Rock colors (brown/gray)
+            var rockGradient = new Gradient();
+            rockGradient.SetKeys(
+                new GradientColorKey[] { 
+                    new GradientColorKey(new Color(0.8f, 0.7f, 0.6f, 1f), 0.0f),  // Light brown
+                    new GradientColorKey(new Color(0.6f, 0.5f, 0.4f, 1f), 0.03f),  // Brown
+                    new GradientColorKey(new Color(0.4f, 0.4f, 0.4f, 1f), 0.05f),  // Gray
+                    new GradientColorKey(new Color(0.3f, 0.3f, 0.3f, 1f), 1.0f)   // Dark gray
+                },
+                new GradientAlphaKey[] { 
+                    new GradientAlphaKey(1.0f, 0.0f),
+                    new GradientAlphaKey(0.3f, 0.015f),
+                    new GradientAlphaKey(0.1f, 0.03f),
+                    new GradientAlphaKey(0.02f, 0.05f),
+                    new GradientAlphaKey(0.0f, 0.07f)
+                }
+            );
+            main.startColor = new ParticleSystem.MinMaxGradient(rockGradient);
+            
+            // Emission - denser for "wall" effect
+            var emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 1000f; // More particles for wall
+            emission.rateOverDistance = 600f;
+            
+            // Shape - wider spread for wall effect
+            var shape = particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.2f; // Wider spread
+            shape.radiusThickness = 0f;
+            
+            // No velocity - particles stay where emitted
+            var velocityOverLifetime = particles.velocityOverLifetime;
+            velocityOverLifetime.enabled = false;
+            
+            var inheritVelocity = particles.inheritVelocity;
+            inheritVelocity.enabled = false;
+            
+            // Color over lifetime
+            var colorOverLifetime = particles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            colorOverLifetime.color = rockGradient;
+            
+            // Size over lifetime
+            var sizeOverLifetime = particles.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            var sizeCurve = new AnimationCurve(
+                new Keyframe(0f, 1f, 0f, 0f),
+                new Keyframe(0.015f, 0.4f, -2f, -2f),
+                new Keyframe(0.03f, 0.15f, -0.8f, -0.8f),
+                new Keyframe(0.05f, 0.03f, -0.4f, -0.4f),
+                new Keyframe(0.07f, 0f, -0.1f, -0.1f)
+            );
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+            
+            // Limit velocity
+            var limitVelocityOverLifetime = particles.limitVelocityOverLifetime;
+            limitVelocityOverLifetime.enabled = false;
+            
+            // Renderer
+            SetupRenderer(particles);
+        }
+        
+        /// <summary>
+        /// Setup renderer with proper shader for particle colors
+        /// </summary>
+        private static void SetupRenderer(ParticleSystem particles)
+        {
+            var renderer = particles.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.renderMode = ParticleSystemRenderMode.Billboard;
+                renderer.alignment = ParticleSystemRenderSpace.View;
+                
+                // Create material with particle shader
+                Shader particleShader = Shader.Find("Particles/Standard Unlit") ??
+                                       Shader.Find("Particles/Unlit") ??
+                                       Shader.Find("Particles/Alpha Blended") ??
+                                       Shader.Find("Sprites/Default");
+                
+                if (particleShader != null)
+                {
+                    Material particleMaterial = new Material(particleShader);
+                    if (particleShader.name.Contains("Particles"))
+                    {
+                        particleMaterial.SetColor("_BaseColor", Color.white);
+                        particleMaterial.SetColor("_TintColor", Color.white);
+                    }
+                    else
+                    {
+                        particleMaterial.SetColor("_Color", Color.white);
+                    }
+                    renderer.material = particleMaterial;
+                }
+            }
+        }
         
         /// <summary>
         /// Apply these settings to a ParticleSystem component
