@@ -566,7 +566,7 @@ Transform:
   m_GameObject: {fileID: 562279424}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5926,12 +5926,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1064267507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a06363e553464a14826ac563fbc1ae3, type: 3}
+  m_Script: {fileID: 11500000, guid: e07f08ec46c984b72b43cf70641d9981, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.ProjectileArmsRotator
-  arms: []
-  joint2: {fileID: 0}
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.ProjectileFXController
+  mode: 1
   rotationSpeed: 2000
+  particleJoint2: {fileID: 1560315909}
 --- !u!1 &1230346032
 GameObject:
   m_ObjectHideFlags: 0
@@ -6678,7 +6678,6 @@ GameObject:
   - component: {fileID: 1917811862}
   - component: {fileID: 1917811865}
   - component: {fileID: 1917811864}
-  - component: {fileID: 1917811863}
   m_Layer: 0
   m_Name: ParticleJoint1
   m_TagString: Untagged
@@ -6695,34 +6694,13 @@ Transform:
   m_GameObject: {fileID: 1917811861}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 562279428}
   m_Father: {fileID: 1560315909}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &1917811863
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1917811861}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1917811864
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6730,7 +6708,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1917811861}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1

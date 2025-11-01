@@ -6,7 +6,9 @@ namespace ArenaGame.Client
     /// <summary>
     /// Rotates joint2 about the z axis at a specified rate
     /// References children arms for future use
+    /// DEPRECATED: Use ProjectileFXController instead
     /// </summary>
+    [System.Obsolete("Use ProjectileFXController instead")]
     public class ProjectileArmsRotator : MonoBehaviour
     {
         [Header("References")]
