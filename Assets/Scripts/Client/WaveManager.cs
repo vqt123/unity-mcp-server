@@ -90,22 +90,23 @@ namespace ArenaGame.Client
         
         private void SpawnEnemiesForWave()
         {
-            for (int i = 0; i < enemiesPerWave; i++)
-            {
-                // Get deterministic spawn position
-                FixV2 spawnPos = SpawnSystem.GetSpawnPositionOnCircle(
-                    i,
-                    enemiesPerWave,
-                    Fix64.FromInt(10)
-                );
-                
-                // Determine enemy type based on wave
-                string enemyType = GetEnemyTypeForWave(i);
-                
-                // Spawn via simulation
-                SpawnEnemy(enemyType, spawnPos);
-                enemiesSpawnedThisWave++;
-            }
+            // DISABLED: No enemies for interpolation debugging
+            // for (int i = 0; i < enemiesPerWave; i++)
+            // {
+            //     // Get deterministic spawn position
+            //     FixV2 spawnPos = SpawnSystem.GetSpawnPositionOnCircle(
+            //         i,
+            //         enemiesPerWave,
+            //         Fix64.FromInt(10)
+            //     );
+            //     
+            //     // Determine enemy type based on wave
+            //     string enemyType = GetEnemyTypeForWave(i);
+            //     
+            //     // Spawn via simulation
+            //     SpawnEnemy(enemyType, spawnPos);
+            //     enemiesSpawnedThisWave++;
+            // }
         }
         
         private void SpawnEnemy(string enemyType, FixV2 position)

@@ -103,6 +103,9 @@ namespace UnityMCP
                     case "unity_set_position":
                         return SetPosition(args);
                     
+                    case "unity_set_parent":
+                        return SetParent(args);
+                    
                     case "unity_set_rotation":
                         return SetRotation(args);
                     
@@ -946,6 +949,72 @@ namespace UnityMCP
                     ["success"] = true,
                     ["name"] = name,
                     ["newPosition"] = new JArray { newPos.x, newPos.y, newPos.z }
+                };
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject SetParent(JObject args)
+        {
+            string name = args["name"]?.ToString();
+            string parentName = args["parent"]?.ToString();
+            bool worldPositionStays = args["worldPositionStays"]?.ToObject<bool>() ?? true;
+            
+            if (string.IsNullOrEmpty(name))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "GameObject name is required"
+                };
+            }
+            
+            try
+            {
+                GameObject obj = GameObject.Find(name);
+                if (obj == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"GameObject '{name}' not found"
+                    };
+                }
+                
+                Transform newParent = null;
+                if (!string.IsNullOrEmpty(parentName))
+                {
+                    GameObject parentObj = GameObject.Find(parentName);
+                    if (parentObj == null)
+                    {
+                        return new JObject
+                        {
+                            ["success"] = false,
+                            ["error"] = $"Parent GameObject '{parentName}' not found"
+                        };
+                    }
+                    newParent = parentObj.transform;
+                }
+                // If parentName is null/empty, unparent (set to null)
+                
+                Undo.RecordObject(obj.transform, "Set Parent");
+                obj.transform.SetParent(newParent, worldPositionStays);
+                
+                string parentInfo = newParent != null ? newParent.name : "none";
+                Debug.Log($"[MCP] Set parent of '{name}' to '{parentInfo}' (worldPositionStays: {worldPositionStays})");
+                
+                return new JObject
+                {
+                    ["success"] = true,
+                    ["name"] = name,
+                    ["parent"] = parentInfo
                 };
             }
             catch (System.Exception e)

@@ -13,7 +13,7 @@ namespace ArenaGame.Client
         public static GameSimulation Instance { get; private set; }
         
         [Header("Simulation")]
-        [SerializeField] private int ticksPerSecond = 30;
+        [SerializeField] private int ticksPerSecond = 10;
         
         private Simulation simulation;
         private float tickInterval;
@@ -21,6 +21,8 @@ namespace ArenaGame.Client
         private List<ISimulationCommand> pendingCommands = new List<ISimulationCommand>();
         
         public Simulation Simulation => simulation;
+        public float TickAccumulator => tickAccumulator;
+        public float TickInterval => tickInterval;
         
         void Awake()
         {

@@ -250,7 +250,7 @@ namespace ArenaGame.Shared.Systems
         // Weapon configurations
         private static Fix64 GetProjectileSpeed(string weaponType)
         {
-            return Fix64.FromInt(15); // Default for now
+            return Fix64.FromFloat(15f); // Restored to original speed (was 1.5 for debugging, now 15)
         }
         
         private static bool IsPiercing(string weaponType)

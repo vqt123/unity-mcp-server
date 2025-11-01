@@ -109,6 +109,29 @@ GAMEOBJECT_TOOLS = [
         }
     },
     {
+        "name": "unity_set_parent",
+        "description": "Set the parent of a GameObject. If parent is null or empty, unparents the object.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the child GameObject"
+                },
+                "parent": {
+                    "type": "string",
+                    "description": "Name of the parent GameObject. Leave empty or null to unparent."
+                },
+                "worldPositionStays": {
+                    "type": "boolean",
+                    "description": "If true, the GameObject keeps its world position. If false, it keeps its local position relative to the new parent.",
+                    "default": true
+                }
+            },
+            "required": ["name"]
+        }
+    },
+    {
         "name": "unity_set_camera_background",
         "description": "Set camera clear flags and background color. Use to hide 3D scenes behind UI or set solid color backgrounds.",
         "inputSchema": {
