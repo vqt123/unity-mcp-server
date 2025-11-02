@@ -129,11 +129,14 @@ namespace ArenaGame.Client
         private Image CreateDefaultSprite(Transform parent)
         {
             // Create a simple colored sprite as fallback
+            // This GameObject is only used to hold the sprite - it's hidden
             GameObject spriteObj = new GameObject("DefaultSprite");
             spriteObj.transform.SetParent(parent, false);
             
             RectTransform rect = spriteObj.AddComponent<RectTransform>();
             rect.sizeDelta = new Vector2(100, 100);
+            // Position off-screen so it's not visible
+            rect.anchoredPosition = new Vector2(-10000, -10000);
             
             Image img = spriteObj.AddComponent<Image>();
             // Create a simple white sprite texture
@@ -143,6 +146,9 @@ namespace ArenaGame.Client
             
             Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 100);
             img.sprite = sprite;
+            
+            // Hide the GameObject so it doesn't appear on screen
+            spriteObj.SetActive(false);
             
             return img;
         }
