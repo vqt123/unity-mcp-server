@@ -78,6 +78,25 @@ namespace ArenaGame.Client
             GameObject visualizerObj = new GameObject("EntityVisualizer");
             EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();
             
+            // Auto-load prefabs from Resources if not assigned
+            if (projectilePrefab == null)
+            {
+                projectilePrefab = Resources.Load<GameObject>("Projectile");
+                if (projectilePrefab != null)
+                {
+                    GameLogger.Log("[Bootstrap] Loaded Projectile prefab from Resources");
+                }
+            }
+            
+            if (projectileFXDefault == null)
+            {
+                projectileFXDefault = Resources.Load<GameObject>("ProjectileFX");
+                if (projectileFXDefault != null)
+                {
+                    GameLogger.Log("[Bootstrap] Loaded ProjectileFX prefab from Resources");
+                }
+            }
+            
             // Assign prefabs using public method
             visualizer.SetPrefabs(heroPrefab, enemyPrefab, projectilePrefab);
             visualizer.SetProjectileFXPrefabs(projectileFXDefault, projectileFXFireball);

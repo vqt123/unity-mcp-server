@@ -210,9 +210,19 @@ namespace ArenaGame.Client
                 projectileToUse = projectilePrefab;
             }
             
+            // Fallback: try to load from Resources if still null
             if (projectileToUse == null)
             {
-                Debug.LogError("[EntityVisualizer] Projectile prefab is null!");
+                projectileToUse = Resources.Load<GameObject>("Projectile");
+                if (projectileToUse != null)
+                {
+                    Debug.Log("[EntityVisualizer] Loaded Projectile prefab from Resources");
+                }
+            }
+            
+            if (projectileToUse == null)
+            {
+                Debug.LogError("[EntityVisualizer] Projectile prefab is null! Make sure to assign it in GameBootstrapper or place 'Projectile.prefab' in Assets/Resources/");
                 return;
             }
             
@@ -365,6 +375,13 @@ namespace ArenaGame.Client
             if (projectileFXDefault != null)
             {
                 return projectileFXDefault;
+            }
+            
+            // Fallback: try to load from Resources
+            GameObject fxFromResources = Resources.Load<GameObject>("ProjectileFX");
+            if (fxFromResources != null)
+            {
+                return fxFromResources;
             }
             
             // Last resort: try to find in scene (backward compatibility)

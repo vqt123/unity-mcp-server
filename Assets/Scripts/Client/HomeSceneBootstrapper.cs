@@ -53,8 +53,16 @@ namespace ArenaGame.Client
             {
                 GameObject eventSystemObj = new GameObject("EventSystem");
                 eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                
+#if ENABLE_INPUT_SYSTEM
+                // New Input System
+                eventSystemObj.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+                Debug.Log("[HomeBootstrap] ✓ Created EventSystem with InputSystemUIInputModule");
+#else
+                // Legacy Input System
                 eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-                Debug.Log("[HomeBootstrap] ✓ Created EventSystem");
+                Debug.Log("[HomeBootstrap] ✓ Created EventSystem with StandaloneInputModule");
+#endif
             }
             
             // 5. Create HomeMenuUI

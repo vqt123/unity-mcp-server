@@ -124,7 +124,14 @@ namespace ArenaGame.Client
                 {
                     GameObject eventSystemObj = new GameObject("EventSystem");
                     eventSystemObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                    
+#if ENABLE_INPUT_SYSTEM
+                    // New Input System
+                    eventSystemObj.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+#else
+                    // Legacy Input System
                     eventSystemObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+#endif
                 }
             }
             

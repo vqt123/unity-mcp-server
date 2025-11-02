@@ -34,11 +34,15 @@ namespace ArenaGame.Client
             Image sourceImage = FindExistingUISprite();
             if (sourceImage == null || sourceImage.sprite == null)
             {
-                Debug.LogError("[WaveProgress] Could not find existing sprite to reuse!");
-                return;
+                // If no sprite found, create a simple colored sprite
+                Debug.LogWarning("[WaveProgress] No existing sprite found, creating default sprite");
+                sourceImage = CreateDefaultSprite(canvas.transform);
             }
             
-            Debug.Log($"[WaveProgress] Found existing sprite: {sourceImage.sprite.name}");
+            if (sourceImage != null && sourceImage.sprite != null)
+            {
+                Debug.Log($"[WaveProgress] Using sprite: {sourceImage.sprite.name}");
+            }
             
             // Create container in top-right
             GameObject containerObj = new GameObject("WaveProgressContainer");
@@ -120,6 +124,27 @@ namespace ArenaGame.Client
             }
             
             return null;
+        }
+        
+        private Image CreateDefaultSprite(Transform parent)
+        {
+            // Create a simple colored sprite as fallback
+            GameObject spriteObj = new GameObject("DefaultSprite");
+            spriteObj.transform.SetParent(parent, false);
+            
+            RectTransform rect = spriteObj.AddComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(100, 100);
+            
+            Image img = spriteObj.AddComponent<Image>();
+            // Create a simple white sprite texture
+            Texture2D texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, Color.white);
+            texture.Apply();
+            
+            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 100);
+            img.sprite = sprite;
+            
+            return img;
         }
         
         void Update()
