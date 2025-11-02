@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b80739a1eda174ad69c552e546fe64be, type: 3}
+  m_Name: Sword_Weapon
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.WeaponConfig
+  weaponName: Sword
+  description: Melee slash attack
+  damage: 100
+  shootCooldown: 0.5
+  projectileSpeed: 24
+  projectileCount: 1
+  aoeRadius: 2.5
+  piercing: 0
+  projectilePrefab: {fileID: 0}
+  projectileFXPrefab: {fileID: 0}
+  bulletColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  hasTiers: 0
+  tiers: []

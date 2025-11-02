@@ -20,7 +20,6 @@ namespace ArenaGame.Client
         [SerializeField] private Button[] upgradeButtons = new Button[3];
         
         private EntityId playerHeroId;
-        private bool isInitialized = false;
         private bool hasSelectedInitialHero = false;
         private List<string> spawnedHeroTypes = new List<string>();
         
@@ -41,7 +40,6 @@ namespace ArenaGame.Client
             // Subscribe to level-up events
             EventBus.Subscribe<HeroLevelUpEvent>(OnHeroLevelUp);
             
-            isInitialized = true;
             Debug.Log("[UpgradeUI] Initialized and subscribed to HeroLevelUpEvent");
             
             // Show hero selection at game start

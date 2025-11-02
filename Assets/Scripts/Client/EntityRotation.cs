@@ -24,6 +24,8 @@ namespace ArenaGame.Client
         {
             if (entityView == null) return;
             
+            if (!faceMovementDirection) return;
+            
             Vector3 currentPosition = transform.position;
             Vector3 movement = currentPosition - lastPosition;
             

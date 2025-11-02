@@ -179,8 +179,17 @@ namespace ArenaGame.Client
         
         private void CreateProjectileView(ProjectileSpawnedEvent evt)
         {
-            // Use projectilePrefab as the base projectile
-            if (projectilePrefab == null)
+            // Get weapon type from owner
+            string weaponType = GetWeaponTypeFromOwner(evt.OwnerId);
+            
+            // Try to get projectile prefab from weapon config, fallback to default
+            GameObject projectileToUse = GetProjectilePrefabForWeapon(weaponType);
+            if (projectileToUse == null)
+            {
+                projectileToUse = projectilePrefab;
+            }
+            
+            if (projectileToUse == null)
             {
                 Debug.LogError("[EntityVisualizer] Projectile prefab is null!");
                 return;
@@ -190,8 +199,8 @@ namespace ArenaGame.Client
             Vector3 direction = ToVector3(evt.Velocity).normalized;
             Quaternion rotation = direction != Vector3.zero ? Quaternion.LookRotation(direction) : Quaternion.identity;
             
-            // Clone projectilePrefab as the base projectile
-            GameObject obj = Instantiate(projectilePrefab, ToVector3(evt.Position), rotation);
+            // Clone projectile prefab
+            GameObject obj = Instantiate(projectileToUse, ToVector3(evt.Position), rotation);
             obj.name = $"Projectile_{evt.ProjectileId.Value}";
             
             // Store entity ID for reference
@@ -212,8 +221,7 @@ namespace ArenaGame.Client
             
             obj.transform.position = initialPos;
             
-            // Get weapon type from owner to select appropriate FX
-            string weaponType = GetWeaponTypeFromOwner(evt.OwnerId);
+            // Get ProjectileFX from weapon config or fallback to weapon-based lookup
             GameObject projectileFXTemplate = GetProjectileFXForWeapon(weaponType);
             
             // Clone ProjectileFX from scene and attach it to the projectile for particles
@@ -287,9 +295,35 @@ namespace ArenaGame.Client
             return "Bow"; // Default fallback
         }
         
+        private GameObject GetProjectilePrefabForWeapon(string weaponType)
+        {
+            // Try to get from weapon config first
+            if (WeaponConfigDatabase.Instance != null)
+            {
+                WeaponConfig config = WeaponConfigDatabase.Instance.GetWeaponConfig(weaponType);
+                if (config != null && config.projectilePrefab != null)
+                {
+                    return config.projectilePrefab;
+                }
+            }
+            
+            // Fallback to default
+            return null;
+        }
+        
         private GameObject GetProjectileFXForWeapon(string weaponType)
         {
-            // Map weapon types to ProjectileFX prefabs
+            // Try to get from weapon config first
+            if (WeaponConfigDatabase.Instance != null)
+            {
+                WeaponConfig config = WeaponConfigDatabase.Instance.GetWeaponConfig(weaponType);
+                if (config != null && config.projectileFXPrefab != null)
+                {
+                    return config.projectileFXPrefab;
+                }
+            }
+            
+            // Fallback to old system: Map weapon types to ProjectileFX prefabs
             switch (weaponType)
             {
                 case "Firewand":
@@ -316,7 +350,7 @@ namespace ArenaGame.Client
             GameObject fx = GameObject.Find("ProjectileFX");
             if (fx != null)
             {
-                Debug.LogWarning($"[EntityVisualizer] ProjectileFX prefabs not assigned and found '{fx.name}' in scene (consider assigning prefabs in GameBootstrapper)");
+                Debug.LogWarning($"[EntityVisualizer] ProjectileFX prefabs not assigned and found '{fx.name}' in scene (consider assigning prefabs in weapon config or GameBootstrapper)");
             }
             else
             {
@@ -337,32 +371,38 @@ namespace ArenaGame.Client
                 // If this is a projectile, detach particle emitter before destroying projectile
                 if (projectileParticleEmitters.TryGetValue(id, out GameObject emitter))
                 {
-                    // Unparent emitter FIRST so it stays in world space and won't be destroyed with projectile
+                    // CRITICAL: Unparent emitter FIRST so it stays in world space and won't be destroyed with projectile
                     emitter.transform.SetParent(null);
                     
-                    // Get particle system
-                    ParticleSystem particles = emitter.GetComponent<ParticleSystem>();
-                    if (particles != null)
+                    // Find ALL particle systems within ProjectileFX (they're in children like ParticleEmitter)
+                    ParticleSystem[] particleSystems = emitter.GetComponentsInChildren<ParticleSystem>();
+                    
+                    if (particleSystems != null && particleSystems.Length > 0)
                     {
-                        // Stop emitting new particles, but keep existing particles alive
-                        particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+                        float maxLifetime = 5f; // Default fallback
                         
-                        // Ensure particles stay in world space and don't get cleared
-                        var main = particles.main;
-                        main.simulationSpace = ParticleSystemSimulationSpace.World;
-                        
-                        // Get particle lifetime to destroy emitter after all particles fade
-                        float maxLifetime = 5f; // Default
-                        maxLifetime = main.startLifetime.constantMax;
-                        if (maxLifetime <= 0f) maxLifetime = main.startLifetime.constant;
-                        if (maxLifetime <= 0f) maxLifetime = 5f; // Final fallback
+                        // Stop all particle systems and ensure they're in world space
+                        foreach (ParticleSystem particles in particleSystems)
+                        {
+                            // Stop emitting new particles, but keep existing particles alive
+                            particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+                            
+                            // Ensure particles stay in world space
+                            var main = particles.main;
+                            main.simulationSpace = ParticleSystemSimulationSpace.World;
+                            
+                            // Track maximum lifetime across all systems
+                            float lifetime = main.startLifetime.constantMax;
+                            if (lifetime <= 0f) lifetime = main.startLifetime.constant;
+                            if (lifetime > maxLifetime) maxLifetime = lifetime;
+                        }
                         
                         // Destroy emitter GameObject after all particles have faded
                         Destroy(emitter, maxLifetime + 1f);
                     }
                     else
                     {
-                        // No particle system found, destroy immediately
+                        // No particle systems found, destroy immediately
                         Destroy(emitter);
                     }
                     
