@@ -80,6 +80,7 @@ namespace ArenaGame.Shared.Events
         public EntityId AttackerId;
         public Fix64 Damage;
         public Fix64 RemainingHealth;
+        public FixV2 EnemyPosition; // Store position so we can display damage even if enemy is removed
     }
     
     public class HeroKilledEvent : SimulationEvent

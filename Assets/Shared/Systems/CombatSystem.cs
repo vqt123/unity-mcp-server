@@ -113,19 +113,23 @@ namespace ArenaGame.Shared.Systems
                     
                     if (dist <= enemyRadius)
                     {
+                        // Store enemy position BEFORE applying damage (in case enemy dies and gets removed)
+                        FixV2 enemyPosAtHit = enemy.Position;
+                        
                         // Apply damage
                         Fix64 healthBefore = enemy.Health;
                         enemy.TakeDamage(proj.Damage);
                         world.UpdateEnemy(enemyId, enemy);
                         
-                        // Generate damage event
+                        // Generate damage event (store position BEFORE damage was applied)
                         world.AddEvent(new Events.EnemyDamagedEvent
                         {
                             Tick = world.CurrentTick,
                             EnemyId = enemyId,
                             AttackerId = proj.OwnerId,
                             Damage = proj.Damage,
-                            RemainingHealth = enemy.Health
+                            RemainingHealth = enemy.Health,
+                            EnemyPosition = enemyPosAtHit // Use position BEFORE damage (when hit occurred)
                         });
                         
                         if (!enemy.IsAlive)
@@ -172,11 +176,13 @@ namespace ArenaGame.Shared.Systems
                         
                         hitSomething = true;
                         
-                        if (!proj.Piercing)
-                            break;
+                        // ALWAYS destroy projectile on hit (unless piercing - only ice arrow)
+                        // Break immediately so projectile doesn't hit multiple enemies
+                        break;
                     }
                 }
                 
+                // Destroy projectile if it hit something (unless it's piercing)
                 if (hitSomething && !proj.Piercing)
                 {
                     projectilesToRemove.Add(projId);

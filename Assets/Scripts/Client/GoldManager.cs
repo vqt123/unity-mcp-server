@@ -33,11 +33,26 @@ namespace ArenaGame.Client
             
             _instance = this;
             DontDestroyOnLoad(gameObject);
+            Debug.Log("[GoldManager] Awake - Instance created");
+        }
+        
+        void Start()
+        {
+            // Ensure we subscribe - unsubscribe first to avoid duplicates
+            EventBus.Unsubscribe<EnemyKilledEvent>(OnEnemyKilled);
+            EventBus.Subscribe<EnemyKilledEvent>(OnEnemyKilled);
+            Debug.Log($"[GoldManager] Subscribed to EnemyKilledEvent in Start. Current gold: {currentGold}");
         }
         
         void OnEnable()
         {
-            EventBus.Subscribe<EnemyKilledEvent>(OnEnemyKilled);
+            // Subscribe when enabled
+            if (_instance == this)
+            {
+                EventBus.Unsubscribe<EnemyKilledEvent>(OnEnemyKilled);
+                EventBus.Subscribe<EnemyKilledEvent>(OnEnemyKilled);
+                Debug.Log("[GoldManager] Subscribed to EnemyKilledEvent in OnEnable");
+            }
         }
         
         void OnDisable()
@@ -47,6 +62,7 @@ namespace ArenaGame.Client
         
         private void OnEnemyKilled(ISimulationEvent evt)
         {
+            Debug.Log($"[GoldManager] OnEnemyKilled called with event type: {evt.GetType().Name}");
             if (evt is EnemyKilledEvent killEvent)
             {
                 // Use enemy data from event (enemy might be removed from world already)
@@ -66,6 +82,10 @@ namespace ArenaGame.Client
                 
                 AddGold(goldReward);
                 Debug.Log($"[GoldManager] Awarded {goldReward} gold for killing enemy (Boss:{killEvent.IsBoss}, MiniBoss:{killEvent.IsMiniBoss})");
+            }
+            else
+            {
+                Debug.LogWarning($"[GoldManager] Event is not EnemyKilledEvent, it's {evt?.GetType().Name}");
             }
         }
         

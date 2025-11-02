@@ -14,15 +14,30 @@ namespace ArenaGame.Client
         [SerializeField] private GameObject damageNumberPrefab;
         
         [Header("Settings")]
-        [SerializeField] private float floatSpeed = 2f;
-        [SerializeField] private float lifetime = 1f;
+        [SerializeField] private float floatSpeed = 3f;
+        [SerializeField] private float lifetime = 1.5f;
+        [SerializeField] private float fontSize = 64f; // Much bigger damage numbers
         [SerializeField] private Color heroDamageColor = Color.red;
         [SerializeField] private Color enemyDamageColor = Color.white;
         
-        void OnEnable()
+        void Start()
         {
+            // Ensure we subscribe - unsubscribe first to avoid duplicates
+            EventBus.Unsubscribe<HeroDamagedEvent>(OnHeroDamaged);
+            EventBus.Unsubscribe<EnemyDamagedEvent>(OnEnemyDamaged);
             EventBus.Subscribe<HeroDamagedEvent>(OnHeroDamaged);
             EventBus.Subscribe<EnemyDamagedEvent>(OnEnemyDamaged);
+            Debug.Log("[DamageNumberSpawner] Subscribed to damage events in Start");
+        }
+        
+        void OnEnable()
+        {
+            // Subscribe when enabled
+            EventBus.Unsubscribe<HeroDamagedEvent>(OnHeroDamaged);
+            EventBus.Unsubscribe<EnemyDamagedEvent>(OnEnemyDamaged);
+            EventBus.Subscribe<HeroDamagedEvent>(OnHeroDamaged);
+            EventBus.Subscribe<EnemyDamagedEvent>(OnEnemyDamaged);
+            Debug.Log("[DamageNumberSpawner] Subscribed to damage events in OnEnable");
         }
         
         void OnDisable()
@@ -50,18 +65,61 @@ namespace ArenaGame.Client
         
         private void OnEnemyDamaged(ISimulationEvent evt)
         {
-            if (evt is EnemyDamagedEvent dmg && GameSimulation.Instance != null)
+            if (evt is EnemyDamagedEvent dmg)
             {
-                var world = GameSimulation.Instance.Simulation.World;
-                if (world.TryGetEnemy(dmg.EnemyId, out var enemy))
+                Vector3 pos = Vector3.zero;
+                
+                // Priority 1: Use EntityVisualizer position (most reliable - uses visual GameObject position)
+                var visualizer = FindFirstObjectByType<EntityVisualizer>();
+                if (visualizer != null)
                 {
-                    Vector3 pos = new Vector3(
-                        (float)enemy.Position.X.ToDouble(),
-                        0.5f,
-                        (float)enemy.Position.Y.ToDouble()
-                    );
-                    SpawnDamageNumber(pos, dmg.Damage.ToInt(), enemyDamageColor);
+                    Vector3 visualPos = visualizer.GetEntityPosition(dmg.EnemyId);
+                    if (visualPos != Vector3.zero)
+                    {
+                        pos = new Vector3(visualPos.x, 1.0f, visualPos.z);
+                    }
                 }
+                
+                // Priority 2: Use position from event (stored when damage is dealt)
+                if (pos == Vector3.zero)
+                {
+                    pos = new Vector3(
+                        (float)dmg.EnemyPosition.X.ToDouble(),
+                        1.0f, // Higher up so it's more visible
+                        (float)dmg.EnemyPosition.Y.ToDouble()
+                    );
+                }
+                
+                // Priority 3: Try simulation world as final fallback
+                if (pos == Vector3.zero && GameSimulation.Instance != null)
+                {
+                    var world = GameSimulation.Instance.Simulation.World;
+                    if (world.TryGetEnemy(dmg.EnemyId, out var enemy))
+                    {
+                        pos = new Vector3(
+                            (float)enemy.Position.X.ToDouble(),
+                            1.0f,
+                            (float)enemy.Position.Y.ToDouble()
+                        );
+                    }
+                }
+                
+                // If we still don't have a position, log warning but don't spawn at origin
+                if (pos == Vector3.zero)
+                {
+                    Debug.LogWarning($"[DamageNumberSpawner] Could not find position for enemy {dmg.EnemyId} - skipping damage number");
+                    return;
+                }
+                
+                // Debug log to verify position
+                Debug.Log($"[DamageNumberSpawner] Spawning damage {dmg.Damage.ToInt()} at enemy position: {pos} (enemy {dmg.EnemyId}, attacker {dmg.AttackerId})");
+                
+                // ALWAYS spawn damage number at enemy position
+                SpawnDamageNumber(pos, dmg.Damage.ToInt(), enemyDamageColor);
+            }
+            else
+            {
+                Debug.LogWarning($"[DamageNumberSpawner] Event is not EnemyDamagedEvent: {evt?.GetType().Name}");
             }
         }
         
@@ -85,6 +143,8 @@ namespace ArenaGame.Client
             {
                 tmp.text = damage.ToString();
                 tmp.color = color;
+                tmp.fontSize = fontSize; // Ensure fontSize is applied
+                tmp.fontStyle = FontStyles.Bold; // Make it bold
             }
             else
             {
@@ -99,7 +159,7 @@ namespace ArenaGame.Client
                     canvas.worldCamera = Camera.main;
                     RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
                     canvasRect.sizeDelta = new Vector2(1f, 1f);
-                    canvasRect.localScale = Vector3.one * 0.01f;
+                    canvasRect.localScale = Vector3.one * 0.02f; // 2x bigger for visibility
                 }
                 
                 GameObject textObj = new GameObject("Text");
@@ -112,8 +172,9 @@ namespace ArenaGame.Client
                 tmp = textObj.AddComponent<TextMeshProUGUI>();
                 tmp.text = damage.ToString();
                 tmp.color = color;
-                tmp.fontSize = 32;
+                tmp.fontSize = fontSize; // Use configurable fontSize
                 tmp.alignment = TextAlignmentOptions.Center;
+                tmp.fontStyle = FontStyles.Bold; // Make it bold
             }
             
             var floater = obj.GetComponent<FloatingNumber>();
@@ -137,7 +198,8 @@ namespace ArenaGame.Client
             canvas.worldCamera = Camera.main;
             RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
             canvasRect.sizeDelta = new Vector2(1f, 1f);
-            canvasRect.localScale = Vector3.one * 0.01f; // Scale down for world space
+            // Make bigger - reduce scale less so text appears larger
+            canvasRect.localScale = Vector3.one * 0.02f; // 2x bigger than before
             
             // Create text
             GameObject textObj = new GameObject("Text");
@@ -148,9 +210,10 @@ namespace ArenaGame.Client
             textRect.sizeDelta = Vector2.zero;
             
             TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
-            tmp.fontSize = 32;
+            tmp.fontSize = fontSize; // Use configurable fontSize
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.white;
+            tmp.fontStyle = FontStyles.Bold; // Make it bold
             
             return obj;
         }

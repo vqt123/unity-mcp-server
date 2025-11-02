@@ -60,6 +60,27 @@ namespace ArenaGame.Client
             Debug.Log($"[EntityVisualizer] ProjectileFX prefabs set - Default:{defaultFX!=null}, Fireball:{fireballFX!=null}");
         }
         
+        /// <summary>
+        /// Gets the visual position of an entity by ID (for damage numbers, etc.)
+        /// Returns world position if found, otherwise Vector3.zero
+        /// </summary>
+        public Vector3 GetEntityPosition(EntityId id)
+        {
+            // Try to get from visual GameObject first (most accurate)
+            if (entityViews.TryGetValue(id, out GameObject obj) && obj != null)
+            {
+                return obj.transform.position;
+            }
+            
+            // Try to get from position buffer (last known position)
+            if (entityPositionBuffers.TryGetValue(id, out PositionBuffer buffer))
+            {
+                return buffer.currentTickPos;
+            }
+            
+            return Vector3.zero;
+        }
+        
         void OnEnable()
         {
             EventBus.Subscribe<HeroSpawnedEvent>(OnEvent);

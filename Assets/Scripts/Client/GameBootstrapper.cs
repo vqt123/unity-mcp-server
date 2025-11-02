@@ -34,6 +34,9 @@ namespace ArenaGame.Client
         
         private void SetupGame()
         {
+            Debug.Log($"[GameBootstrapper] ========== SETUP START ==========");
+            Debug.Log($"[GameBootstrapper] Scene: {UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}");
+            
             // 0. Initialize logging FIRST
             GameLogger.Initialize(new UnityLogger());
             GameLogger.Log("[Bootstrap] ========== GAME SETUP START ==========");

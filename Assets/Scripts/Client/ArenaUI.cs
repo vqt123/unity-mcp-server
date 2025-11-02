@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 namespace ArenaGame.Client
 {
@@ -19,11 +20,24 @@ namespace ArenaGame.Client
         {
             SetupUI();
             
+            // Wait a frame to ensure GoldManager is created
+            StartCoroutine(SubscribeToGoldDelayed());
+        }
+        
+        private System.Collections.IEnumerator SubscribeToGoldDelayed()
+        {
+            yield return null; // Wait one frame
+            
             // Subscribe to gold changes
             if (GoldManager.Instance != null)
             {
                 GoldManager.Instance.OnGoldChanged += UpdateGoldDisplay;
                 UpdateGoldDisplay(GoldManager.Instance.CurrentGold);
+                Debug.Log($"[ArenaUI] Subscribed to GoldManager, current gold: {GoldManager.Instance.CurrentGold}");
+            }
+            else
+            {
+                Debug.LogError("[ArenaUI] GoldManager.Instance is null! GameBootstrapper may not have run yet.");
             }
         }
         
