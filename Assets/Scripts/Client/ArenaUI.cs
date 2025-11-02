@@ -162,7 +162,7 @@ namespace ArenaGame.Client
         private void OnExitClicked()
         {
             Debug.Log("[ArenaUI] Exit button clicked - returning to main menu");
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("HomeScene");
         }
     }
 }

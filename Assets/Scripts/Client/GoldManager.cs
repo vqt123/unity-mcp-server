@@ -33,7 +33,17 @@ namespace ArenaGame.Client
             
             _instance = this;
             DontDestroyOnLoad(gameObject);
-            Debug.Log("[GoldManager] Awake - Instance created");
+            
+            // Load gold from PlayerDataManager if available
+            if (PlayerDataManager.Instance != null)
+            {
+                currentGold = PlayerDataManager.Instance.TotalGold;
+                Debug.Log($"[GoldManager] Loaded {currentGold} gold from PlayerDataManager");
+            }
+            else
+            {
+                Debug.Log("[GoldManager] Awake - Instance created (PlayerDataManager not available yet)");
+            }
         }
         
         void Start()
@@ -41,7 +51,37 @@ namespace ArenaGame.Client
             // Ensure we subscribe - unsubscribe first to avoid duplicates
             EventBus.Unsubscribe<EnemyKilledEvent>(OnEnemyKilled);
             EventBus.Subscribe<EnemyKilledEvent>(OnEnemyKilled);
+            
+            // Sync with PlayerDataManager in Start (after all Awake() calls)
+            SyncWithPlayerData();
+            
             Debug.Log($"[GoldManager] Subscribed to EnemyKilledEvent in Start. Current gold: {currentGold}");
+        }
+        
+        /// <summary>
+        /// Syncs gold with PlayerDataManager (called when PlayerDataManager initializes)
+        /// </summary>
+        private void SyncWithPlayerData()
+        {
+            if (PlayerDataManager.Instance != null)
+            {
+                int savedGold = PlayerDataManager.Instance.TotalGold;
+                if (savedGold != currentGold)
+                {
+                    // Use saved gold if it's higher (in case gold was earned in previous session)
+                    if (savedGold > currentGold)
+                    {
+                        currentGold = savedGold;
+                        OnGoldChanged?.Invoke(currentGold);
+                        Debug.Log($"[GoldManager] Synced gold with PlayerDataManager: {currentGold}");
+                    }
+                    else
+                    {
+                        // Update PlayerDataManager with current gold
+                        PlayerDataManager.Instance.SetTotalGold(currentGold);
+                    }
+                }
+            }
         }
         
         void OnEnable()
@@ -95,6 +135,13 @@ namespace ArenaGame.Client
             
             currentGold += amount;
             OnGoldChanged?.Invoke(currentGold);
+            
+            // Sync with PlayerDataManager for persistence
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.AddGold(amount);
+            }
+            
             Debug.Log($"[GoldManager] Gold: {currentGold} (+{amount})");
         }
         
@@ -108,6 +155,13 @@ namespace ArenaGame.Client
             
             currentGold -= amount;
             OnGoldChanged?.Invoke(currentGold);
+            
+            // Sync with PlayerDataManager for persistence
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.SetTotalGold(currentGold);
+            }
+            
             Debug.Log($"[GoldManager] Gold: {currentGold} (-{amount})");
             return true;
         }
@@ -116,6 +170,12 @@ namespace ArenaGame.Client
         {
             currentGold = Mathf.Max(0, amount);
             OnGoldChanged?.Invoke(currentGold);
+            
+            // Sync with PlayerDataManager for persistence
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.SetTotalGold(currentGold);
+            }
         }
         
         public void ResetGold()
