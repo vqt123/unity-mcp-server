@@ -74,6 +74,10 @@ namespace ArenaGame.Client
             WeaponConfigBridge.RegisterBridge();
             GameLogger.Log("[Bootstrap] ✓ Registered WeaponConfig bridge");
             
+            // 2d. Register hero level bridge
+            HeroLevelBridge.RegisterBridge();
+            GameLogger.Log("[Bootstrap] ✓ Registered HeroLevel bridge");
+            
             // 3. Create EntityVisualizer (creates GameObjects from events)
             GameObject visualizerObj = new GameObject("EntityVisualizer");
             EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();

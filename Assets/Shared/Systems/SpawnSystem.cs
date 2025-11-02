@@ -10,10 +10,18 @@ namespace ArenaGame.Shared.Systems
     /// </summary>
     public static class SpawnSystem
     {
-        public static EntityId SpawnHero(SimulationWorld world, HeroConfig data, FixV2 position)
+        public static EntityId SpawnHero(SimulationWorld world, HeroConfig data, FixV2 position, HeroLevelBonuses? bonuses = null)
         {
-            // Calculate shot cooldown ticks from attacks per second
-            Fix64 ticksPerAttack = SimulationConfig.TICKS_PER_SECOND / data.AttackSpeed;
+            // Apply level bonuses if provided
+            HeroLevelBonuses b = bonuses ?? default(HeroLevelBonuses);
+            Fix64 finalMaxHealth = data.MaxHealth + (b.IsValid ? b.HealthBonus : Fix64.Zero);
+            Fix64 finalDamage = data.Damage + (b.IsValid ? b.DamageBonus : Fix64.Zero);
+            Fix64 finalMoveSpeed = data.MoveSpeed + (b.IsValid ? b.MoveSpeedBonus : Fix64.Zero);
+            Fix64 finalAttackSpeed = data.AttackSpeed + (b.IsValid ? b.AttackSpeedBonus : Fix64.Zero);
+            int heroLevel = b.IsValid ? b.Level : 1;
+            
+            // Calculate shot cooldown ticks from attacks per second (using final attack speed)
+            Fix64 ticksPerAttack = SimulationConfig.TICKS_PER_SECOND / finalAttackSpeed;
             int cooldownTicks = (int)ticksPerAttack.ToLong();
             
             Hero hero = new Hero
@@ -22,16 +30,16 @@ namespace ArenaGame.Shared.Systems
                 Position = position,
                 Velocity = FixV2.Zero,
                 Rotation = Fix64.Zero,
-                Health = data.MaxHealth,
-                MaxHealth = data.MaxHealth,
-                MoveSpeed = data.MoveSpeed,
-                Damage = data.Damage,
-                AttackSpeed = data.AttackSpeed,
+                Health = finalMaxHealth,
+                MaxHealth = finalMaxHealth,
+                MoveSpeed = finalMoveSpeed,
+                Damage = finalDamage,
+                AttackSpeed = finalAttackSpeed,
                 LastShotTick = -cooldownTicks, // Can shoot immediately
                 ShotCooldownTicks = cooldownTicks,
                 WeaponType = data.WeaponType,
                 WeaponTier = data.WeaponTier,
-                Level = 1,
+                Level = heroLevel,
                 CurrentXP = 0,
                 XPToNextLevel = 100,
                 IsAlive = true
@@ -46,10 +54,10 @@ namespace ArenaGame.Shared.Systems
                 HeroId = id,
                 HeroType = data.HeroType,
                 Position = position,
-                MaxHealth = data.MaxHealth,
-                MoveSpeed = data.MoveSpeed,
-                Damage = data.Damage,
-                AttackSpeed = data.AttackSpeed,
+                MaxHealth = finalMaxHealth,
+                MoveSpeed = finalMoveSpeed,
+                Damage = finalDamage,
+                AttackSpeed = finalAttackSpeed,
                 WeaponType = data.WeaponType,
                 WeaponTier = data.WeaponTier
             });

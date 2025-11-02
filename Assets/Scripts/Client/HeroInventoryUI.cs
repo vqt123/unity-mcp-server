@@ -285,6 +285,8 @@ namespace ArenaGame.Client
         private Image cardImage;
         private TextMeshProUGUI nameText;
         private GameObject partyIndicator;
+        private TextMeshProUGUI upgradeText;
+        private Button upgradeButton;
         
         public void Setup(string type, bool isInParty, HeroInventoryUI ui)
         {
@@ -293,6 +295,30 @@ namespace ArenaGame.Client
             inventoryUI = ui;
             
             CreateCardUI();
+            
+            // Subscribe to gold changes to update button
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged += OnGoldChanged;
+            }
+        }
+        
+        void OnDestroy()
+        {
+            // Unsubscribe from gold changes
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged -= OnGoldChanged;
+            }
+        }
+        
+        private void OnGoldChanged(int newGold)
+        {
+            // Update upgrade button when gold changes
+            if (upgradeText != null && upgradeButton != null)
+            {
+                UpdateUpgradeButtonText(upgradeText, upgradeButton);
+            }
         }
         
         private void CreateCardUI()
@@ -342,7 +368,7 @@ namespace ArenaGame.Client
             statsObj.transform.SetParent(transform, false);
             
             RectTransform statsRect = statsObj.AddComponent<RectTransform>();
-            statsRect.anchorMin = new Vector2(0.1f, 0.3f);
+            statsRect.anchorMin = new Vector2(0.1f, 0.4f);
             statsRect.anchorMax = new Vector2(0.9f, 0.65f);
             statsRect.sizeDelta = Vector2.zero;
             
@@ -351,12 +377,88 @@ namespace ArenaGame.Client
             statsText.fontSize = 16;
             statsText.alignment = TextAlignmentOptions.TopLeft;
             statsText.color = new Color(0.9f, 0.9f, 0.9f);
+            
+            // Upgrade button
+            GameObject upgradeObj = new GameObject("UpgradeButton");
+            upgradeObj.transform.SetParent(transform, false);
+            
+            RectTransform upgradeRect = upgradeObj.AddComponent<RectTransform>();
+            upgradeRect.anchorMin = new Vector2(0.1f, 0.1f);
+            upgradeRect.anchorMax = new Vector2(0.9f, 0.35f);
+            upgradeRect.sizeDelta = Vector2.zero;
+            
+            Image upgradeBg = upgradeObj.AddComponent<Image>();
+            upgradeBg.color = new Color(0.2f, 0.4f, 0.8f); // Blue background
+            
+            Button upgradeButton = upgradeObj.AddComponent<Button>();
+            
+            // Upgrade button text
+            GameObject upgradeTextObj = new GameObject("Text");
+            upgradeTextObj.transform.SetParent(upgradeObj.transform, false);
+            
+            RectTransform upgradeTextRect = upgradeTextObj.AddComponent<RectTransform>();
+            upgradeTextRect.anchorMin = Vector2.zero;
+            upgradeTextRect.anchorMax = Vector2.one;
+            upgradeTextRect.sizeDelta = Vector2.zero;
+            
+            upgradeText = upgradeTextObj.AddComponent<TextMeshProUGUI>();
+            UpdateUpgradeButtonText(upgradeText, upgradeButton);
+            upgradeText.fontSize = 18;
+            upgradeText.alignment = TextAlignmentOptions.Center;
+            upgradeText.color = Color.white;
+            
+            this.upgradeButton = upgradeButton;
+            upgradeButton.onClick.AddListener(() => OnUpgradeClicked(upgradeText, upgradeButton));
+        }
+        
+        private void UpdateUpgradeButtonText(TextMeshProUGUI text, Button button)
+        {
+            HeroProgressData progress = PlayerDataManager.Instance?.GetHeroProgress(heroType);
+            int level = progress?.level ?? 1;
+            int cost = HeroLevelingManager.GetLevelUpCost(level);
+            
+            bool canAfford = GoldManager.Instance != null && GoldManager.Instance.CurrentGold >= cost;
+            
+            text.text = $"Level Up ({cost} Gold)";
+            text.color = canAfford ? Color.white : Color.gray;
+            button.interactable = canAfford;
+        }
+        
+        private void OnUpgradeClicked(TextMeshProUGUI upgradeText, Button upgradeButton)
+        {
+            if (HeroLevelingManager.LevelUpHero(heroType))
+            {
+                // Update button text and stats display
+                UpdateUpgradeButtonText(upgradeText, upgradeButton);
+                
+                // Update stats display
+                Transform statsObj = transform.Find("Stats");
+                if (statsObj != null)
+                {
+                    TextMeshProUGUI statsText = statsObj.GetComponent<TextMeshProUGUI>();
+                    if (statsText != null)
+                    {
+                        statsText.text = GetHeroStats(heroType);
+                    }
+                }
+                
+                Debug.Log($"[HeroCard] {heroType} leveled up!");
+            }
+            else
+            {
+                Debug.LogWarning($"[HeroCard] Failed to level up {heroType}");
+            }
         }
         
         private string GetHeroStats(string type)
         {
-            // Simple stat display
-            return type switch
+            // Get hero level and stats
+            HeroProgressData progress = PlayerDataManager.Instance?.GetHeroProgress(type);
+            int level = progress?.level ?? 1;
+            HeroStatBonuses bonuses = HeroLevelingManager.GetHeroStatBonuses(type);
+            
+            // Get base stats from config
+            string baseStats = type switch
             {
                 "DefaultHero" => "Balanced\nDmg: 100\nAtkSpd: 3.3",
                 "FastHero" => "Fast Attacker\nDmg: 100\nAtkSpd: 3.3",
@@ -366,6 +468,8 @@ namespace ArenaGame.Client
                 "Warrior" => "Melee Tank\nDmg: 100\nAtkSpd: 2.0",
                 _ => "Hero"
             };
+            
+            return $"Level {level}\n{baseStats}";
         }
         
         private void OnClick()

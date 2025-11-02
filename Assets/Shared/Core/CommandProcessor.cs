@@ -115,8 +115,31 @@ namespace ArenaGame.Shared.Core
         private void ProcessSpawnHero(SpawnHeroCommand cmd)
         {
             HeroConfig data = GetHeroData(cmd.HeroType);
-            SpawnSystem.SpawnHero(world, data, cmd.Position);
+            
+            // Get level bonuses if provided (from Client via bridge)
+            HeroLevelBonuses? bonuses = GetHeroLevelBonuses(cmd.HeroType);
+            
+            SpawnSystem.SpawnHero(world, data, cmd.Position, bonuses);
         }
+        
+        /// <summary>
+        /// Gets hero level bonuses from Client assembly via bridge
+        /// </summary>
+        private HeroLevelBonuses? GetHeroLevelBonuses(string heroType)
+        {
+            // Try to get from bridge (Client assembly will set this)
+            if (HeroLevelBridge != null)
+            {
+                return HeroLevelBridge(heroType);
+            }
+            return null;
+        }
+        
+        /// <summary>
+        /// Bridge function from Client assembly to get hero level bonuses
+        /// Set by Client assembly during initialization
+        /// </summary>
+        public static System.Func<string, HeroLevelBonuses?> HeroLevelBridge { get; set; }
         
         private void ProcessSpawnEnemy(SpawnEnemyCommand cmd)
         {
