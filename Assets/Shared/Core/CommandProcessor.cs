@@ -120,6 +120,17 @@ namespace ArenaGame.Shared.Core
         
         private HeroConfig GetHeroData(string heroType)
         {
+            // Try Client-side config first (if bridge is available)
+            if (HeroData.ClientConfigBridge != null)
+            {
+                HeroConfig? config = HeroData.ClientConfigBridge(heroType);
+                if (config.HasValue)
+                {
+                    return config.Value;
+                }
+            }
+            
+            // Fallback to hardcoded configs
             return HeroData.GetConfig(heroType);
         }
         

@@ -55,6 +55,18 @@ namespace ArenaGame.Client
                 GameLogger.Log("[Bootstrap] ✓ Created WeaponConfigDatabase");
             }
             
+            // 2a. Create HeroConfigDatabase (loads hero configs from Resources)
+            if (HeroConfigDatabase.Instance == null)
+            {
+                GameObject heroDbObj = new GameObject("HeroConfigDatabase");
+                heroDbObj.AddComponent<HeroConfigDatabase>();
+                GameLogger.Log("[Bootstrap] ✓ Created HeroConfigDatabase");
+            }
+            
+            // 2b. Register bridge so Shared assembly can use HeroConfigSO
+            HeroConfigConverter.RegisterBridge();
+            GameLogger.Log("[Bootstrap] ✓ Registered HeroConfig bridge");
+            
             // 3. Create EntityVisualizer (creates GameObjects from events)
             GameObject visualizerObj = new GameObject("EntityVisualizer");
             EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();

@@ -1,10 +1,17 @@
 using ArenaGame.Shared.Math;
+using System;
 using System.Collections.Generic;
 
 namespace ArenaGame.Shared.Data
 {
     public static class HeroData
     {
+        /// <summary>
+        /// Bridge function from Client assembly to get HeroConfig from ScriptableObjects
+        /// Set by HeroConfigBridge in Client assembly
+        /// </summary>
+        public static Func<string, HeroConfig?> ClientConfigBridge { get; set; }
+        
         public static Dictionary<string, HeroConfig> Configs = new Dictionary<string, HeroConfig>
         {
             { "DefaultHero", new HeroConfig {

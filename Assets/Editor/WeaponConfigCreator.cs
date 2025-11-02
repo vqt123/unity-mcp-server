@@ -30,6 +30,24 @@ namespace ArenaGame.Editor
             CreateWeaponConfig("Sword_Weapon", "Sword", "Melee slash attack", 100f, 0.5f, 24f, 1, 2.5f, false);
         }
         
+        [MenuItem("Tools/Create Weapon Configs/Pistol")]
+        public static void CreatePistolWeapon()
+        {
+            CreateWeaponConfig("Pistol_Weapon", "Pistol", "Standard pistol", 100f, 0.3f, 45f, 1, 0f, false);
+        }
+        
+        [MenuItem("Tools/Create Weapon Configs/SMG")]
+        public static void CreateSMGWeapon()
+        {
+            CreateWeaponConfig("SMG_Weapon", "SMG", "Fast-firing submachine gun", 100f, 0.2f, 45f, 1, 0f, false);
+        }
+        
+        [MenuItem("Tools/Create Weapon Configs/Shotgun")]
+        public static void CreateShotgunWeapon()
+        {
+            CreateWeaponConfig("Shotgun_Weapon", "Shotgun", "Close-range spread weapon", 100f, 0.5f, 35f, 3, 1.5f, false);
+        }
+        
         [MenuItem("Tools/Create Weapon Configs/Custom Weapon")]
         public static void CreateCustomWeapon()
         {
@@ -68,6 +86,15 @@ namespace ArenaGame.Editor
                     break;
                 case "sword":
                     config.bulletColor = new Color(0.7f, 0.7f, 0.7f, 1f); // Gray
+                    break;
+                case "pistol":
+                    config.bulletColor = new Color(0.9f, 0.9f, 0.9f, 1f); // Light gray/white
+                    break;
+                case "smg":
+                    config.bulletColor = new Color(0.8f, 0.8f, 0.3f, 1f); // Yellow/green
+                    break;
+                case "shotgun":
+                    config.bulletColor = new Color(0.6f, 0.4f, 0.2f, 1f); // Brown
                     break;
             }
             

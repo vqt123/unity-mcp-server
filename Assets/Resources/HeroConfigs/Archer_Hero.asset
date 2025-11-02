@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf63e7d1affde4402a0ccfe9a43bf74f, type: 3}
+  m_Name: Archer_Hero
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.HeroConfigSO
+  heroTypeName: Archer
+  displayName: Archer
+  description: Ranged hero with bow
+  maxHealth: 150
+  damage: 100
+  moveSpeed: 5
+  attackSpeed: 3.3
+  weaponConfig: {fileID: 11400000, guid: 9465cc8d3951a4270ab88e00ee19ee41, type: 2}
+  heroColor: {r: 0, g: 1, b: 0, a: 1}
+  heroPrefab: {fileID: 6633539639111151010, guid: 55084956521ea4ab4974b4c64c362880, type: 3}

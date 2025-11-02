@@ -20,7 +20,7 @@ MonoBehaviour:
   projectileCount: 1
   aoeRadius: 0
   piercing: 0
-  projectilePrefab: {fileID: 0}
+  projectilePrefab: {fileID: 5719230637902707598, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
   projectileFXPrefab: {fileID: 0}
   bulletColor: {r: 0.8, g: 0.6, b: 0.2, a: 1}
   hasTiers: 0

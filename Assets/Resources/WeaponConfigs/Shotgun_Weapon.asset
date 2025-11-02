@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b80739a1eda174ad69c552e546fe64be, type: 3}
-  m_Name: Sword_Weapon
+  m_Name: Shotgun_Weapon
   m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.WeaponConfig
-  weaponName: Sword
-  description: Melee slash attack
+  weaponName: Shotgun
+  description: Close-range spread weapon
   damage: 100
   shootCooldown: 0.5
-  projectileSpeed: 24
-  projectileCount: 1
-  aoeRadius: 2.5
+  projectileSpeed: 35
+  projectileCount: 3
+  aoeRadius: 1.5
   piercing: 0
-  projectilePrefab: {fileID: 7565391221540716531, guid: 2eb89d887c507440d8a142b0f0e2e8ab, type: 3}
+  projectilePrefab: {fileID: 0}
   projectileFXPrefab: {fileID: 0}
-  bulletColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  bulletColor: {r: 0.6, g: 0.4, b: 0.2, a: 1}
   hasTiers: 0
   tiers: []

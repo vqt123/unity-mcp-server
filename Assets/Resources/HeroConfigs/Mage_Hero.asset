@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf63e7d1affde4402a0ccfe9a43bf74f, type: 3}
+  m_Name: Mage_Hero
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.HeroConfigSO
+  heroTypeName: Mage
+  displayName: Mage
+  description: Magic hero with fire wand
+  maxHealth: 120
+  damage: 100
+  moveSpeed: 5
+  attackSpeed: 1.67
+  weaponConfig: {fileID: 11400000, guid: 1462044c845444a2cb697e4900fb3b4f, type: 2}
+  heroColor: {r: 0.5, g: 0, b: 1, a: 1}
+  heroPrefab: {fileID: 0}
