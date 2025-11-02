@@ -16,6 +16,11 @@ namespace ArenaGame.Client
         public int totalGold = 0;
         public List<HeroProgressEntry> heroProgressList = new List<HeroProgressEntry>();
         
+        // Energy system
+        public int currentEnergy = 30;
+        public int maxEnergy = 30;
+        public double lastEnergyRegenTime = 0; // Unix timestamp of last regeneration check
+        
         /// <summary>
         /// Creates default player blob with single archer hero card
         /// </summary>
@@ -28,6 +33,11 @@ namespace ArenaGame.Client
             blob.heroInventory.partyHeroes = new List<string> { "Archer" };
             
             blob.totalGold = 0;
+            
+            // Start with full energy
+            blob.currentEnergy = 30;
+            blob.maxEnergy = 30;
+            blob.lastEnergyRegenTime = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             
             return blob;
         }

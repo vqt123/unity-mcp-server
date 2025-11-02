@@ -16,15 +16,7 @@ namespace ArenaGame.Client
         {
             Debug.Log("[HomeBootstrap] Setting up home scene");
             
-            // 1. Create GoldManager (persistent - needed for gold display)
-            if (GoldManager.Instance == null)
-            {
-                GameObject goldObj = new GameObject("GoldManager");
-                goldObj.AddComponent<GoldManager>();
-                Debug.Log("[HomeBootstrap] ✓ Created GoldManager");
-            }
-            
-            // 2. Create PlayerDataManager (persistent)
+            // 1. Create PlayerDataManager (persistent - must be first)
             if (PlayerDataManager.Instance == null)
             {
                 GameObject dataObj = new GameObject("PlayerDataManager");
@@ -32,7 +24,23 @@ namespace ArenaGame.Client
                 Debug.Log("[HomeBootstrap] ✓ Created PlayerDataManager");
             }
             
-            // 3. Create Canvas if needed
+            // 2. Create GoldManager (persistent - needed for gold display)
+            if (GoldManager.Instance == null)
+            {
+                GameObject goldObj = new GameObject("GoldManager");
+                goldObj.AddComponent<GoldManager>();
+                Debug.Log("[HomeBootstrap] ✓ Created GoldManager");
+            }
+            
+            // 3. Create EnergyManager (persistent - manages energy regeneration)
+            if (EnergyManager.Instance == null)
+            {
+                GameObject energyObj = new GameObject("EnergyManager");
+                energyObj.AddComponent<EnergyManager>();
+                Debug.Log("[HomeBootstrap] ✓ Created EnergyManager");
+            }
+            
+            // 4. Create Canvas if needed
             Canvas canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
@@ -65,12 +73,12 @@ namespace ArenaGame.Client
 #endif
             }
             
-            // 5. Create HomeMenuUI
+            // 4. Create HomeMenuUI
             GameObject menuObj = new GameObject("HomeMenuUI");
             menuObj.AddComponent<HomeMenuUI>();
             Debug.Log("[HomeBootstrap] ✓ Created HomeMenuUI");
             
-            // 6. Set camera background
+            // 5. Set camera background
             Camera mainCam = Camera.main;
             if (mainCam != null)
             {

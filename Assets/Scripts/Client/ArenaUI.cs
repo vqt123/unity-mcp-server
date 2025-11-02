@@ -14,17 +14,18 @@ namespace ArenaGame.Client
         [Header("UI References")]
         [SerializeField] private Button exitButton;
         [SerializeField] private TextMeshProUGUI goldText;
+        [SerializeField] private TextMeshProUGUI energyText;
         [SerializeField] private GameObject upgradePanel;
         
         void Start()
         {
             SetupUI();
             
-            // Wait a frame to ensure GoldManager is created
-            StartCoroutine(SubscribeToGoldDelayed());
+            // Wait a frame to ensure managers are created
+            StartCoroutine(SubscribeToManagersDelayed());
         }
         
-        private System.Collections.IEnumerator SubscribeToGoldDelayed()
+        private System.Collections.IEnumerator SubscribeToManagersDelayed()
         {
             yield return null; // Wait one frame
             
@@ -39,6 +40,14 @@ namespace ArenaGame.Client
             {
                 Debug.LogError("[ArenaUI] GoldManager.Instance is null! GameBootstrapper may not have run yet.");
             }
+            
+            // Subscribe to energy changes
+            if (EnergyManager.Instance != null)
+            {
+                EnergyManager.Instance.OnEnergyChanged += UpdateEnergyDisplay;
+                UpdateEnergyDisplay(EnergyManager.Instance.CurrentEnergy);
+                Debug.Log($"[ArenaUI] Subscribed to EnergyManager, current energy: {EnergyManager.Instance.CurrentEnergy}");
+            }
         }
         
         void OnDestroy()
@@ -46,6 +55,11 @@ namespace ArenaGame.Client
             if (GoldManager.Instance != null)
             {
                 GoldManager.Instance.OnGoldChanged -= UpdateGoldDisplay;
+            }
+            
+            if (EnergyManager.Instance != null)
+            {
+                EnergyManager.Instance.OnEnergyChanged -= UpdateEnergyDisplay;
             }
         }
         
@@ -91,6 +105,12 @@ namespace ArenaGame.Client
             if (goldText == null)
             {
                 CreateGoldDisplay(canvas.transform);
+            }
+            
+            // Create energy display if not assigned
+            if (energyText == null)
+            {
+                CreateEnergyDisplay(canvas.transform);
             }
         }
         
@@ -156,6 +176,36 @@ namespace ArenaGame.Client
             if (goldText != null)
             {
                 goldText.text = $"Gold: {gold}";
+            }
+        }
+        
+        private void CreateEnergyDisplay(Transform parent)
+        {
+            GameObject energyObj = new GameObject("EnergyDisplay");
+            energyObj.transform.SetParent(parent, false);
+            
+            RectTransform rect = energyObj.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(20f, -70f); // Below gold display
+            rect.sizeDelta = new Vector2(250f, 40f);
+            
+            TextMeshProUGUI tmp = energyObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = "Energy: 30/30";
+            tmp.fontSize = 28;
+            tmp.alignment = TextAlignmentOptions.Left;
+            tmp.color = new Color(0.3f, 0.8f, 1f); // Light blue/cyan color
+            
+            energyText = tmp;
+        }
+        
+        private void UpdateEnergyDisplay(int energy)
+        {
+            if (energyText != null)
+            {
+                int maxEnergy = EnergyManager.Instance != null ? EnergyManager.Instance.MaxEnergy : 30;
+                energyText.text = $"Energy: {energy}/{maxEnergy}";
             }
         }
         

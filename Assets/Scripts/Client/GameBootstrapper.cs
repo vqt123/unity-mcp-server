@@ -106,7 +106,16 @@ namespace ArenaGame.Client
             visualizer.SetProjectileFXPrefabs(projectileFXDefault, projectileFXFireball);
             GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}, FXDefault={projectileFXDefault!=null}, FXFireball={projectileFXFireball!=null}");
             
-            // 4. Create GoldManager (tracks and awards gold)
+            // 4. Create PlayerDataManager if not already present (persistent - must be first)
+            if (PlayerDataManager.Instance == null)
+            {
+                GameObject dataObj = new GameObject("PlayerDataManager");
+                dataObj.AddComponent<PlayerDataManager>();
+                DontDestroyOnLoad(dataObj);
+                GameLogger.Log("[Bootstrap] ✓ Created PlayerDataManager");
+            }
+            
+            // 5. Create GoldManager (tracks and awards gold)
             if (GoldManager.Instance == null)
             {
                 GameObject goldObj = new GameObject("GoldManager");
@@ -114,30 +123,30 @@ namespace ArenaGame.Client
                 GameLogger.Log("[Bootstrap] ✓ Created GoldManager");
             }
             
-            // 5. Create PlayerDataManager if not already present (persistent)
-            if (PlayerDataManager.Instance == null)
+            // 6. Create EnergyManager (manages energy regeneration)
+            if (EnergyManager.Instance == null)
             {
-                GameObject dataObj = new GameObject("PlayerDataManager");
-                dataObj.AddComponent<PlayerDataManager>();
-                GameLogger.Log("[Bootstrap] ✓ Created PlayerDataManager");
+                GameObject energyObj = new GameObject("EnergyManager");
+                energyObj.AddComponent<EnergyManager>();
+                GameLogger.Log("[Bootstrap] ✓ Created EnergyManager");
             }
             
-            // 6. Create PartySpawner (spawns heroes from party)
+            // 7. Create PartySpawner (spawns heroes from party)
             GameObject partySpawnerObj = new GameObject("PartySpawner");
             partySpawnerObj.AddComponent<PartySpawner>();
             GameLogger.Log("[Bootstrap] ✓ Created PartySpawner");
             
-            // 7. Create WaveManager (spawns enemies)
+            // 8. Create WaveManager (spawns enemies)
             GameObject waveObj = new GameObject("WaveManager");
             waveObj.AddComponent<WaveManager>();
             GameLogger.Log("[Bootstrap] ✓ Created WaveManager");
             
-            // 8. Create ArenaUI (exit button, gold display)
+            // 9. Create ArenaUI (exit button, gold display)
             GameObject arenaUIObj = new GameObject("ArenaUI");
             arenaUIObj.AddComponent<ArenaUI>();
             GameLogger.Log("[Bootstrap] ✓ Created ArenaUI");
             
-            // 9. Create DamageNumberSpawner (floating damage numbers) - always create it
+            // 10. Create DamageNumberSpawner (floating damage numbers) - always create it
             GameObject dmgNumObj = new GameObject("DamageNumberSpawner");
             DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
             if (damageNumberPrefab != null)
@@ -147,7 +156,7 @@ namespace ArenaGame.Client
             }
             GameLogger.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
             
-            // 8. Create CombatEffectsManager (VFX & audio)
+            // 11. Create CombatEffectsManager (VFX & audio)
             GameObject effectsObj = new GameObject("CombatEffectsManager");
             effectsObj.AddComponent<CombatEffectsManager>();
             GameLogger.Log("[Bootstrap] ✓ Created CombatEffectsManager");

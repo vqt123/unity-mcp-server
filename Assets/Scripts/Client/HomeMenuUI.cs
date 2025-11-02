@@ -15,6 +15,7 @@ namespace ArenaGame.Client
         [SerializeField] private Button playButton;
         [SerializeField] private Button quitButton;
         [SerializeField] private TextMeshProUGUI goldText;
+        [SerializeField] private TextMeshProUGUI energyText;
         
         void Start()
         {
@@ -36,6 +37,9 @@ namespace ArenaGame.Client
             
             // Setup gold display
             SetupGoldDisplay();
+            
+            // Setup energy display
+            SetupEnergyDisplay();
         }
         
         void OnEnable()
@@ -45,6 +49,12 @@ namespace ArenaGame.Client
                 GoldManager.Instance.OnGoldChanged += UpdateGoldDisplay;
                 UpdateGoldDisplay(GoldManager.Instance.CurrentGold);
             }
+            
+            if (EnergyManager.Instance != null)
+            {
+                EnergyManager.Instance.OnEnergyChanged += UpdateEnergyDisplay;
+                UpdateEnergyDisplay(EnergyManager.Instance.CurrentEnergy);
+            }
         }
         
         void OnDisable()
@@ -52,6 +62,11 @@ namespace ArenaGame.Client
             if (GoldManager.Instance != null)
             {
                 GoldManager.Instance.OnGoldChanged -= UpdateGoldDisplay;
+            }
+            
+            if (EnergyManager.Instance != null)
+            {
+                EnergyManager.Instance.OnEnergyChanged -= UpdateEnergyDisplay;
             }
         }
         
@@ -104,6 +119,59 @@ namespace ArenaGame.Client
             if (goldText != null)
             {
                 goldText.text = $"Gold: {gold}";
+            }
+        }
+        
+        private void SetupEnergyDisplay()
+        {
+            // Create energy display if not assigned
+            if (energyText == null)
+            {
+                Canvas canvas = FindFirstObjectByType<Canvas>();
+                if (canvas == null)
+                {
+                    GameObject canvasObj = new GameObject("Canvas");
+                    canvas = canvasObj.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                }
+                
+                CreateEnergyDisplay(canvas.transform);
+            }
+            else
+            {
+                UpdateEnergyDisplay(EnergyManager.Instance != null ? EnergyManager.Instance.CurrentEnergy : 0);
+            }
+        }
+        
+        private void CreateEnergyDisplay(Transform parent)
+        {
+            GameObject energyObj = new GameObject("EnergyDisplay");
+            energyObj.transform.SetParent(parent, false);
+            
+            RectTransform rect = energyObj.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(20f, -70f); // Below gold display
+            rect.sizeDelta = new Vector2(250f, 40f);
+            
+            TextMeshProUGUI tmp = energyObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = "Energy: 30/30";
+            tmp.fontSize = 28;
+            tmp.alignment = TextAlignmentOptions.Left;
+            tmp.color = new Color(0.3f, 0.8f, 1f); // Light blue/cyan color
+            
+            energyText = tmp;
+        }
+        
+        private void UpdateEnergyDisplay(int energy)
+        {
+            if (energyText != null)
+            {
+                int maxEnergy = EnergyManager.Instance != null ? EnergyManager.Instance.MaxEnergy : 30;
+                energyText.text = $"Energy: {energy}/{maxEnergy}";
             }
         }
         
@@ -224,8 +292,30 @@ namespace ArenaGame.Client
         
         private void OnPlayClicked()
         {
-            Debug.Log("[HomeMenu] Play clicked - loading game scene");
-            SceneManager.LoadScene("ArenaGame");
+            Debug.Log("[HomeMenu] Play clicked - checking energy");
+            
+            // Check energy cost (5 energy to start arena)
+            const int ARENA_ENERGY_COST = 5;
+            
+            if (EnergyManager.Instance == null)
+            {
+                Debug.LogError("[HomeMenu] EnergyManager not found!");
+                return;
+            }
+            
+            if (EnergyManager.Instance.CurrentEnergy < ARENA_ENERGY_COST)
+            {
+                Debug.LogWarning($"[HomeMenu] Not enough energy! Need {ARENA_ENERGY_COST}, have {EnergyManager.Instance.CurrentEnergy}");
+                // TODO: Show error message to player
+                return;
+            }
+            
+            // Spend energy and start arena
+            if (EnergyManager.Instance.SpendEnergy(ARENA_ENERGY_COST))
+            {
+                Debug.Log("[HomeMenu] Starting arena - loading game scene");
+                SceneManager.LoadScene("ArenaGame");
+            }
         }
         
         private void OnHeroesClicked()

@@ -48,8 +48,30 @@ namespace ArenaGame.Client
         
         private void OnPlayClicked()
         {
-            Debug.Log("[HomeMenu] Play button clicked - loading ArenaGame");
-            SceneManager.LoadScene("ArenaGame");
+            Debug.Log("[HomeMenu] Play button clicked - checking energy");
+            
+            // Check energy cost (5 energy to start arena)
+            const int ARENA_ENERGY_COST = 5;
+            
+            if (EnergyManager.Instance == null)
+            {
+                Debug.LogError("[HomeMenu] EnergyManager not found!");
+                return;
+            }
+            
+            if (EnergyManager.Instance.CurrentEnergy < ARENA_ENERGY_COST)
+            {
+                Debug.LogWarning($"[HomeMenu] Not enough energy! Need {ARENA_ENERGY_COST}, have {EnergyManager.Instance.CurrentEnergy}");
+                // TODO: Show error message to player
+                return;
+            }
+            
+            // Spend energy and start arena
+            if (EnergyManager.Instance.SpendEnergy(ARENA_ENERGY_COST))
+            {
+                Debug.Log("[HomeMenu] Starting arena - loading ArenaGame");
+                SceneManager.LoadScene("ArenaGame");
+            }
         }
         
         private void OnHeroesClicked()

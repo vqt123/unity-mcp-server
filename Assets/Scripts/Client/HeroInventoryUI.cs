@@ -17,6 +17,7 @@ namespace ArenaGame.Client
         
         private HomeMenuUI homeMenu;
         private List<HeroCard> heroCards = new List<HeroCard>();
+        private TextMeshProUGUI goldText;
         
         public void Show(HomeMenuUI menu)
         {
@@ -28,6 +29,13 @@ namespace ArenaGame.Client
             }
             
             RefreshHeroCards();
+            UpdateGoldDisplay();
+            
+            // Subscribe to gold changes
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged += OnGoldChanged;
+            }
             
             if (panel != null)
             {
@@ -36,6 +44,29 @@ namespace ArenaGame.Client
             gameObject.SetActive(true);
             
             Debug.Log("[HeroInventory] Inventory UI shown");
+        }
+        
+        void OnDestroy()
+        {
+            // Unsubscribe from gold changes
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged -= OnGoldChanged;
+            }
+        }
+        
+        private void OnGoldChanged(int newGold)
+        {
+            UpdateGoldDisplay();
+        }
+        
+        private void UpdateGoldDisplay()
+        {
+            if (goldText != null)
+            {
+                int gold = GoldManager.Instance != null ? GoldManager.Instance.CurrentGold : 0;
+                goldText.text = $"Gold: {gold}";
+            }
         }
         
         private void CreateInventoryUI()
@@ -75,6 +106,23 @@ namespace ArenaGame.Client
             headerText.fontSize = 48;
             headerText.alignment = TextAlignmentOptions.Center;
             headerText.color = Color.white;
+            
+            // Create gold display (top-right)
+            GameObject goldObj = new GameObject("GoldDisplay");
+            goldObj.transform.SetParent(panel.transform, false);
+            
+            RectTransform goldRect = goldObj.AddComponent<RectTransform>();
+            goldRect.anchorMin = new Vector2(1f, 1f);
+            goldRect.anchorMax = new Vector2(1f, 1f);
+            goldRect.pivot = new Vector2(1f, 1f);
+            goldRect.anchoredPosition = new Vector2(-20f, -20f);
+            goldRect.sizeDelta = new Vector2(250f, 50f);
+            
+            goldText = goldObj.AddComponent<TextMeshProUGUI>();
+            goldText.text = "Gold: 0";
+            goldText.fontSize = 32;
+            goldText.alignment = TextAlignmentOptions.Right;
+            goldText.color = new Color(1f, 0.84f, 0f); // Gold color
             
             // Create party info text
             GameObject partyInfo = new GameObject("PartyInfo");
