@@ -79,7 +79,13 @@ namespace ArenaGame.Shared.Core
             
             world.UpdateHero(cmd.HeroId, hero);
             
-            // TODO: Generate UpgradeChosenEvent
+            // Generate upgrade event
+            world.AddEvent(new Events.UpgradeChosenEvent
+            {
+                Tick = world.CurrentTick,
+                HeroId = cmd.HeroId,
+                UpgradeType = cmd.UpgradeType
+            });
         }
         
         private void ProcessWeapon(ChooseWeaponCommand cmd)

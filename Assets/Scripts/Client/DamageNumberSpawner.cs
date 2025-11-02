@@ -67,9 +67,18 @@ namespace ArenaGame.Client
         
         private void SpawnDamageNumber(Vector3 position, int damage, Color color)
         {
-            if (damageNumberPrefab == null) return;
+            GameObject obj = null;
             
-            GameObject obj = Instantiate(damageNumberPrefab, position, Quaternion.identity);
+            if (damageNumberPrefab != null)
+            {
+                obj = Instantiate(damageNumberPrefab, position, Quaternion.identity);
+            }
+            else
+            {
+                // Create damage text dynamically if prefab not assigned
+                obj = CreateDamageTextObject();
+                obj.transform.position = position;
+            }
             
             var tmp = obj.GetComponentInChildren<TextMeshProUGUI>();
             if (tmp != null)
@@ -77,10 +86,73 @@ namespace ArenaGame.Client
                 tmp.text = damage.ToString();
                 tmp.color = color;
             }
+            else
+            {
+                // Add TextMeshPro if not found
+                GameObject canvasObj = obj.transform.Find("Canvas")?.gameObject;
+                if (canvasObj == null)
+                {
+                    canvasObj = new GameObject("Canvas");
+                    canvasObj.transform.SetParent(obj.transform, false);
+                    Canvas canvas = canvasObj.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.WorldSpace;
+                    canvas.worldCamera = Camera.main;
+                    RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
+                    canvasRect.sizeDelta = new Vector2(1f, 1f);
+                    canvasRect.localScale = Vector3.one * 0.01f;
+                }
+                
+                GameObject textObj = new GameObject("Text");
+                textObj.transform.SetParent(canvasObj.transform, false);
+                RectTransform textRect = textObj.AddComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.sizeDelta = Vector2.zero;
+                
+                tmp = textObj.AddComponent<TextMeshProUGUI>();
+                tmp.text = damage.ToString();
+                tmp.color = color;
+                tmp.fontSize = 32;
+                tmp.alignment = TextAlignmentOptions.Center;
+            }
             
-            var floater = obj.AddComponent<FloatingNumber>();
+            var floater = obj.GetComponent<FloatingNumber>();
+            if (floater == null)
+            {
+                floater = obj.AddComponent<FloatingNumber>();
+            }
             floater.speed = floatSpeed;
             floater.lifetime = lifetime;
+        }
+        
+        private GameObject CreateDamageTextObject()
+        {
+            GameObject obj = new GameObject("DamageText");
+            
+            // Create canvas for world space text
+            GameObject canvasObj = new GameObject("Canvas");
+            canvasObj.transform.SetParent(obj.transform, false);
+            Canvas canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = Camera.main;
+            RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(1f, 1f);
+            canvasRect.localScale = Vector3.one * 0.01f; // Scale down for world space
+            
+            // Create text
+            GameObject textObj = new GameObject("Text");
+            textObj.transform.SetParent(canvasObj.transform, false);
+            RectTransform textRect = textObj.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+            
+            TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+            tmp.fontSize = 32;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            
+            return obj;
         }
         
         private class FloatingNumber : MonoBehaviour
@@ -88,11 +160,26 @@ namespace ArenaGame.Client
             public float speed = 2f;
             public float lifetime = 1f;
             private float timer = 0f;
+            private TextMeshProUGUI text;
+            
+            void Start()
+            {
+                text = GetComponentInChildren<TextMeshProUGUI>();
+            }
             
             void Update()
             {
                 timer += Time.deltaTime;
                 transform.position += Vector3.up * speed * Time.deltaTime;
+                
+                // Fade out over time
+                if (text != null)
+                {
+                    float alpha = 1f - (timer / lifetime);
+                    Color color = text.color;
+                    color.a = alpha;
+                    text.color = color;
+                }
                 
                 if (timer >= lifetime)
                 {

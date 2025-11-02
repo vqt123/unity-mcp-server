@@ -92,6 +92,8 @@ namespace ArenaGame.Shared.Events
     {
         public EntityId EnemyId;
         public EntityId KillerId;
+        public bool IsBoss;
+        public bool IsMiniBoss;
     }
     
     // === Progression Events ===
@@ -108,6 +110,12 @@ namespace ArenaGame.Shared.Events
     {
         public EntityId HeroId;
         public int NewLevel;
+    }
+    
+    public class UpgradeChosenEvent : SimulationEvent
+    {
+        public EntityId HeroId;
+        public string UpgradeType;
     }
     
     // === Entity Destruction Events ===

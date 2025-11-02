@@ -14,6 +14,7 @@ namespace ArenaGame.Client
         [SerializeField] private Button heroesButton;
         [SerializeField] private Button playButton;
         [SerializeField] private Button quitButton;
+        [SerializeField] private TextMeshProUGUI goldText;
         
         void Start()
         {
@@ -31,6 +32,78 @@ namespace ArenaGame.Client
                     playButton.onClick.AddListener(OnPlayClicked);
                 if (quitButton != null)
                     quitButton.onClick.AddListener(OnQuitClicked);
+            }
+            
+            // Setup gold display
+            SetupGoldDisplay();
+        }
+        
+        void OnEnable()
+        {
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged += UpdateGoldDisplay;
+                UpdateGoldDisplay(GoldManager.Instance.CurrentGold);
+            }
+        }
+        
+        void OnDisable()
+        {
+            if (GoldManager.Instance != null)
+            {
+                GoldManager.Instance.OnGoldChanged -= UpdateGoldDisplay;
+            }
+        }
+        
+        private void SetupGoldDisplay()
+        {
+            // Create gold display if not assigned
+            if (goldText == null)
+            {
+                Canvas canvas = FindFirstObjectByType<Canvas>();
+                if (canvas == null)
+                {
+                    GameObject canvasObj = new GameObject("Canvas");
+                    canvas = canvasObj.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                }
+                
+                CreateGoldDisplay(canvas.transform);
+            }
+            else
+            {
+                UpdateGoldDisplay(GoldManager.Instance != null ? GoldManager.Instance.CurrentGold : 0);
+            }
+        }
+        
+        private void CreateGoldDisplay(Transform parent)
+        {
+            GameObject goldObj = new GameObject("GoldDisplay");
+            goldObj.transform.SetParent(parent, false);
+            
+            RectTransform rect = goldObj.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-20f, -20f);
+            rect.sizeDelta = new Vector2(200f, 40f);
+            
+            TextMeshProUGUI tmp = goldObj.AddComponent<TextMeshProUGUI>();
+            tmp.text = "Gold: 0";
+            tmp.fontSize = 28;
+            tmp.alignment = TextAlignmentOptions.Right;
+            tmp.color = new Color(1f, 0.84f, 0f); // Gold color
+            
+            goldText = tmp;
+        }
+        
+        private void UpdateGoldDisplay(int gold)
+        {
+            if (goldText != null)
+            {
+                goldText.text = $"Gold: {gold}";
             }
         }
         

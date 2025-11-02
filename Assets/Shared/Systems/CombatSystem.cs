@@ -45,6 +45,9 @@ namespace ArenaGame.Shared.Systems
             FixV2 normalizedDir = direction.Normalized;
             Fix64 projectileSpeed = GetProjectileSpeed(hero.WeaponType);
             
+            // Check if weapon is piercing (only Ice Arrow should pierce)
+            bool isPiercing = IsPiercing(hero.WeaponType);
+            
             Projectile projectile = new Projectile
             {
                 OwnerId = heroId,
@@ -55,7 +58,7 @@ namespace ArenaGame.Shared.Systems
                 IsActive = true,
                 SpawnTick = world.CurrentTick,
                 MaxLifetimeTicks = PROJECTILE_LIFETIME_TICKS,
-                Piercing = true, // All projectiles pierce through enemies
+                Piercing = isPiercing, // Use weapon config - only Ice Arrow pierces
                 AoeRadius = GetAoeRadius(hero.WeaponType)
             };
             
@@ -161,7 +164,9 @@ namespace ArenaGame.Shared.Systems
                             {
                                 Tick = world.CurrentTick,
                                 EnemyId = enemyId,
-                                KillerId = proj.OwnerId
+                                KillerId = proj.OwnerId,
+                                IsBoss = enemy.IsBoss,
+                                IsMiniBoss = enemy.IsMiniBoss
                             });
                         }
                         
@@ -255,8 +260,31 @@ namespace ArenaGame.Shared.Systems
         
         private static bool IsPiercing(string weaponType)
         {
-            return false; // Default for now
+            // Only Ice Arrow is piercing - check if weapon name contains "Ice"
+            if (weaponType != null && weaponType.ToLower().Contains("ice"))
+            {
+                return true;
+            }
+            
+            // Try bridge function if available (set by Client assembly)
+            if (WeaponPiercingBridge != null)
+            {
+                bool? result = WeaponPiercingBridge(weaponType);
+                if (result.HasValue)
+                {
+                    return result.Value;
+                }
+            }
+            
+            // Default: non-piercing (projectiles destroy on hit)
+            return false;
         }
+        
+        /// <summary>
+        /// Bridge function from Client assembly to check if weapon is piercing
+        /// Set by WeaponConfigBridge in Client assembly
+        /// </summary>
+        public static System.Func<string, bool?> WeaponPiercingBridge { get; set; }
         
         private static Fix64 GetAoeRadius(string weaponType)
         {

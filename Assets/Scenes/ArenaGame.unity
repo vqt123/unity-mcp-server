@@ -5052,7 +5052,7 @@ GameObject:
   - component: {fileID: 177203679}
   - component: {fileID: 177203678}
   m_Layer: 0
-  m_Name: ParticleJoint1 (1)
+  m_Name: ParticleJoint2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -16766,6 +16766,120 @@ Transform:
   - {fileID: 1255582172}
   m_Father: {fileID: 1679702849}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &5759942722212093998
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1443507651446722864, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719230637902707598, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+      propertyPath: m_Name
+      value: ArcherProjectile
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 79e07473cc6b24db1bd7099f34ff7f1a, type: 3}
+--- !u!1001 &7720381111930602733
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.29288
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.77469
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.85974
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3004408883688870145, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6633539639111151010, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
+      propertyPath: m_Name
+      value: ArcherPrefab
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 55084956521ea4ab4974b4c64c362880, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -16780,3 +16894,5 @@ SceneRoots:
   - {fileID: 1724608650}
   - {fileID: 870063231}
   - {fileID: 1679702849}
+  - {fileID: 7720381111930602733}
+  - {fileID: 5759942722212093998}

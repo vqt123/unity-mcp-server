@@ -331,7 +331,7 @@ namespace ArenaGame.Client
                 indicatorRect.sizeDelta = Vector2.zero;
                 
                 TextMeshProUGUI indicatorText = partyIndicator.AddComponent<TextMeshProUGUI>();
-                indicatorText.text = "★ IN PARTY ★";
+                indicatorText.text = "[ IN PARTY ]";
                 indicatorText.fontSize = 20;
                 indicatorText.alignment = TextAlignmentOptions.Center;
                 indicatorText.color = Color.yellow;

@@ -67,6 +67,10 @@ namespace ArenaGame.Client
             HeroConfigConverter.RegisterBridge();
             GameLogger.Log("[Bootstrap] ✓ Registered HeroConfig bridge");
             
+            // 2c. Register weapon config bridge
+            WeaponConfigBridge.RegisterBridge();
+            GameLogger.Log("[Bootstrap] ✓ Registered WeaponConfig bridge");
+            
             // 3. Create EntityVisualizer (creates GameObjects from events)
             GameObject visualizerObj = new GameObject("EntityVisualizer");
             EntityVisualizer visualizer = visualizerObj.AddComponent<EntityVisualizer>();
@@ -76,7 +80,15 @@ namespace ArenaGame.Client
             visualizer.SetProjectileFXPrefabs(projectileFXDefault, projectileFXFireball);
             GameLogger.Log($"[Bootstrap] ✓ Created EntityVisualizer - Prefabs: Hero={heroPrefab!=null}, Enemy={enemyPrefab!=null}, Proj={projectilePrefab!=null}, FXDefault={projectileFXDefault!=null}, FXFireball={projectileFXFireball!=null}");
             
-            // 4. Create PlayerDataManager if not already present (persistent)
+            // 4. Create GoldManager (tracks and awards gold)
+            if (GoldManager.Instance == null)
+            {
+                GameObject goldObj = new GameObject("GoldManager");
+                goldObj.AddComponent<GoldManager>();
+                GameLogger.Log("[Bootstrap] ✓ Created GoldManager");
+            }
+            
+            // 5. Create PlayerDataManager if not already present (persistent)
             if (PlayerDataManager.Instance == null)
             {
                 GameObject dataObj = new GameObject("PlayerDataManager");
@@ -84,25 +96,30 @@ namespace ArenaGame.Client
                 GameLogger.Log("[Bootstrap] ✓ Created PlayerDataManager");
             }
             
-            // 5. Create PartySpawner (spawns heroes from party)
+            // 6. Create PartySpawner (spawns heroes from party)
             GameObject partySpawnerObj = new GameObject("PartySpawner");
             partySpawnerObj.AddComponent<PartySpawner>();
             GameLogger.Log("[Bootstrap] ✓ Created PartySpawner");
             
-            // 6. Create WaveManager (spawns enemies)
+            // 7. Create WaveManager (spawns enemies)
             GameObject waveObj = new GameObject("WaveManager");
             waveObj.AddComponent<WaveManager>();
             GameLogger.Log("[Bootstrap] ✓ Created WaveManager");
             
-            // 7. Create DamageNumberSpawner (floating damage numbers)
+            // 8. Create ArenaUI (exit button, gold display)
+            GameObject arenaUIObj = new GameObject("ArenaUI");
+            arenaUIObj.AddComponent<ArenaUI>();
+            GameLogger.Log("[Bootstrap] ✓ Created ArenaUI");
+            
+            // 9. Create DamageNumberSpawner (floating damage numbers) - always create it
+            GameObject dmgNumObj = new GameObject("DamageNumberSpawner");
+            DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
             if (damageNumberPrefab != null)
             {
-                GameObject dmgNumObj = new GameObject("DamageNumberSpawner");
-                DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
-                typeof(DamageNumberSpawner).GetField("damageNumberPrefab", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                    ?.SetValue(spawner, damageNumberPrefab);
-                GameLogger.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
+                var field = typeof(DamageNumberSpawner).GetField("damageNumberPrefab", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                field?.SetValue(spawner, damageNumberPrefab);
             }
+            GameLogger.Log("[Bootstrap] ✓ Created DamageNumberSpawner");
             
             // 8. Create CombatEffectsManager (VFX & audio)
             GameObject effectsObj = new GameObject("CombatEffectsManager");
@@ -122,17 +139,22 @@ namespace ArenaGame.Client
             debugObj.AddComponent<SimulationDebugger>();
             GameLogger.Log("[Bootstrap] ✓ Created SimulationDebugger");
             
-            // 11. Create UpgradeUIManager for level-up upgrades
+            // 11. Create HeroUpgradeManager for gold-based upgrades
+            GameObject heroUpgradeObj = new GameObject("HeroUpgradeManager");
+            heroUpgradeObj.AddComponent<HeroUpgradeManager>();
+            GameLogger.Log("[Bootstrap] ✓ Created HeroUpgradeManager");
+            
+            // 12. Create UpgradeUIManager for level-up upgrades
             GameObject upgradeObj = new GameObject("UpgradeUIManager");
             upgradeObj.AddComponent<UpgradeUIManager>();
             GameLogger.Log("[Bootstrap] ✓ Created UpgradeUIManager");
             
-            // 12. Create CooldownUIManager for hero cooldown displays
+            // 13. Create CooldownUIManager for hero cooldown displays
             GameObject cooldownMgrObj = new GameObject("CooldownUIManager");
             cooldownMgrObj.AddComponent<CooldownUIManager>();
             GameLogger.Log("[Bootstrap] ✓ Created CooldownUIManager");
             
-            // 13. Create WaveProgressUI for wave completion progress
+            // 14. Create WaveProgressUI for wave completion progress
             GameObject waveProgressObj = new GameObject("WaveProgressUI");
             waveProgressObj.AddComponent<WaveProgressUI>();
             GameLogger.Log("[Bootstrap] ✓ Created WaveProgressUI");
