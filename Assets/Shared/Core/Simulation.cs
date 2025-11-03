@@ -34,26 +34,39 @@ namespace ArenaGame.Shared.Core
                 commandProcessor.ProcessCommands(commands);
             }
             
-            // 1. AI decides what enemies do
+            // 1. Update wave system (spawns enemies deterministically)
+            WaveSystem.Update(world);
+            
+            // 2. AI decides what enemies do
             AISystem.UpdateEnemies(world);
             
-            // 2. Heroes auto-shoot at enemies
+            // 3. Heroes auto-shoot at enemies
             CombatSystem.ProcessHeroShooting(world);
             
-            // 3. Process movement
+            // 4. Process movement
             MovementSystem.UpdateHeroes(world);
             MovementSystem.UpdateEnemies(world);
             MovementSystem.UpdateProjectiles(world);
             
-            // 4. Process combat (collisions and enemy attacks)
+            // 5. Process combat (collisions and enemy attacks)
             CombatSystem.ProcessCollisions(world);
             CombatSystem.ProcessEnemyAttacks(world);
             
-            // 5. Advance tick counter and get events
+            // 6. Advance tick counter and get events
             world.Tick();
             
-            // 6. Return events for this tick
+            // 7. Return events for this tick
             return world.GetAndClearEvents();
+        }
+        
+        /// <summary>
+        /// Reset simulation state (for new arena or replay)
+        /// </summary>
+        public void Reset()
+        {
+            world = new SimulationWorld();
+            commandProcessor = new CommandProcessor(world);
+            WaveSystem.Reset();
         }
     }
 }

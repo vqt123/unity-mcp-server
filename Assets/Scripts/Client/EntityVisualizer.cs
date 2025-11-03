@@ -421,14 +421,14 @@ namespace ArenaGame.Client
                         
                         // Stop all particle systems and ensure they're in world space
                         foreach (ParticleSystem particles in particleSystems)
-                        {
-                            // Stop emitting new particles, but keep existing particles alive
-                            particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
-                            
+                    {
+                        // Stop emitting new particles, but keep existing particles alive
+                        particles.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+                        
                             // Ensure particles stay in world space
-                            var main = particles.main;
-                            main.simulationSpace = ParticleSystemSimulationSpace.World;
-                            
+                        var main = particles.main;
+                        main.simulationSpace = ParticleSystemSimulationSpace.World;
+                        
                             // Track maximum lifetime across all systems
                             float lifetime = main.startLifetime.constantMax;
                             if (lifetime <= 0f) lifetime = main.startLifetime.constant;

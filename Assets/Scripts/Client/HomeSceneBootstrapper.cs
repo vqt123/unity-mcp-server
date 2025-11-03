@@ -40,6 +40,14 @@ namespace ArenaGame.Client
                 Debug.Log("[HomeBootstrap] ✓ Created EnergyManager");
             }
             
+            // 3a. Create GemsManager (persistent - manages gems currency)
+            if (GemsManager.Instance == null)
+            {
+                GameObject gemsObj = new GameObject("GemsManager");
+                gemsObj.AddComponent<GemsManager>();
+                Debug.Log("[HomeBootstrap] ✓ Created GemsManager");
+            }
+            
             // 4. Create Canvas if needed
             Canvas canvas = FindFirstObjectByType<Canvas>();
             if (canvas == null)

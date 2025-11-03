@@ -211,7 +211,27 @@ namespace ArenaGame.Client
         
         private void OnExitClicked()
         {
-            Debug.Log("[ArenaUI] Exit button clicked - returning to main menu");
+            Debug.Log("[ArenaUI] Exit button clicked - saving replay and returning to main menu");
+            
+            // Save replay before exiting
+            if (GameSimulation.Instance != null)
+            {
+                var recordedCommands = GameSimulation.Instance.StopRecording();
+                if (recordedCommands != null && recordedCommands.Count > 0)
+                {
+                    ArenaReplayManager.SaveReplay(recordedCommands);
+                    Debug.Log($"[ArenaUI] Saved replay with {recordedCommands.Count} commands");
+                }
+            }
+            
+            // Reset player level to 0 when exiting arena
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.SetPlayerLevel(0);
+                PlayerDataManager.Instance.PlayerBlob.upgradesChosenAtLevel1 = 0;
+                Debug.Log("[ArenaUI] Reset player level to 0");
+            }
+            
             SceneManager.LoadScene("HomeScene");
         }
     }

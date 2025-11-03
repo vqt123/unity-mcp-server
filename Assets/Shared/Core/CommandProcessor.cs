@@ -114,12 +114,49 @@ namespace ArenaGame.Shared.Core
         
         private void ProcessSpawnHero(SpawnHeroCommand cmd)
         {
+            // Shared assembly logging - using System.Diagnostics (no Unity dependencies)
+            System.Diagnostics.Debug.WriteLine($"[CommandProcessor] ProcessSpawnHero called: {cmd.HeroType} at tick {cmd.Tick}");
+            
             HeroConfig data = GetHeroData(cmd.HeroType);
+            System.Diagnostics.Debug.WriteLine($"[CommandProcessor] HeroConfig retrieved: {data.HeroType}, MaxHealth: {data.MaxHealth.ToInt()}");
             
-            // Get level bonuses if provided (from Client via bridge)
-            HeroLevelBonuses? bonuses = GetHeroLevelBonuses(cmd.HeroType);
+            // Heroes always spawn at level 0 in arena (ignoring persistent level)
+            // Persistent hero level only affects stat bonuses, not arena starting level
+            HeroLevelBonuses? persistentBonuses = GetHeroLevelBonuses(cmd.HeroType);
             
-            SpawnSystem.SpawnHero(world, data, cmd.Position, bonuses);
+            // Create bonuses with level 0 for arena, but keep stat bonuses from persistent level
+            HeroLevelBonuses? bonuses = null;
+            if (persistentBonuses.HasValue)
+            {
+                var pb = persistentBonuses.Value;
+                // Keep stat bonuses but set arena level to 0
+                bonuses = new HeroLevelBonuses
+                {
+                    Level = 0, // Always start at level 0 in arena
+                    HealthBonus = pb.HealthBonus,
+                    DamageBonus = pb.DamageBonus,
+                    MoveSpeedBonus = pb.MoveSpeedBonus,
+                    AttackSpeedBonus = pb.AttackSpeedBonus
+                };
+                System.Diagnostics.Debug.WriteLine($"[CommandProcessor] Using persistent bonuses, level set to 0 for arena");
+            }
+            else
+            {
+                // No persistent bonuses, but still start at level 0
+                bonuses = new HeroLevelBonuses
+                {
+                    Level = 0,
+                    HealthBonus = Fix64.Zero,
+                    DamageBonus = Fix64.Zero,
+                    MoveSpeedBonus = Fix64.Zero,
+                    AttackSpeedBonus = Fix64.Zero
+                };
+                System.Diagnostics.Debug.WriteLine($"[CommandProcessor] No persistent bonuses, using default (level 0)");
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[CommandProcessor] Calling SpawnSystem.SpawnHero");
+            EntityId heroId = SpawnSystem.SpawnHero(world, data, cmd.Position, bonuses);
+            System.Diagnostics.Debug.WriteLine($"[CommandProcessor] Hero spawned with EntityId: {heroId.Value}");
         }
         
         /// <summary>

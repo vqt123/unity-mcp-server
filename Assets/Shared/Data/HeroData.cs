@@ -50,6 +50,15 @@ namespace ArenaGame.Shared.Data
                 WeaponType = "Bow",
                 WeaponTier = 1
             }},
+            { "IceArcher", new HeroConfig {
+                HeroType = "IceArcher",
+                MaxHealth = Fix64.FromInt(150),
+                MoveSpeed = Fix64.FromInt(5),
+                Damage = Fix64.FromInt(100),
+                AttackSpeed = Fix64.FromFloat(3.3f),
+                WeaponType = "Bow",
+                WeaponTier = 1
+            }},
             { "Mage", new HeroConfig {
                 HeroType = "Mage",
                 MaxHealth = Fix64.FromInt(120),

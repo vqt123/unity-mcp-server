@@ -20,6 +20,14 @@ namespace ArenaGame.Client
                 DontDestroyOnLoad(dataObj);
                 Debug.Log("[HomeMenuController] Created PlayerDataManager");
             }
+            
+            // Ensure EnergyManager exists
+            if (EnergyManager.Instance == null)
+            {
+                GameObject energyObj = new GameObject("EnergyManager");
+                energyObj.AddComponent<EnergyManager>();
+                Debug.Log("[HomeMenuController] Created EnergyManager");
+            }
         }
         
         void Start()
@@ -67,10 +75,12 @@ namespace ArenaGame.Client
             // Check energy cost (5 energy to start arena)
             const int ARENA_ENERGY_COST = 5;
             
+            // Ensure EnergyManager exists (fallback if not created by bootstrapper)
             if (EnergyManager.Instance == null)
             {
-                Debug.LogError("[HomeMenuController] EnergyManager not found!");
-                return;
+                GameObject energyObj = new GameObject("EnergyManager");
+                energyObj.AddComponent<EnergyManager>();
+                Debug.Log("[HomeMenuController] Created EnergyManager (fallback)");
             }
             
             if (EnergyManager.Instance.CurrentEnergy < ARENA_ENERGY_COST)

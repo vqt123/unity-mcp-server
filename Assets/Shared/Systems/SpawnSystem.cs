@@ -14,11 +14,14 @@ namespace ArenaGame.Shared.Systems
         {
             // Apply level bonuses if provided
             HeroLevelBonuses b = bonuses ?? default(HeroLevelBonuses);
-            Fix64 finalMaxHealth = data.MaxHealth + (b.IsValid ? b.HealthBonus : Fix64.Zero);
-            Fix64 finalDamage = data.Damage + (b.IsValid ? b.DamageBonus : Fix64.Zero);
-            Fix64 finalMoveSpeed = data.MoveSpeed + (b.IsValid ? b.MoveSpeedBonus : Fix64.Zero);
-            Fix64 finalAttackSpeed = data.AttackSpeed + (b.IsValid ? b.AttackSpeedBonus : Fix64.Zero);
-            int heroLevel = b.IsValid ? b.Level : 1;
+            // Always apply stat bonuses if bonuses struct is provided (even if Level is 0)
+            // Level 0 is valid for arena spawn, stat bonuses come from persistent hero level
+            bool hasBonuses = bonuses.HasValue;
+            Fix64 finalMaxHealth = data.MaxHealth + (hasBonuses ? b.HealthBonus : Fix64.Zero);
+            Fix64 finalDamage = data.Damage + (hasBonuses ? b.DamageBonus : Fix64.Zero);
+            Fix64 finalMoveSpeed = data.MoveSpeed + (hasBonuses ? b.MoveSpeedBonus : Fix64.Zero);
+            Fix64 finalAttackSpeed = data.AttackSpeed + (hasBonuses ? b.AttackSpeedBonus : Fix64.Zero);
+            int heroLevel = hasBonuses ? b.Level : 0; // Use level from bonuses (always 0 for arena)
             
             // Calculate shot cooldown ticks from attacks per second (using final attack speed)
             Fix64 ticksPerAttack = SimulationConfig.TICKS_PER_SECOND / finalAttackSpeed;
@@ -46,9 +49,10 @@ namespace ArenaGame.Shared.Systems
             };
             
             EntityId id = world.CreateHero(hero);
+            System.Diagnostics.Debug.WriteLine($"[SpawnSystem] Hero created with EntityId: {id.Value}, Level: {heroLevel}, Tick: {world.CurrentTick}");
             
             // Generate spawn event
-            world.AddEvent(new Events.HeroSpawnedEvent
+            var spawnEvent = new Events.HeroSpawnedEvent
             {
                 Tick = world.CurrentTick,
                 HeroId = id,
@@ -60,7 +64,10 @@ namespace ArenaGame.Shared.Systems
                 AttackSpeed = finalAttackSpeed,
                 WeaponType = data.WeaponType,
                 WeaponTier = data.WeaponTier
-            });
+            };
+            
+            world.AddEvent(spawnEvent);
+            System.Diagnostics.Debug.WriteLine($"[SpawnSystem] HeroSpawnedEvent added to world event buffer - HeroId: {id.Value}, HeroType: {data.HeroType}");
             
             return id;
         }

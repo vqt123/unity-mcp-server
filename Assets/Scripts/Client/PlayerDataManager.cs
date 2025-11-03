@@ -19,6 +19,8 @@ namespace ArenaGame.Client
         public HeroInventoryData HeroInventory => playerBlob?.heroInventory;
         public PlayerBlob PlayerBlob => playerBlob;
         public int TotalGold => playerBlob?.totalGold ?? 0;
+        public int TotalGems => playerBlob?.totalGems ?? 0;
+        public int PlayerLevel => playerBlob?.playerLevel ?? 0;
         
         void Awake()
         {
@@ -42,7 +44,7 @@ namespace ArenaGame.Client
             if (File.Exists(SaveFilePath))
             {
                 try
-                {
+            {
                     string json = File.ReadAllText(SaveFilePath);
                     playerBlob = JsonUtility.FromJson<PlayerBlob>(json);
                     
@@ -100,7 +102,7 @@ namespace ArenaGame.Client
             catch (System.Exception e)
             {
                 Debug.LogError($"[PlayerData] Failed to save player blob: {e.Message}");
-            }
+        }
         }
         
         /// <summary>
@@ -143,6 +145,74 @@ namespace ArenaGame.Client
         public HeroProgressData GetHeroProgress(string heroType)
         {
             return playerBlob?.GetHeroProgress(heroType);
+        }
+        
+        /// <summary>
+        /// Updates total gold and saves
+        /// </summary>
+        public void SetTotalGems(int gems)
+        {
+            if (playerBlob != null)
+            {
+                playerBlob.totalGems = gems;
+                SaveData();
+            }
+        }
+        
+        /// <summary>
+        /// Adds gems and saves
+        /// </summary>
+        public void AddGems(int amount)
+        {
+            if (playerBlob != null)
+            {
+                playerBlob.totalGems += amount;
+                SaveData();
+            }
+        }
+        
+        /// <summary>
+        /// Spends gems and saves
+        /// </summary>
+        public void SpendGems(int amount)
+        {
+            if (playerBlob != null)
+            {
+                playerBlob.totalGems = Mathf.Max(0, playerBlob.totalGems - amount);
+                SaveData();
+            }
+        }
+        
+        /// <summary>
+        /// Sets player level and saves
+        /// </summary>
+        public void SetPlayerLevel(int level)
+        {
+            if (playerBlob != null)
+            {
+                playerBlob.playerLevel = level;
+                SaveData();
+            }
+        }
+        
+        /// <summary>
+        /// Increments upgrades chosen at level 1
+        /// </summary>
+        public void IncrementUpgradesAtLevel1()
+        {
+            if (playerBlob != null)
+            {
+                playerBlob.upgradesChosenAtLevel1++;
+                SaveData();
+            }
+        }
+        
+        /// <summary>
+        /// Gets upgrades chosen at level 1
+        /// </summary>
+        public int GetUpgradesAtLevel1()
+        {
+            return playerBlob?.upgradesChosenAtLevel1 ?? 0;
         }
     }
 }

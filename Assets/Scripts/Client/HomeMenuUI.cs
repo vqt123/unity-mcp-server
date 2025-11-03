@@ -13,6 +13,7 @@ namespace ArenaGame.Client
         [Header("UI References")]
         [SerializeField] private Button heroesButton;
         [SerializeField] private Button playButton;
+        [SerializeField] private Button replayButton;
         [SerializeField] private Button quitButton;
         [SerializeField] private TextMeshProUGUI goldText;
         [SerializeField] private TextMeshProUGUI energyText;
@@ -31,8 +32,16 @@ namespace ArenaGame.Client
                     heroesButton.onClick.AddListener(OnHeroesClicked);
                 if (playButton != null)
                     playButton.onClick.AddListener(OnPlayClicked);
+                if (replayButton != null)
+                    replayButton.onClick.AddListener(OnReplayClicked);
                 if (quitButton != null)
                     quitButton.onClick.AddListener(OnQuitClicked);
+                
+                // Update replay button state
+                if (replayButton != null)
+                {
+                    replayButton.interactable = ArenaReplayManager.HasReplay();
+                }
             }
             
             // Setup gold display
@@ -231,13 +240,21 @@ namespace ArenaGame.Client
             
             // Create buttons
             playButton = CreateButton(menuPanel.transform, "PLAY", new Color(0.2f, 0.8f, 0.2f));
+            replayButton = CreateButton(menuPanel.transform, "REPLAY LAST ARENA", new Color(0.8f, 0.6f, 0.2f));
             heroesButton = CreateButton(menuPanel.transform, "HEROES", new Color(0.2f, 0.4f, 0.8f));
             quitButton = CreateButton(menuPanel.transform, "QUIT", new Color(0.8f, 0.2f, 0.2f));
             
             // Wire up buttons
             playButton.onClick.AddListener(OnPlayClicked);
+            replayButton.onClick.AddListener(OnReplayClicked);
             heroesButton.onClick.AddListener(OnHeroesClicked);
             quitButton.onClick.AddListener(OnQuitClicked);
+            
+            // Disable replay button if no replay available
+            if (!ArenaReplayManager.HasReplay())
+            {
+                replayButton.interactable = false;
+            }
             
             Debug.Log("[HomeMenu] Created menu UI");
         }
@@ -316,6 +333,26 @@ namespace ArenaGame.Client
                 Debug.Log("[HomeMenu] Starting arena - loading game scene");
                 SceneManager.LoadScene("ArenaGame");
             }
+        }
+        
+        private void OnReplayClicked()
+        {
+            Debug.Log("[HomeMenu] Replay clicked - loading last arena replay");
+            
+            // Load replay data
+            var commands = ArenaReplayManager.LoadReplay();
+            if (commands == null || commands.Count == 0)
+            {
+                Debug.LogWarning("[HomeMenu] No replay data available");
+                return;
+            }
+            
+            // Load arena scene and set replay mode
+            SceneManager.LoadScene("ArenaGame");
+            
+            // Note: Replay will be started by GameBootstrapper after scene loads
+            // We need to pass the replay commands somehow - using a static variable for now
+            ReplayStarter.SetReplayCommands(commands);
         }
         
         private void OnHeroesClicked()

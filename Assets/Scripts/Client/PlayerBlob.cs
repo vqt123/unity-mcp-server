@@ -14,7 +14,12 @@ namespace ArenaGame.Client
     {
         public HeroInventoryData heroInventory = new HeroInventoryData();
         public int totalGold = 0;
+        public int totalGems = 0;
         public List<HeroProgressEntry> heroProgressList = new List<HeroProgressEntry>();
+        
+        // Arena progression
+        public int playerLevel = 0; // Player level (starts at 0, levels to 1 on arena entry)
+        public int upgradesChosenAtLevel1 = 0; // Track upgrades chosen at level 1 (0-2)
         
         // Energy system
         public int currentEnergy = 30;
@@ -22,17 +27,21 @@ namespace ArenaGame.Client
         public double lastEnergyRegenTime = 0; // Unix timestamp of last regeneration check
         
         /// <summary>
-        /// Creates default player blob with single archer hero card
+        /// Creates default player blob with Archer, Ice Archer, and Mage hero cards
         /// </summary>
         public static PlayerBlob CreateDefault()
         {
             var blob = new PlayerBlob();
             
-            // Start with only Archer unlocked and in party
-            blob.heroInventory.unlockedHeroes = new List<string> { "Archer" };
-            blob.heroInventory.partyHeroes = new List<string> { "Archer" };
+            // Start with Archer, Ice Archer, and Mage unlocked
+            blob.heroInventory.unlockedHeroes = new List<string> { "Archer", "IceArcher", "Mage" };
+            // Start with all three in party
+            blob.heroInventory.partyHeroes = new List<string> { "Archer", "IceArcher", "Mage" };
             
             blob.totalGold = 0;
+            blob.totalGems = 0;
+            blob.playerLevel = 0;
+            blob.upgradesChosenAtLevel1 = 0;
             
             // Start with full energy
             blob.currentEnergy = 30;

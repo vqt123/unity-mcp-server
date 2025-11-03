@@ -18,11 +18,11 @@ namespace ArenaGame.Client
         {
             var data = new HeroInventoryData();
             
-            // Start with only Archer unlocked (player must unlock others)
-            data.unlockedHeroes = new List<string> { "Archer" };
+            // Start with Archer, Ice Archer, and Mage unlocked
+            data.unlockedHeroes = new List<string> { "Archer", "IceArcher", "Mage" };
             
-            // Start with Archer in party
-            data.partyHeroes = new List<string> { "Archer" };
+            // Start with all three in party
+            data.partyHeroes = new List<string> { "Archer", "IceArcher", "Mage" };
             
             return data;
         }

@@ -51,17 +51,8 @@ namespace ArenaGame.Client
             SpawnHero(heroType, FixV2.Zero);
             spawnedHeroTypes.Add(heroType);
             
-            // Start waves immediately - hero will spawn on next simulation tick
-            WaveManager waveManager = FindFirstObjectByType<WaveManager>();
-            if (waveManager != null)
-            {
-                Debug.Log("[PartySpawner] Starting waves");
-                waveManager.OnHeroSelected();
-            }
-            else
-            {
-                Debug.LogError("[PartySpawner] WaveManager not found!");
-            }
+            // Waves will start automatically from WaveSystem when hero spawns
+            // No need to manually trigger - WaveSystem checks for heroes each tick
             
             // Track that we've spawned the first hero
             heroesSpawned = true;
@@ -116,8 +107,20 @@ namespace ArenaGame.Client
                 Position = position
             };
             
+            Debug.Log($"[PartySpawner] Creating SpawnHeroCommand: {heroType} at {position}");
+            
+            if (GameSimulation.Instance == null)
+            {
+                Debug.LogError("[PartySpawner] GameSimulation.Instance is null - cannot queue command!");
+                return;
+            }
+            
+            int tickBefore = GameSimulation.Instance.Simulation.World.CurrentTick;
             GameSimulation.Instance.QueueCommand(cmd);
-            Debug.Log($"[PartySpawner] Spawning {heroType} at {position}");
+            int tickAfter = GameSimulation.Instance.Simulation.World.CurrentTick;
+            
+            Debug.Log($"[PartySpawner] Command queued - tick before: {tickBefore}, tick after: {tickAfter}");
+            Debug.Log($"[PartySpawner] Command will be processed on next simulation tick");
         }
         
     }

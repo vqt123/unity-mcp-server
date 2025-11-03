@@ -35,7 +35,13 @@ public class CooldownRadialUI : MonoBehaviour
         Debug.Log($"[CooldownRadial] Image configured - type: {fillImage.type}, fillMethod: {fillImage.fillMethod}");
         
         // Try to find hero after a delay
-        Invoke(nameof(FindHero), 1f);
+        StartCoroutine(FindHeroDelayed());
+    }
+    
+    private System.Collections.IEnumerator FindHeroDelayed()
+    {
+        yield return new WaitForSeconds(1f);
+        FindHero();
     }
     
     private void FindHero()
@@ -53,13 +59,13 @@ public class CooldownRadialUI : MonoBehaviour
             else
             {
                 Debug.LogWarning("[CooldownRadial] No heroes found, retrying in 1 second");
-                Invoke(nameof(FindHero), 1f);
+                StartCoroutine(FindHeroDelayed());
             }
         }
         else
         {
             Debug.LogWarning("[CooldownRadial] GameSimulation not ready, retrying in 1 second");
-            Invoke(nameof(FindHero), 1f);
+            StartCoroutine(FindHeroDelayed());
         }
     }
     

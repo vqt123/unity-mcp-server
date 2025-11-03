@@ -92,15 +92,15 @@ namespace ArenaGame.Client
                 
                 // Priority 3: Try simulation world as final fallback
                 if (pos == Vector3.zero && GameSimulation.Instance != null)
+            {
+                var world = GameSimulation.Instance.Simulation.World;
+                if (world.TryGetEnemy(dmg.EnemyId, out var enemy))
                 {
-                    var world = GameSimulation.Instance.Simulation.World;
-                    if (world.TryGetEnemy(dmg.EnemyId, out var enemy))
-                    {
                         pos = new Vector3(
-                            (float)enemy.Position.X.ToDouble(),
+                        (float)enemy.Position.X.ToDouble(),
                             1.0f,
-                            (float)enemy.Position.Y.ToDouble()
-                        );
+                        (float)enemy.Position.Y.ToDouble()
+                    );
                     }
                 }
                 
@@ -116,7 +116,7 @@ namespace ArenaGame.Client
                 
                 // ALWAYS spawn damage number at enemy position
                 SpawnDamageNumber(pos, dmg.Damage.ToInt(), enemyDamageColor);
-            }
+                }
             else
             {
                 Debug.LogWarning($"[DamageNumberSpawner] Event is not EnemyDamagedEvent: {evt?.GetType().Name}");

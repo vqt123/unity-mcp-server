@@ -178,7 +178,7 @@ namespace ArenaGame.Shared.Systems
                         
                         // ALWAYS destroy projectile on hit (unless piercing - only ice arrow)
                         // Break immediately so projectile doesn't hit multiple enemies
-                        break;
+                            break;
                     }
                 }
                 

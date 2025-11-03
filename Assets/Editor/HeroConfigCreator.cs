@@ -18,6 +18,12 @@ namespace ArenaGame.Editor
             CreateHeroConfig("Archer_Hero", "Archer", "Archer", "Ranged hero with bow", 150f, 100f, 5f, 3.3f, Color.green);
         }
         
+        [MenuItem("Tools/Create Hero Configs/Ice Archer Hero")]
+        public static void CreateIceArcherHero()
+        {
+            CreateHeroConfig("IceArcher_Hero", "IceArcher", "Ice Archer", "Ice-themed ranged hero with bow", 150f, 100f, 5f, 3.3f, new Color(0.5f, 0.8f, 1f, 1f));
+        }
+        
         [MenuItem("Tools/Create Hero Configs/Mage Hero")]
         public static void CreateMageHero()
         {
@@ -87,6 +93,7 @@ namespace ArenaGame.Editor
             switch (heroType.ToLower())
             {
                 case "archer":
+                case "icearcher":
                     return "Bow";
                 case "mage":
                     return "Firewand";

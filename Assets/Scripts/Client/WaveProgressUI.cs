@@ -34,8 +34,8 @@ namespace ArenaGame.Client
             Image sourceImage = FindExistingUISprite();
             if (sourceImage == null || sourceImage.sprite == null)
             {
-                // If no sprite found, create a simple colored sprite
-                Debug.LogWarning("[WaveProgress] No existing sprite found, creating default sprite");
+                // If no sprite found, create a simple colored sprite (this is normal behavior)
+                Debug.Log("[WaveProgress] No existing sprite found, creating default sprite");
                 sourceImage = CreateDefaultSprite(canvas.transform);
             }
             
