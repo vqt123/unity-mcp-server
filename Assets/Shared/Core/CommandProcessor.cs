@@ -75,6 +75,22 @@ namespace ArenaGame.Shared.Core
                     hero.MaxHealth += Fix64.FromInt(30);
                     hero.Health = Fix64.Min(hero.Health + Fix64.FromInt(30), hero.MaxHealth);
                     break;
+                case "Star":
+                    // Star upgrade - only for Archer and IceArcher, max 3 stars
+                    if ((hero.HeroType == "Archer" || hero.HeroType == "IceArcher") && hero.Stars < 3)
+                    {
+                        hero.Stars++;
+                        
+                        // Apply star 3 bonuses immediately if applicable
+                        if (hero.Stars >= 3)
+                        {
+                            // Star 3: faster attack speed (for both Archer and IceArcher)
+                            Fix64 speedMultiplier = Fix64.FromFloat(1.5f);
+                            hero.AttackSpeed = hero.AttackSpeed * speedMultiplier;
+                            hero.ShotCooldownTicks = (int)(SimulationConfig.TICKS_PER_SECOND / hero.AttackSpeed).ToLong();
+                        }
+                    }
+                    break;
             }
             
             world.UpdateHero(cmd.HeroId, hero);

@@ -4,14 +4,14 @@ using ArenaGame.Shared.Systems;
 namespace ArenaGame.Client
 {
     /// <summary>
-    /// Bridges Client WeaponConfig data to Shared CombatSystem
+    /// Bridges Client HeroConfig data to Shared CombatSystem (weapon properties now in HeroConfig)
     /// </summary>
     public static class WeaponConfigBridge
     {
         private static bool bridgeRegistered = false;
         
         /// <summary>
-        /// Registers the bridge function so Shared assembly can access Client WeaponConfig
+        /// Registers the bridge function so Shared assembly can access Client HeroConfig piercing info
         /// Call this from GameBootstrapper or similar initialization code
         /// </summary>
         public static void RegisterBridge()
@@ -24,22 +24,14 @@ namespace ArenaGame.Client
         }
         
         /// <summary>
-        /// Bridge function: Gets piercing status from WeaponConfig
+        /// Bridge function: Gets piercing status from HeroConfig (weapon properties merged)
         /// Called by Shared assembly via CombatSystem.WeaponPiercingBridge
+        /// Note: This is a legacy bridge - piercing is now determined by hero type and stars
         /// </summary>
         private static bool? GetWeaponPiercing(string weaponType)
         {
-            // Try to get from WeaponConfigDatabase (ScriptableObjects)
-            if (WeaponConfigDatabase.Instance != null)
-            {
-                WeaponConfig config = WeaponConfigDatabase.Instance.GetWeaponConfig(weaponType);
-                if (config != null)
-                {
-                    return config.piercing;
-                }
-            }
-            
-            // Return null to fall back to default (check weapon name for "Ice")
+            // IceArcher is always piercing (handled in CombatSystem)
+            // Return null to fall back to default logic in CombatSystem
             return null;
         }
     }

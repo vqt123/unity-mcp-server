@@ -19,63 +19,70 @@ namespace ArenaGame.Shared.Data
                 MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(3.3f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "Pistol",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "FastHero", new HeroConfig {
                 HeroType = "FastHero",
                 MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(7),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(3.3f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "SMG",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "TankHero", new HeroConfig {
                 HeroType = "TankHero",
                 MaxHealth = Fix64.FromInt(200),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(2.0f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "Shotgun",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "Archer", new HeroConfig {
                 HeroType = "Archer",
                 MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(3.3f),
+                AttackSpeed = Fix64.FromFloat(1.0f), // 1 per 1s
                 WeaponType = "Bow",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "IceArcher", new HeroConfig {
                 HeroType = "IceArcher",
                 MaxHealth = Fix64.FromInt(150),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(3.3f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "Bow",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "Mage", new HeroConfig {
                 HeroType = "Mage",
                 MaxHealth = Fix64.FromInt(120),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(1.67f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "Firewand",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
             { "Warrior", new HeroConfig {
                 HeroType = "Warrior",
                 MaxHealth = Fix64.FromInt(200),
                 MoveSpeed = Fix64.FromInt(5),
                 Damage = Fix64.FromInt(100),
-                AttackSpeed = Fix64.FromFloat(2.0f),
+                AttackSpeed = Fix64.FromFloat(0.5f), // 1 per 2s
                 WeaponType = "Sword",
-                WeaponTier = 1
+                WeaponTier = 1,
+                Stars = 0
             }},
         };
 
@@ -98,6 +105,7 @@ namespace ArenaGame.Shared.Data
         public Fix64 AttackSpeed;
         public string WeaponType;
         public int WeaponTier;
+        public int Stars;
     }
 }
 

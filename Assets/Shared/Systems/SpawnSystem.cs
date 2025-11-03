@@ -42,6 +42,7 @@ namespace ArenaGame.Shared.Systems
                 ShotCooldownTicks = cooldownTicks,
                 WeaponType = data.WeaponType,
                 WeaponTier = data.WeaponTier,
+                Stars = data.Stars,
                 Level = heroLevel,
                 CurrentXP = 0,
                 XPToNextLevel = 100,

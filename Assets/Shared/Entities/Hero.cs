@@ -27,6 +27,7 @@ namespace ArenaGame.Shared.Entities
         public int ShotCooldownTicks;
         public string WeaponType;
         public int WeaponTier;
+        public int Stars; // Hero star level (0-3) for weapon upgrades
         
         // Progression
         public int Level;

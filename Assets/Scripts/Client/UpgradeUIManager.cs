@@ -703,15 +703,36 @@ namespace ArenaGame.Client
                 }
             }
             
-            // Second upgrade: Randomly show either heroes OR stat upgrades
-            string[] upgradeTypes = { "Damage", "AttackSpeed", "Health" };
-            string[] upgradeLabels = { 
+            // Check if any spawned heroes can get star upgrades
+            List<string> starEligibleHeroes = GetStarEligibleHeroes();
+            
+            // Second upgrade: Randomly show either heroes OR stat upgrades OR star upgrades
+            List<string> upgradeTypes = new List<string> { "Damage", "AttackSpeed", "Health" };
+            List<string> upgradeLabels = new List<string> { 
                 "Increase Damage\n+10 DMG", 
                 "Increase Attack Speed\n+0.5 ATK/SEC",
                 "Increase Max Health\n+30 HP"
             };
             
-            List<int> statIndices = new List<int> { 0, 1, 2 };
+            // Add star upgrade option if eligible heroes exist
+            if (starEligibleHeroes.Count > 0)
+            {
+                string heroType = starEligibleHeroes[0]; // Use first eligible hero
+                int currentStars = GetHeroStars(heroType);
+                if (currentStars < 3)
+                {
+                    string starLabel = GetStarUpgradeLabel(heroType, currentStars);
+                    upgradeTypes.Add("Star");
+                    upgradeLabels.Add(starLabel);
+                }
+            }
+            
+            List<int> statIndices = new List<int>();
+            for (int i = 0; i < upgradeTypes.Count; i++)
+            {
+                statIndices.Add(i);
+            }
+            // Shuffle upgrade indices
             for (int i = 0; i < statIndices.Count; i++)
             {
                 int randomIndex = Random.Range(i, statIndices.Count);
@@ -739,7 +760,7 @@ namespace ArenaGame.Client
                 upgradeButtons[0].onClick.RemoveAllListeners();
                 upgradeButtons[0].onClick.AddListener(() => SpawnAdditionalHero(randomHeroType));
                 
-                // Show 2 stat upgrades
+                // Show 2 upgrades (stat or star)
                 for (int i = 0; i < 2 && i < statIndices.Count; i++)
                 {
                     int statIndex = statIndices[i];
@@ -763,8 +784,9 @@ namespace ArenaGame.Client
             }
             else
             {
-                // Show 3 stat upgrades
-                for (int i = 0; i < 3 && i < statIndices.Count; i++)
+                // Show 3 upgrades (stat or star)
+                int upgradesToShow = Mathf.Min(3, statIndices.Count);
+                for (int i = 0; i < upgradesToShow; i++)
                 {
                     int statIndex = statIndices[i];
                     upgradeButtons[i].gameObject.SetActive(true);
@@ -780,7 +802,7 @@ namespace ArenaGame.Client
                     upgradeButtons[i].onClick.AddListener(() => OnUpgradeSelected(upgradeType));
                 }
                 
-                Debug.Log($"[UpgradeUI] Showing 3 stat upgrades for second upgrade (2 of 2)");
+                Debug.Log($"[UpgradeUI] Showing {upgradesToShow} upgrades for second upgrade (2 of 2)");
             }
             
             upgradePanel.SetActive(true);
@@ -831,14 +853,35 @@ namespace ArenaGame.Client
                 }
             }
             
-            string[] upgradeTypes = { "Damage", "AttackSpeed", "Health" };
-            string[] upgradeLabels = { 
+            // Check if any spawned heroes can get star upgrades
+            List<string> starEligibleHeroes = GetStarEligibleHeroes();
+            
+            List<string> upgradeTypes = new List<string> { "Damage", "AttackSpeed", "Health" };
+            List<string> upgradeLabels = new List<string> { 
                 "Increase Damage\n+10 DMG", 
                 "Increase Attack Speed\n+0.5 ATK/SEC",
                 "Increase Max Health\n+30 HP"
             };
             
-            List<int> statIndices = new List<int> { 0, 1, 2 };
+            // Add star upgrade option if eligible heroes exist
+            if (starEligibleHeroes.Count > 0)
+            {
+                string heroType = starEligibleHeroes[0];
+                int currentStars = GetHeroStars(heroType);
+                if (currentStars < 3)
+                {
+                    string starLabel = GetStarUpgradeLabel(heroType, currentStars);
+                    upgradeTypes.Add("Star");
+                    upgradeLabels.Add(starLabel);
+                }
+            }
+            
+            List<int> statIndices = new List<int>();
+            for (int i = 0; i < upgradeTypes.Count; i++)
+            {
+                statIndices.Add(i);
+            }
+            // Shuffle upgrade indices
             for (int i = 0; i < statIndices.Count; i++)
             {
                 int randomIndex = Random.Range(i, statIndices.Count);
@@ -953,9 +996,32 @@ namespace ArenaGame.Client
                 }
             }
             
+            // For star upgrades, find the eligible hero (Archer or IceArcher with < 3 stars)
+            EntityId targetHeroId = playerHeroId;
+            if (upgradeType == "Star")
+            {
+                List<string> eligibleHeroes = GetStarEligibleHeroes();
+                if (eligibleHeroes.Count > 0)
+                {
+                    // Find the first eligible hero in the world
+                    var world = GameSimulation.Instance.Simulation.World;
+                    foreach (var heroId in world.HeroIds)
+                    {
+                        if (world.TryGetHero(heroId, out Hero hero))
+                        {
+                            if ((hero.HeroType == "Archer" || hero.HeroType == "IceArcher") && hero.Stars < 3)
+                            {
+                                targetHeroId = heroId;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
             ChooseUpgradeCommand cmd = new ChooseUpgradeCommand
             {
-                HeroId = playerHeroId,
+                HeroId = targetHeroId,
                 UpgradeType = upgradeType,
                 UpgradeTier = 1
             };
@@ -976,6 +1042,89 @@ namespace ArenaGame.Client
         {
             playerHeroId = heroId;
             Debug.Log($"[UpgradeUI] Player hero set to ID: {heroId.Value}");
+        }
+        
+        /// <summary>
+        /// Gets list of heroes that are eligible for star upgrades (Archer, IceArcher)
+        /// </summary>
+        private List<string> GetStarEligibleHeroes()
+        {
+            List<string> eligible = new List<string>();
+            
+            if (GameSimulation.Instance == null) return eligible;
+            
+            var world = GameSimulation.Instance.Simulation.World;
+            foreach (var heroId in world.HeroIds)
+            {
+                if (world.TryGetHero(heroId, out Hero hero))
+                {
+                    if ((hero.HeroType == "Archer" || hero.HeroType == "IceArcher") && hero.Stars < 3)
+                    {
+                        eligible.Add(hero.HeroType);
+                    }
+                }
+            }
+            
+            return eligible;
+        }
+        
+        /// <summary>
+        /// Gets current star level for a hero type
+        /// </summary>
+        private int GetHeroStars(string heroType)
+        {
+            if (GameSimulation.Instance == null) return 0;
+            
+            var world = GameSimulation.Instance.Simulation.World;
+            foreach (var heroId in world.HeroIds)
+            {
+                if (world.TryGetHero(heroId, out Hero hero) && hero.HeroType == heroType)
+                {
+                    return hero.Stars;
+                }
+            }
+            
+            return 0;
+        }
+        
+        /// <summary>
+        /// Gets star upgrade label based on hero type and current stars
+        /// </summary>
+        private string GetStarUpgradeLabel(string heroType, int currentStars)
+        {
+            int newStars = currentStars + 1;
+            string heroName = heroType == "Archer" ? "Archer" : "Ice Archer";
+            
+            if (heroType == "Archer")
+            {
+                switch (newStars)
+                {
+                    case 1:
+                        return $"{heroName} Star {newStars}\nDouble Arrow";
+                    case 2:
+                        return $"{heroName} Star {newStars}\nTriple Arrow";
+                    case 3:
+                        return $"{heroName} Star {newStars}\n4 Arrows + 2x DMG + Faster";
+                    default:
+                        return $"{heroName} Star {newStars}";
+                }
+            }
+            else if (heroType == "IceArcher")
+            {
+                switch (newStars)
+                {
+                    case 1:
+                        return $"{heroName} Star {newStars}\n2 Arrows (Piercing)";
+                    case 2:
+                        return $"{heroName} Star {newStars}\n3 Arrows (Piercing)";
+                    case 3:
+                        return $"{heroName} Star {newStars}\n4 Arrows + Faster";
+                    default:
+                        return $"{heroName} Star {newStars}";
+                }
+            }
+            
+            return $"Star {newStars}";
         }
     }
 }

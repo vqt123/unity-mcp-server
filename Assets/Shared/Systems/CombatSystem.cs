@@ -41,51 +41,137 @@ namespace ArenaGame.Shared.Systems
             if (!world.TryGetHero(heroId, out Hero hero)) return;
             if (!hero.CanShoot(world.CurrentTick)) return;
             
-            // Create projectile
-            FixV2 normalizedDir = direction.Normalized;
+            // Calculate projectile count and modifiers based on hero type and stars
+            int projectileCount = GetProjectileCount(hero);
+            Fix64 damage = GetProjectileDamage(hero);
             Fix64 projectileSpeed = GetProjectileSpeed(hero.WeaponType);
+            bool isPiercing = IsPiercing(hero.WeaponType, hero.Stars);
             
-            // Check if weapon is piercing (only Ice Arrow should pierce)
-            bool isPiercing = IsPiercing(hero.WeaponType);
+            FixV2 normalizedDir = direction.Normalized;
             
-            Projectile projectile = new Projectile
+            // Create projectiles based on star level
+            for (int i = 0; i < projectileCount; i++)
             {
-                OwnerId = heroId,
-                Position = hero.Position,
-                Velocity = normalizedDir * projectileSpeed,
-                Speed = projectileSpeed,
-                Damage = hero.Damage,
-                IsActive = true,
-                SpawnTick = world.CurrentTick,
-                MaxLifetimeTicks = PROJECTILE_LIFETIME_TICKS,
-                Piercing = isPiercing, // Use weapon config - only Ice Arrow pierces
-                AoeRadius = GetAoeRadius(hero.WeaponType)
-            };
-            
-            EntityId projectileId = world.CreateProjectile(projectile);
+                // Calculate angle offset for this projectile (spread them)
+                FixV2 projectileDir = normalizedDir;
+                if (projectileCount > 1)
+                {
+                    // Spread angle: 15 degrees per projectile
+                    // Convert degrees to radians and compute rotation
+                    float angleDegrees = (i - (projectileCount - 1) / 2f) * 15f;
+                    double angleRadians = angleDegrees * System.Math.PI / 180.0;
+                    
+                    // Use System.Math for trig (deterministic enough for spread calculation)
+                    double cos = System.Math.Cos(angleRadians);
+                    double sin = System.Math.Sin(angleRadians);
+                    
+                    // Rotate direction by angle offset
+                    double dirX = normalizedDir.X.ToDouble();
+                    double dirY = normalizedDir.Y.ToDouble();
+                    double rotatedX = dirX * cos - dirY * sin;
+                    double rotatedY = dirX * sin + dirY * cos;
+                    
+                    projectileDir = new FixV2(
+                        Fix64.FromDouble(rotatedX),
+                        Fix64.FromDouble(rotatedY)
+                    ).Normalized;
+                }
+                
+                Projectile projectile = new Projectile
+                {
+                    OwnerId = heroId,
+                    Position = hero.Position,
+                    Velocity = projectileDir * projectileSpeed,
+                    Speed = projectileSpeed,
+                    Damage = damage,
+                    IsActive = true,
+                    SpawnTick = world.CurrentTick,
+                    MaxLifetimeTicks = PROJECTILE_LIFETIME_TICKS,
+                    Piercing = isPiercing,
+                    AoeRadius = GetAoeRadius(hero.WeaponType)
+                };
+                
+                EntityId projectileId = world.CreateProjectile(projectile);
+                
+                // Generate events
+                world.AddEvent(new Events.ProjectileSpawnedEvent
+                {
+                    Tick = world.CurrentTick,
+                    ProjectileId = projectileId,
+                    OwnerId = heroId,
+                    Position = hero.Position,
+                    Velocity = projectileDir * projectileSpeed,
+                    Damage = damage
+                });
+            }
             
             // Update hero cooldown
             hero.LastShotTick = world.CurrentTick;
             world.UpdateHero(heroId, hero);
             
-            // Generate events
-            world.AddEvent(new Events.ProjectileSpawnedEvent
-            {
-                Tick = world.CurrentTick,
-                ProjectileId = projectileId,
-                OwnerId = heroId,
-                Position = hero.Position,
-                Velocity = normalizedDir * projectileSpeed,
-                Damage = hero.Damage
-            });
-            
+            // Generate shoot event (single event for the shot)
             world.AddEvent(new Events.HeroShootEvent
             {
                 Tick = world.CurrentTick,
                 HeroId = heroId,
-                ProjectileId = projectileId,
+                ProjectileId = EntityId.Invalid, // Not applicable for multiple projectiles
                 Direction = normalizedDir
             });
+        }
+        
+        /// <summary>
+        /// Gets the number of projectiles to fire based on hero type and stars
+        /// </summary>
+        private static int GetProjectileCount(Hero hero)
+        {
+            // Base projectile count
+            int count = 1;
+            
+            // Apply star upgrades
+            if (hero.HeroType == "Archer")
+            {
+                // Archer: star 1 = 2 arrows, star 2 = 3 arrows, star 3 = 4 arrows
+                if (hero.Stars >= 1) count = 2;
+                if (hero.Stars >= 2) count = 3;
+                if (hero.Stars >= 3) count = 4;
+            }
+            else if (hero.HeroType == "IceArcher")
+            {
+                // IceArcher: star 1 = 2 arrows, star 2 = 3 arrows, star 3 = 4 arrows
+                if (hero.Stars >= 1) count = 2;
+                if (hero.Stars >= 2) count = 3;
+                if (hero.Stars >= 3) count = 4;
+            }
+            
+            return count;
+        }
+        
+        /// <summary>
+        /// Gets projectile damage with star modifiers
+        /// </summary>
+        private static Fix64 GetProjectileDamage(Hero hero)
+        {
+            Fix64 damage = hero.Damage;
+            
+            // Archer star 3: double damage
+            if (hero.HeroType == "Archer" && hero.Stars >= 3)
+            {
+                damage = damage * Fix64.FromInt(2);
+            }
+            
+            return damage;
+        }
+        
+        /// <summary>
+        /// Gets effective attack speed with star modifiers
+        /// This is called when the hero shoots to check cooldown
+        /// Star 3 bonuses are applied in CommandProcessor when star is upgraded
+        /// </summary>
+        private static Fix64 GetEffectiveAttackSpeed(Hero hero)
+        {
+            // Attack speed multiplier is already applied when star 3 is upgraded
+            // This method is kept for future use if needed for dynamic speed changes
+            return hero.AttackSpeed;
         }
         
         public static void ProcessCollisions(SimulationWorld world)
@@ -264,9 +350,9 @@ namespace ArenaGame.Shared.Systems
             return Fix64.FromFloat(45f); // 3x faster: 15 * 3 = 45
         }
         
-        private static bool IsPiercing(string weaponType)
+        private static bool IsPiercing(string weaponType, int stars)
         {
-            // Only Ice Arrow is piercing - check if weapon name contains "Ice"
+            // IceArcher is always piercing (base and all stars)
             if (weaponType != null && weaponType.ToLower().Contains("ice"))
             {
                 return true;

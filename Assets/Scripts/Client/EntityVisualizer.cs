@@ -328,7 +328,21 @@ namespace ArenaGame.Client
         
         private GameObject GetProjectilePrefabForWeapon(string weaponType)
         {
-            // Try to get from weapon config first
+            // Try to get from hero config (weapon properties are now in hero config)
+            // Note: We need to find a hero that uses this weapon type
+            if (HeroConfigDatabase.Instance != null)
+            {
+                var allHeroConfigs = HeroConfigDatabase.Instance.GetAllHeroConfigs();
+                foreach (var heroConfig in allHeroConfigs)
+                {
+                    if (heroConfig != null && heroConfig.weaponType == weaponType && heroConfig.projectilePrefab != null)
+                    {
+                        return heroConfig.projectilePrefab;
+                    }
+                }
+            }
+            
+            // Fallback to old WeaponConfigDatabase if still available
             if (WeaponConfigDatabase.Instance != null)
             {
                 WeaponConfig config = WeaponConfigDatabase.Instance.GetWeaponConfig(weaponType);
@@ -344,7 +358,21 @@ namespace ArenaGame.Client
         
         private GameObject GetProjectileFXForWeapon(string weaponType)
         {
-            // Try to get from weapon config first
+            // Try to get from hero config (weapon properties are now in hero config)
+            // Note: We need to find a hero that uses this weapon type
+            if (HeroConfigDatabase.Instance != null)
+            {
+                var allHeroConfigs = HeroConfigDatabase.Instance.GetAllHeroConfigs();
+                foreach (var heroConfig in allHeroConfigs)
+                {
+                    if (heroConfig != null && heroConfig.weaponType == weaponType && heroConfig.projectileFXPrefab != null)
+                    {
+                        return heroConfig.projectileFXPrefab;
+                    }
+                }
+            }
+            
+            // Fallback to old WeaponConfigDatabase if still available
             if (WeaponConfigDatabase.Instance != null)
             {
                 WeaponConfig config = WeaponConfigDatabase.Instance.GetWeaponConfig(weaponType);

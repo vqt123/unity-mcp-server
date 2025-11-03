@@ -48,7 +48,7 @@ namespace ArenaGame.Client
                     // Validate config
                     if (!config.IsValid())
                     {
-                        Debug.LogWarning($"[HeroConfigDatabase] Hero config '{config.heroTypeName}' is missing weapon config!");
+                        Debug.LogWarning($"[HeroConfigDatabase] Hero config '{config.heroTypeName}' is missing weapon type!");
                     }
                     else
                     {

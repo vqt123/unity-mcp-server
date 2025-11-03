@@ -61,15 +61,12 @@ namespace ArenaGame.Client
                 return null;
             }
             
-            // Validate weapon config is assigned
-            if (configSO.weaponConfig == null)
+            // Validate weapon type is assigned
+            if (string.IsNullOrEmpty(configSO.weaponType))
             {
-                UnityEngine.Debug.LogError($"[HeroConfigConverter] HeroConfigSO '{configSO.heroTypeName}' has no weapon config assigned!");
+                UnityEngine.Debug.LogError($"[HeroConfigConverter] HeroConfigSO '{configSO.heroTypeName}' has no weapon type assigned!");
                 return null;
             }
-            
-            // Get weapon type from weapon config
-            string weaponType = configSO.GetWeaponType();
             
             // Convert to Shared HeroConfig
             HeroConfig config = new HeroConfig
@@ -79,8 +76,9 @@ namespace ArenaGame.Client
                 MoveSpeed = Fix64.FromFloat(configSO.moveSpeed),
                 Damage = Fix64.FromFloat(configSO.damage),
                 AttackSpeed = Fix64.FromFloat(configSO.attackSpeed),
-                WeaponType = weaponType,
-                WeaponTier = 1 // Start at tier 1 (can be upgraded later)
+                WeaponType = configSO.weaponType,
+                WeaponTier = 1, // Start at tier 1 (can be upgraded later)
+                Stars = 0 // Start with 0 stars
             };
             
             return config;
