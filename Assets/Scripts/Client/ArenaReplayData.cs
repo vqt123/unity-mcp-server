@@ -15,11 +15,12 @@ namespace ArenaGame.Client
     {
         public List<SerializableCommand> commands = new List<SerializableCommand>();
         public SerializableStateHashes stateHashes = new SerializableStateHashes();
+        public int stopTick = -1; // Tick when the original game stopped
         
         /// <summary>
         /// Convert ISimulationCommand to serializable format
         /// </summary>
-        public static ArenaReplayData FromCommands(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null)
+        public static ArenaReplayData FromCommands(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null, int stopTick = -1)
         {
             var replay = new ArenaReplayData();
             foreach (var cmd in commands)
@@ -31,6 +32,8 @@ namespace ArenaGame.Client
             {
                 replay.stateHashes = SerializableStateHashes.FromDictionary(stateHashes);
             }
+            
+            replay.stopTick = stopTick;
             
             return replay;
         }

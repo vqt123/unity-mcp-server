@@ -218,10 +218,12 @@ namespace ArenaGame.Client
             {
                 var recordedCommands = GameSimulation.Instance.StopRecording();
                 var stateHashes = GameSimulation.Instance.GetRecordedStateHashes();
+                // CurrentTick is the next tick to process, so last processed tick is CurrentTick - 1
+                int stopTick = GameSimulation.Instance.GetCurrentTick() - 1;
                 if (recordedCommands != null && recordedCommands.Count > 0)
                 {
-                    ArenaReplayManager.SaveReplay(recordedCommands, stateHashes);
-                    Debug.Log($"[ArenaUI] Saved replay with {recordedCommands.Count} commands and {stateHashes.Count} state hashes");
+                    ArenaReplayManager.SaveReplay(recordedCommands, stateHashes, stopTick);
+                    Debug.Log($"[ArenaUI] Saved replay with {recordedCommands.Count} commands, {stateHashes.Count} state hashes, stopTick={stopTick} (last processed tick)");
                 }
             }
             

@@ -31,10 +31,14 @@ namespace ArenaGame.Client
         // Divergence detection
         private Dictionary<int, string> recordedStateHashes = new Dictionary<int, string>();
         private bool checkDivergence = false;
+        private int replayStopTick = -1; // Stop replay at this tick
+        private int lastDivergenceCheckLogTick = -1; // Track last logged divergence check
+        private bool replayFinished = false; // Track if replay has completed
         
         public Simulation Simulation => simulation;
         public float TickAccumulator => tickAccumulator;
         public float TickInterval => tickInterval;
+        public int GetCurrentTick() => simulation.World.CurrentTick;
         
         void Awake()
         {
@@ -52,6 +56,12 @@ namespace ArenaGame.Client
         
         void Update()
         {
+            // Don't process ticks if replay has finished
+            if (replayFinished)
+            {
+                return;
+            }
+            
             tickAccumulator += Time.deltaTime;
             
             while (tickAccumulator >= tickInterval)
@@ -94,13 +104,65 @@ namespace ArenaGame.Client
             if (pendingCommands.Count > 0 && isReplaying)
             {
                 Debug.Log($"[GameSimulation] REPLAY: Tick {currentTick} - Processing {pendingCommands.Count} commands from replay");
+                
+                // During replay, ensure first hero is level 1 before processing upgrade commands
+                // (In original, hero was leveled up after spawn but before first upgrade)
+                foreach (var cmd in pendingCommands)
+                {
+                    if (cmd is ArenaGame.Shared.Commands.ChooseUpgradeCommand upgradeCmd)
+                    {
+                        var world = simulation.World;
+                        if (world.TryGetHero(upgradeCmd.HeroId, out ArenaGame.Shared.Entities.Hero hero))
+                        {
+                            if (hero.Level == 0)
+                            {
+                                Debug.Log($"[GameSimulation] REPLAY: Auto-leveling hero {upgradeCmd.HeroId.Value} from 0 to 1 before processing upgrade command");
+                                hero.Level = 1;
+                                hero.CurrentXP = 0;
+                                world.UpdateHero(upgradeCmd.HeroId, hero);
+                            }
+                        }
+                    }
+                }
             }
             
             // Run simulation
             List<ISimulationEvent> events = simulation.Tick(pendingCommands);
             
+            // Check if we should stop replay AFTER processing this tick
+            int newTick = simulation.World.CurrentTick;
+            // stopTick is the last tick that was processed in the original game
+            // After processing tick N, CurrentTick becomes N+1
+            // So we stop when CurrentTick > stopTick (i.e., we've processed past the last tick)
+            if (isReplaying && replayStopTick >= 0 && newTick > replayStopTick)
+            {
+                Debug.Log($"[GameSimulation] REPLAY STOPPED at tick {newTick} (recorded stop tick: {replayStopTick}, last processed: tick {replayStopTick})");
+                StopReplay();
+                replayFinished = true;
+                Time.timeScale = 0f; // Pause the game when replay finishes
+                Debug.Log("[GameSimulation] Game paused - replay completed");
+                return; // Don't process any more ticks
+            }
+            
             // Compute state hash for divergence detection
             string currentHash = ArenaGame.Shared.Core.SimulationStateHash.ComputeHash(simulation.World);
+            
+            // Check if this is the last tick we should process
+            if (isReplaying && replayStopTick > 0 && newTick == replayStopTick)
+            {
+                // This is the final tick - do divergence check but will stop after this
+                if (checkDivergence && recordedStateHashes.TryGetValue(currentTick, out string recordedHash))
+                {
+                    if (currentHash != recordedHash)
+                    {
+                        Debug.LogError($"[GameSimulation] REPLAY DIVERGENCE at final tick {currentTick}! Recorded: {recordedHash}, Current: {currentHash}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[GameSimulation] ✓ Final tick {currentTick} hash match: {currentHash.Substring(0, 8)}...");
+                    }
+                }
+            }
             
             if (isRecording)
             {
@@ -123,6 +185,20 @@ namespace ArenaGame.Client
                         Debug.LogError($"[GameSimulation] REPLAY DIVERGENCE at tick {currentTick}! Recorded: {recordedHash}, Current: {currentHash}");
                         // Optionally stop replay or continue logging
                     }
+                    else
+                    {
+                        // Log success periodically (every 50 ticks) to show checking is working
+                        if (currentTick - lastDivergenceCheckLogTick >= 50 || lastDivergenceCheckLogTick < 0)
+                        {
+                            Debug.Log($"[GameSimulation] ✓ Hash match at tick {currentTick}: {currentHash.Substring(0, 8)}... (divergence check active)");
+                            lastDivergenceCheckLogTick = currentTick;
+                        }
+                    }
+                }
+                else if (currentTick % 50 == 0)
+                {
+                    // Log when no hash recorded for this tick (expected for some ticks)
+                    Debug.Log($"[GameSimulation] No recorded hash for tick {currentTick} (expected if not all ticks were hashed)");
                 }
             }
             
@@ -172,11 +248,14 @@ namespace ArenaGame.Client
         /// <summary>
         /// Start replaying from saved commands
         /// </summary>
-        public void StartReplay(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null)
+        public void StartReplay(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null, int stopTick = -1)
         {
             isReplaying = true;
+            replayFinished = false; // Reset finished flag
             replayCommands = new List<ISimulationCommand>(commands);
             replayCommandIndex = 0;
+            replayStopTick = stopTick;
+            Time.timeScale = 1f; // Ensure game is running during replay
             
             // Load state hashes for divergence checking
             if (stateHashes != null && stateHashes.Count > 0)
@@ -194,7 +273,7 @@ namespace ArenaGame.Client
             // Reset simulation for clean replay
             simulation.Reset();
             
-            Debug.Log($"[GameSimulation] Started replay with {commands.Count} commands, divergence checking: {checkDivergence}");
+            Debug.Log($"[GameSimulation] Started replay with {commands.Count} commands, divergence checking: {checkDivergence}, stopTick: {stopTick}");
         }
         
         /// <summary>
@@ -203,8 +282,10 @@ namespace ArenaGame.Client
         public void StopReplay()
         {
             isReplaying = false;
+            replayFinished = true;
             replayCommands = null;
             replayCommandIndex = 0;
+            Debug.Log("[GameSimulation] Replay stopped, simulation will no longer process ticks");
         }
         
         /// <summary>

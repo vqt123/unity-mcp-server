@@ -150,15 +150,15 @@ namespace ArenaGame.Client
         {
             Debug.Log("[HomeMenuController] Replay button clicked");
             
-            var (commands, stateHashes) = ArenaReplayManager.LoadReplayWithHashes();
+            var (commands, stateHashes, stopTick) = ArenaReplayManager.LoadReplayWithHashes();
             if (commands == null || commands.Count == 0)
             {
                 Debug.LogWarning("[HomeMenuController] No replay data available");
                 return;
             }
             
-            Debug.Log($"[HomeMenuController] Loading replay with {commands.Count} commands and {stateHashes?.Count ?? 0} state hashes");
-            ReplayStarter.SetReplayCommands(commands, stateHashes);
+            Debug.Log($"[HomeMenuController] Loading replay with {commands.Count} commands, {stateHashes?.Count ?? 0} state hashes, stopTick={stopTick}");
+            ReplayStarter.SetReplayCommands(commands, stateHashes, stopTick);
             UnityEngine.SceneManagement.SceneManager.LoadScene("ArenaGame");
         }
         

@@ -53,14 +53,15 @@ namespace ArenaGame.Client
             // 1a. Check for replay mode
             var replayCommands = ReplayStarter.GetAndClearReplayCommands();
             var replayHashes = ReplayStarter.GetAndClearReplayHashes();
+            int replayStopTick = ReplayStarter.GetAndClearReplayStopTick();
             if (replayCommands != null && replayCommands.Count > 0)
             {
-                GameLogger.Log($"[Bootstrap] REPLAY MODE DETECTED - {replayCommands.Count} commands to replay, {replayHashes?.Count ?? 0} state hashes");
+                GameLogger.Log($"[Bootstrap] REPLAY MODE DETECTED - {replayCommands.Count} commands to replay, {replayHashes?.Count ?? 0} state hashes, stopTick={replayStopTick}");
                 foreach (var cmd in replayCommands)
                 {
                     GameLogger.Log($"[Bootstrap]   - Replay command: {cmd.GetType().Name} at tick {cmd.Tick}");
                 }
-                GameSimulation.Instance.StartReplay(replayCommands, replayHashes);
+                GameSimulation.Instance.StartReplay(replayCommands, replayHashes, replayStopTick);
                 GameLogger.Log($"[Bootstrap] ✓ Started replay with {replayCommands.Count} commands, IsReplaying={GameSimulation.Instance.IsReplaying}");
             }
             else

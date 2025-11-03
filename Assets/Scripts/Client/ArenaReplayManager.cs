@@ -16,11 +16,11 @@ namespace ArenaGame.Client
         /// <summary>
         /// Save replay data to file (with optional state hashes for divergence detection)
         /// </summary>
-        public static void SaveReplay(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null)
+        public static void SaveReplay(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null, int stopTick = -1)
         {
             try
             {
-                var replayData = ArenaReplayData.FromCommands(commands, stateHashes);
+                var replayData = ArenaReplayData.FromCommands(commands, stateHashes, stopTick);
                 string json = JsonUtility.ToJson(replayData, true);
                 
                 // Ensure directory exists
@@ -31,7 +31,7 @@ namespace ArenaGame.Client
                 }
                 
                 File.WriteAllText(ReplayFilePath, json);
-                Debug.Log($"[Replay] Saved replay with {commands.Count} commands and {stateHashes?.Count ?? 0} state hashes to {ReplayFilePath}");
+                Debug.Log($"[Replay] Saved replay with {commands.Count} commands, {stateHashes?.Count ?? 0} state hashes, stopTick={stopTick} to {ReplayFilePath}");
             }
             catch (System.Exception e)
             {
@@ -44,21 +44,21 @@ namespace ArenaGame.Client
         /// </summary>
         public static List<ISimulationCommand> LoadReplay()
         {
-            var (commands, _) = LoadReplayWithHashes();
+            var (commands, _, _) = LoadReplayWithHashes();
             return commands;
         }
         
         /// <summary>
         /// Load replay data with state hashes from file
         /// </summary>
-        public static (List<ISimulationCommand> commands, Dictionary<int, string> stateHashes) LoadReplayWithHashes()
+        public static (List<ISimulationCommand> commands, Dictionary<int, string> stateHashes, int stopTick) LoadReplayWithHashes()
         {
             try
             {
                 if (!File.Exists(ReplayFilePath))
                 {
                     Debug.LogWarning("[Replay] No replay file found");
-                    return (null, null);
+                    return (null, null, -1);
                 }
                 
                 string json = File.ReadAllText(ReplayFilePath);
@@ -67,19 +67,20 @@ namespace ArenaGame.Client
                 if (replayData == null || replayData.commands == null || replayData.commands.Count == 0)
                 {
                     Debug.LogWarning("[Replay] Replay file is empty or invalid");
-                    return (null, null);
+                    return (null, null, -1);
                 }
                 
                 var commands = replayData.ToCommands();
                 var stateHashes = replayData.stateHashes?.ToDictionary() ?? new Dictionary<int, string>();
+                int stopTick = replayData.stopTick;
                 
-                Debug.Log($"[Replay] Loaded replay with {commands.Count} commands and {stateHashes.Count} state hashes");
-                return (commands, stateHashes);
+                Debug.Log($"[Replay] Loaded replay with {commands.Count} commands, {stateHashes.Count} state hashes, stopTick={stopTick}");
+                return (commands, stateHashes, stopTick);
             }
             catch (System.Exception e)
             {
                 Debug.LogError($"[Replay] Failed to load replay: {e}");
-                return (null, null);
+                return (null, null, -1);
             }
         }
         

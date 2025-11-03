@@ -10,11 +10,13 @@ namespace ArenaGame.Client
     {
         private static List<ISimulationCommand> pendingReplayCommands = null;
         private static Dictionary<int, string> pendingReplayHashes = null;
+        private static int pendingReplayStopTick = -1;
         
-        public static void SetReplayCommands(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null)
+        public static void SetReplayCommands(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null, int stopTick = -1)
         {
             pendingReplayCommands = commands;
             pendingReplayHashes = stateHashes;
+            pendingReplayStopTick = stopTick;
         }
         
         public static List<ISimulationCommand> GetAndClearReplayCommands()
@@ -29,6 +31,13 @@ namespace ArenaGame.Client
             var hashes = pendingReplayHashes;
             pendingReplayHashes = null;
             return hashes;
+        }
+        
+        public static int GetAndClearReplayStopTick()
+        {
+            var tick = pendingReplayStopTick;
+            pendingReplayStopTick = -1;
+            return tick;
         }
     }
 }

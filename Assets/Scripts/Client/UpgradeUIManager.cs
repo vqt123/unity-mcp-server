@@ -6,6 +6,7 @@ using ArenaGame.Shared.Core;
 using ArenaGame.Shared.Events;
 using ArenaGame.Shared.Data;
 using ArenaGame.Shared.Entities;
+using System.Collections;
 using System.Collections.Generic;
 using EntityId = ArenaGame.Shared.Entities.EntityId;
 
@@ -306,16 +307,23 @@ namespace ArenaGame.Client
                     Debug.Log($"[UpgradeUI] Tracked spawned hero: {spawnEvent.HeroType}, total: {spawnedHeroTypes.Count}");
                 }
                 
+                // During replay, auto-level first hero spawn (after hash computation)
+                if (isReplaying && spawnedHeroTypes.Count == 1)
+                {
+                    Debug.Log("[UpgradeUI] REPLAY MODE - first hero spawned, will auto-level after hash computation");
+                    // Schedule level up for next frame to avoid affecting hash computation
+                    StartCoroutine(AutoLevelHeroInReplay(spawnEvent.HeroId));
+                }
+                
                 // If waiting for first hero spawn, trigger level up from 0 to 1
                 if (waitingForFirstHeroSpawn)
                 {
                     Debug.Log("[UpgradeUI] Processing first hero spawn - triggering level up");
                     waitingForFirstHeroSpawn = false;
                     
-                    // During replay, don't trigger level up - it should come from commands
+                    // Skip during replay - already handled above
                     if (isReplaying)
                     {
-                        Debug.Log("[UpgradeUI] REPLAY MODE - skipping manual level up trigger, waiting for replay command");
                         return;
                     }
                     
@@ -502,6 +510,27 @@ namespace ArenaGame.Client
         {
             return upgradeType == "Archer" || upgradeType == "IceArcher" || upgradeType == "Mage" || 
                    upgradeType == "Warrior" || upgradeType == "TankHero" || upgradeType == "FastHero";
+        }
+        
+        /// <summary>
+        /// Auto-level hero during replay after hash computation
+        /// </summary>
+        private IEnumerator AutoLevelHeroInReplay(EntityId heroId)
+        {
+            // Wait one frame to ensure hash computation happens first
+            yield return null;
+            
+            if (GameSimulation.Instance != null && GameSimulation.Instance.IsReplaying)
+            {
+                var world = GameSimulation.Instance.Simulation.World;
+                if (world.TryGetHero(heroId, out Hero hero) && hero.Level == 0)
+                {
+                    hero.Level = 1;
+                    hero.CurrentXP = 0;
+                    world.UpdateHero(heroId, hero);
+                    Debug.Log($"[UpgradeUI] REPLAY - Hero {heroId.Value} auto-leveled to 1 (after hash computation)");
+                }
+            }
         }
         
         private void ShowUpgradePanel(EntityId heroId)
