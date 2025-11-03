@@ -91,7 +91,6 @@ namespace ArenaGame.Client
             {
                 EventBus.Unsubscribe<EnemyKilledEvent>(OnEnemyKilled);
                 EventBus.Subscribe<EnemyKilledEvent>(OnEnemyKilled);
-                Debug.Log("[GoldManager] Subscribed to EnemyKilledEvent in OnEnable");
             }
         }
         
@@ -102,7 +101,6 @@ namespace ArenaGame.Client
         
         private void OnEnemyKilled(ISimulationEvent evt)
         {
-            Debug.Log($"[GoldManager] OnEnemyKilled called with event type: {evt.GetType().Name}");
             if (evt is EnemyKilledEvent killEvent)
             {
                 // Use enemy data from event (enemy might be removed from world already)
@@ -121,11 +119,6 @@ namespace ArenaGame.Client
                 }
                 
                 AddGold(goldReward);
-                Debug.Log($"[GoldManager] Awarded {goldReward} gold for killing enemy (Boss:{killEvent.IsBoss}, MiniBoss:{killEvent.IsMiniBoss})");
-            }
-            else
-            {
-                Debug.LogWarning($"[GoldManager] Event is not EnemyKilledEvent, it's {evt?.GetType().Name}");
             }
         }
         
@@ -142,7 +135,6 @@ namespace ArenaGame.Client
                 PlayerDataManager.Instance.AddGold(amount);
             }
             
-            Debug.Log($"[GoldManager] Gold: {currentGold} (+{amount})");
         }
         
         public bool SpendGold(int amount)

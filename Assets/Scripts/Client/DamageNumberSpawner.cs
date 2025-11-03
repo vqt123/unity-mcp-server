@@ -37,7 +37,6 @@ namespace ArenaGame.Client
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnEnemyDamaged);
             EventBus.Subscribe<HeroDamagedEvent>(OnHeroDamaged);
             EventBus.Subscribe<EnemyDamagedEvent>(OnEnemyDamaged);
-            Debug.Log("[DamageNumberSpawner] Subscribed to damage events in OnEnable");
         }
         
         void OnDisable()
@@ -110,9 +109,6 @@ namespace ArenaGame.Client
                     Debug.LogWarning($"[DamageNumberSpawner] Could not find position for enemy {dmg.EnemyId} - skipping damage number");
                     return;
                 }
-                
-                // Debug log to verify position
-                Debug.Log($"[DamageNumberSpawner] Spawning damage {dmg.Damage.ToInt()} at enemy position: {pos} (enemy {dmg.EnemyId}, attacker {dmg.AttackerId})");
                 
                 // ALWAYS spawn damage number at enemy position
                 SpawnDamageNumber(pos, dmg.Damage.ToInt(), enemyDamageColor);

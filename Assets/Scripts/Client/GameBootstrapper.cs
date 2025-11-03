@@ -106,12 +106,26 @@ namespace ArenaGame.Client
                 }
             }
             
+            // Load ProjectileFX prefabs if not assigned (try multiple paths)
             if (projectileFXDefault == null)
             {
                 projectileFXDefault = Resources.Load<GameObject>("ProjectileFX");
+                if (projectileFXDefault == null)
+                {
+                    projectileFXDefault = Resources.Load<GameObject>("ProjectileFXDefault");
+                }
                 if (projectileFXDefault != null)
                 {
-                    GameLogger.Log("[Bootstrap] Loaded ProjectileFX prefab from Resources");
+                    GameLogger.Log("[Bootstrap] Loaded ProjectileFX default prefab from Resources");
+                }
+            }
+            
+            if (projectileFXFireball == null)
+            {
+                projectileFXFireball = Resources.Load<GameObject>("ProjectileFXFireball");
+                if (projectileFXFireball != null)
+                {
+                    GameLogger.Log("[Bootstrap] Loaded ProjectileFXFireball prefab from Resources");
                 }
             }
             

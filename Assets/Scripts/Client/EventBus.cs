@@ -46,13 +46,9 @@ namespace ArenaGame.Client
         {
             // Call type-specific handlers
             Type eventType = evt.GetType();
-            int handlerCount = 0;
             
             if (subscribers.ContainsKey(eventType))
             {
-                handlerCount = subscribers[eventType].Count;
-                UnityEngine.Debug.Log($"[EventBus] Publishing {eventType.Name} (tick {evt.Tick}) to {handlerCount} subscribers");
-                
                 foreach (var handler in subscribers[eventType])
                 {
                     try
@@ -64,10 +60,6 @@ namespace ArenaGame.Client
                         UnityEngine.Debug.LogError($"[EventBus] Error in handler for {eventType.Name}: {e}");
                     }
                 }
-            }
-            else
-            {
-                UnityEngine.Debug.Log($"[EventBus] Publishing {eventType.Name} (tick {evt.Tick}) - no subscribers found");
             }
             
             // Call global handlers

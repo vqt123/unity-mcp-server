@@ -20,7 +20,7 @@ namespace ArenaGame.Client
         
         void Start()
         {
-            // If no buttons assigned, create them
+            // If no buttons assigned, create them all
             if (heroesButton == null && playButton == null && quitButton == null)
             {
                 CreateMenuUI();
@@ -32,15 +32,22 @@ namespace ArenaGame.Client
                     heroesButton.onClick.AddListener(OnHeroesClicked);
                 if (playButton != null)
                     playButton.onClick.AddListener(OnPlayClicked);
-                if (replayButton != null)
-                    replayButton.onClick.AddListener(OnReplayClicked);
                 if (quitButton != null)
                     quitButton.onClick.AddListener(OnQuitClicked);
                 
-                // Update replay button state
+                // Ensure replay button exists (might be missing from scene)
+                if (replayButton == null)
+                {
+                    Debug.Log("[HomeMenu] Replay button missing - creating it");
+                    CreateReplayButton();
+                }
+                
                 if (replayButton != null)
                 {
+                    replayButton.onClick.AddListener(OnReplayClicked);
+                    // Update replay button state
                     replayButton.interactable = ArenaReplayManager.HasReplay();
+                    Debug.Log($"[HomeMenu] Replay button state: interactable={replayButton.interactable}, hasReplay={ArenaReplayManager.HasReplay()}");
                 }
             }
             
@@ -51,8 +58,57 @@ namespace ArenaGame.Client
             SetupEnergyDisplay();
         }
         
+        /// <summary>
+        /// Create replay button and add it to existing menu structure
+        /// </summary>
+        private void CreateReplayButton()
+        {
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                Debug.LogError("[HomeMenu] Cannot create replay button - no Canvas found");
+                return;
+            }
+            
+            // Find the parent of existing buttons (should be MainCanvas)
+            Transform buttonParent = null;
+            if (playButton != null)
+            {
+                buttonParent = playButton.transform.parent;
+            }
+            else if (heroesButton != null)
+            {
+                buttonParent = heroesButton.transform.parent;
+            }
+            
+            if (buttonParent == null)
+            {
+                Debug.LogError("[HomeMenu] Cannot find parent for replay button");
+                return;
+            }
+            
+            // Create replay button between Play and Heroes buttons
+            replayButton = CreateButton(buttonParent, "REPLAY LAST ARENA", new Color(0.8f, 0.6f, 0.2f));
+            
+            // Position it after Play button
+            if (playButton != null)
+            {
+                int playButtonIndex = playButton.transform.GetSiblingIndex();
+                replayButton.transform.SetSiblingIndex(playButtonIndex + 1);
+            }
+            
+            Debug.Log("[HomeMenu] Created replay button");
+        }
+        
         void OnEnable()
         {
+            // Refresh replay button state when scene is enabled (e.g., returning from arena)
+            if (replayButton != null)
+            {
+                replayButton.interactable = ArenaReplayManager.HasReplay();
+                Debug.Log($"[HomeMenu] OnEnable - Replay button state updated: interactable={replayButton.interactable}, hasReplay={ArenaReplayManager.HasReplay()}");
+            }
+            
             if (GoldManager.Instance != null)
             {
                 GoldManager.Instance.OnGoldChanged += UpdateGoldDisplay;
