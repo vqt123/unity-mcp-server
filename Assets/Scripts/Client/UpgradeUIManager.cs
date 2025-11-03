@@ -26,7 +26,8 @@ namespace ArenaGame.Client
         
         void Start()
         {
-            Debug.Log("[UpgradeUI] Starting UpgradeUIManager");
+            bool isReplaying = GameSimulation.Instance != null && GameSimulation.Instance.IsReplaying;
+            Debug.Log($"[UpgradeUI] Starting UpgradeUIManager, isReplaying={isReplaying}");
             
             // Create UI if not assigned
             if (upgradePanel == null)
@@ -41,17 +42,27 @@ namespace ArenaGame.Client
             // Subscribe to events
             EventBus.Subscribe<HeroLevelUpEvent>(OnHeroLevelUp);
             EventBus.Subscribe<HeroSpawnedEvent>(OnHeroSpawned);
+            EventBus.Subscribe<UpgradeChosenEvent>(OnUpgradeChosenFromReplay);
             
-            Debug.Log("[UpgradeUI] Initialized and subscribed to HeroLevelUpEvent and HeroSpawnedEvent");
+            Debug.Log("[UpgradeUI] Initialized and subscribed to HeroLevelUpEvent, HeroSpawnedEvent, and UpgradeChosenEvent");
             
-            // Arena starts with 0 heroes - trigger initial upgrade (hero selection)
-            StartCoroutine(TriggerInitialLevelUpForNoHeroDelayed());
+            // Only trigger initial upgrade if NOT replaying (during replay, commands will be injected)
+            if (!isReplaying)
+            {
+                Debug.Log("[UpgradeUI] Not replaying - triggering initial upgrade UI");
+                StartCoroutine(TriggerInitialLevelUpForNoHeroDelayed());
+            }
+            else
+            {
+                Debug.Log("[UpgradeUI] REPLAY MODE - skipping initial upgrade UI, commands will be auto-applied");
+            }
         }
         
         void OnDestroy()
         {
             EventBus.Unsubscribe<HeroLevelUpEvent>(OnHeroLevelUp);
             EventBus.Unsubscribe<HeroSpawnedEvent>(OnHeroSpawned);
+            EventBus.Unsubscribe<UpgradeChosenEvent>(OnUpgradeChosenFromReplay);
             // Stop any running coroutines
             StopAllCoroutines();
         }
@@ -281,17 +292,32 @@ namespace ArenaGame.Client
         /// </summary>
         private void OnHeroSpawned(ISimulationEvent evt)
         {
-            Debug.Log($"[UpgradeUI] OnHeroSpawned event received, type: {evt.GetType().Name}");
+            bool isReplaying = GameSimulation.Instance != null && GameSimulation.Instance.IsReplaying;
+            Debug.Log($"[UpgradeUI] OnHeroSpawned event received, type: {evt.GetType().Name}, isReplaying={isReplaying}");
             
             if (evt is HeroSpawnedEvent spawnEvent)
             {
                 Debug.Log($"[UpgradeUI] HeroSpawnedEvent - HeroId: {spawnEvent.HeroId.Value}, HeroType: {spawnEvent.HeroType}, waitingForFirstHeroSpawn: {waitingForFirstHeroSpawn}");
+                
+                // Track spawned hero
+                if (!spawnedHeroTypes.Contains(spawnEvent.HeroType))
+                {
+                    spawnedHeroTypes.Add(spawnEvent.HeroType);
+                    Debug.Log($"[UpgradeUI] Tracked spawned hero: {spawnEvent.HeroType}, total: {spawnedHeroTypes.Count}");
+                }
                 
                 // If waiting for first hero spawn, trigger level up from 0 to 1
                 if (waitingForFirstHeroSpawn)
                 {
                     Debug.Log("[UpgradeUI] Processing first hero spawn - triggering level up");
                     waitingForFirstHeroSpawn = false;
+                    
+                    // During replay, don't trigger level up - it should come from commands
+                    if (isReplaying)
+                    {
+                        Debug.Log("[UpgradeUI] REPLAY MODE - skipping manual level up trigger, waiting for replay command");
+                        return;
+                    }
                     
                     if (GameSimulation.Instance != null)
                     {
@@ -384,9 +410,17 @@ namespace ArenaGame.Client
         {
             if (evt is HeroLevelUpEvent levelUpEvent)
             {
-                Debug.Log($"[UpgradeUI] Hero leveled up to {levelUpEvent.NewLevel}, spawned heroes: {spawnedHeroTypes.Count}");
+                bool isReplaying = GameSimulation.Instance != null && GameSimulation.Instance.IsReplaying;
+                Debug.Log($"[UpgradeUI] Hero leveled up to {levelUpEvent.NewLevel}, spawned heroes: {spawnedHeroTypes.Count}, isReplaying={isReplaying}");
                 
                 playerHeroId = levelUpEvent.HeroId;
+                
+                // During replay, don't show UI - upgrades will be auto-applied from commands
+                if (isReplaying)
+                {
+                    Debug.Log($"[UpgradeUI] REPLAY MODE - skipping upgrade UI for level {levelUpEvent.NewLevel}, upgrade will be auto-applied from replay command");
+                    return;
+                }
                 
                 // Check upgrade progress to determine which panel to show
                 PlayerDataManager dataMgr = PlayerDataManager.Instance;
@@ -395,6 +429,7 @@ namespace ArenaGame.Client
                 if (spawnedHeroTypes.Count == 0)
                 {
                     // No heroes spawned yet - show first upgrade (hero selection)
+                    Debug.Log("[UpgradeUI] Showing first upgrade (hero selection)");
                     ShowUpgradePanelForLevel1FirstUpgrade();
                 }
                 else if (levelUpEvent.NewLevel == 1 && upgradesChosen == 1)
@@ -406,9 +441,67 @@ namespace ArenaGame.Client
                 else
                 {
                     // Normal level up
+                    Debug.Log($"[UpgradeUI] Showing normal upgrade panel for level {levelUpEvent.NewLevel}");
                     ShowUpgradePanel(levelUpEvent.HeroId);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Handle UpgradeChosenEvent during replay to track upgrades without showing UI
+        /// </summary>
+        private void OnUpgradeChosenFromReplay(ISimulationEvent evt)
+        {
+            if (evt is UpgradeChosenEvent upgradeEvent)
+            {
+                bool isReplaying = GameSimulation.Instance != null && GameSimulation.Instance.IsReplaying;
+                Debug.Log($"[UpgradeUI] UpgradeChosenEvent received: HeroId={upgradeEvent.HeroId.Value}, UpgradeType={upgradeEvent.UpgradeType}, isReplaying={isReplaying}");
+                
+                if (isReplaying)
+                {
+                    Debug.Log($"[UpgradeUI] REPLAY MODE - Upgrade '{upgradeEvent.UpgradeType}' auto-applied from replay command");
+                    
+                    // Track hero spawns if it's a hero selection
+                    if (IsHeroType(upgradeEvent.UpgradeType))
+                    {
+                        if (!spawnedHeroTypes.Contains(upgradeEvent.UpgradeType))
+                        {
+                            spawnedHeroTypes.Add(upgradeEvent.UpgradeType);
+                            Debug.Log($"[UpgradeUI] Tracked hero spawn from replay: {upgradeEvent.UpgradeType}, total spawned: {spawnedHeroTypes.Count}");
+                        }
+                    }
+                    
+                    // Update player data if needed
+                    PlayerDataManager dataMgr = PlayerDataManager.Instance;
+                    if (dataMgr != null)
+                    {
+                        var world = GameSimulation.Instance?.Simulation.World;
+                        if (world != null && world.TryGetHero(upgradeEvent.HeroId, out Hero hero))
+                        {
+                            if (hero.Level == 1)
+                            {
+                                int upgradesChosen = dataMgr.GetUpgradesAtLevel1();
+                                if (upgradesChosen == 0)
+                                {
+                                    dataMgr.IncrementUpgradesAtLevel1();
+                                    Debug.Log($"[UpgradeUI] Incremented upgradesAtLevel1 to 1 (from replay)");
+                                }
+                                else if (upgradesChosen == 1)
+                                {
+                                    dataMgr.IncrementUpgradesAtLevel1();
+                                    Debug.Log($"[UpgradeUI] Incremented upgradesAtLevel1 to 2 (from replay)");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        private bool IsHeroType(string upgradeType)
+        {
+            return upgradeType == "Archer" || upgradeType == "IceArcher" || upgradeType == "Mage" || 
+                   upgradeType == "Warrior" || upgradeType == "TankHero" || upgradeType == "FastHero";
         }
         
         private void ShowUpgradePanel(EntityId heroId)

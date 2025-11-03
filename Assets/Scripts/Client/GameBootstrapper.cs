@@ -52,16 +52,22 @@ namespace ArenaGame.Client
             
             // 1a. Check for replay mode
             var replayCommands = ReplayStarter.GetAndClearReplayCommands();
+            var replayHashes = ReplayStarter.GetAndClearReplayHashes();
             if (replayCommands != null && replayCommands.Count > 0)
             {
-                GameSimulation.Instance.StartReplay(replayCommands);
-                GameLogger.Log($"[Bootstrap] ✓ Started replay with {replayCommands.Count} commands");
+                GameLogger.Log($"[Bootstrap] REPLAY MODE DETECTED - {replayCommands.Count} commands to replay, {replayHashes?.Count ?? 0} state hashes");
+                foreach (var cmd in replayCommands)
+                {
+                    GameLogger.Log($"[Bootstrap]   - Replay command: {cmd.GetType().Name} at tick {cmd.Tick}");
+                }
+                GameSimulation.Instance.StartReplay(replayCommands, replayHashes);
+                GameLogger.Log($"[Bootstrap] ✓ Started replay with {replayCommands.Count} commands, IsReplaying={GameSimulation.Instance.IsReplaying}");
             }
             else
             {
                 // Start recording for new arena
                 GameSimulation.Instance.StartRecording();
-                GameLogger.Log("[Bootstrap] ✓ Started command recording");
+                GameLogger.Log("[Bootstrap] ✓ Started command recording (NOT replay mode)");
             }
             
             // 2. Create WeaponConfigDatabase (loads weapon configs from Resources)

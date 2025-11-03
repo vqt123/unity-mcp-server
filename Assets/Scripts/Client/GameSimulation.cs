@@ -28,6 +28,10 @@ namespace ArenaGame.Client
         private List<ISimulationCommand> replayCommands = null;
         private int replayCommandIndex = 0;
         
+        // Divergence detection
+        private Dictionary<int, string> recordedStateHashes = new Dictionary<int, string>();
+        private bool checkDivergence = false;
+        
         public Simulation Simulation => simulation;
         public float TickAccumulator => tickAccumulator;
         public float TickInterval => tickInterval;
@@ -76,6 +80,7 @@ namespace ArenaGame.Client
                     // Inject commands that were recorded at this tick or earlier
                     if (cmd.Tick <= currentTick)
                     {
+                        Debug.Log($"[GameSimulation] REPLAY: Injecting command {cmd.GetType().Name} at tick {currentTick} (was recorded at tick {cmd.Tick})");
                         pendingCommands.Add(cmd);
                         replayCommandIndex++;
                     }
@@ -86,15 +91,38 @@ namespace ArenaGame.Client
                 }
             }
             
+            if (pendingCommands.Count > 0 && isReplaying)
+            {
+                Debug.Log($"[GameSimulation] REPLAY: Tick {currentTick} - Processing {pendingCommands.Count} commands from replay");
+            }
+            
             // Run simulation
             List<ISimulationEvent> events = simulation.Tick(pendingCommands);
             
-            // Record commands before clearing
+            // Compute state hash for divergence detection
+            string currentHash = ArenaGame.Shared.Core.SimulationStateHash.ComputeHash(simulation.World);
+            
             if (isRecording)
             {
+                // Record state hash
+                recordedStateHashes[currentTick] = currentHash;
+                
+                // Record commands before clearing
                 foreach (var cmd in pendingCommands)
                 {
                     recordedCommands.Add(cmd);
+                }
+            }
+            else if (isReplaying && checkDivergence)
+            {
+                // Check for divergence
+                if (recordedStateHashes.TryGetValue(currentTick, out string recordedHash))
+                {
+                    if (currentHash != recordedHash)
+                    {
+                        Debug.LogError($"[GameSimulation] REPLAY DIVERGENCE at tick {currentTick}! Recorded: {recordedHash}, Current: {currentHash}");
+                        // Optionally stop replay or continue logging
+                    }
                 }
             }
             
@@ -120,6 +148,8 @@ namespace ArenaGame.Client
         {
             isRecording = true;
             recordedCommands.Clear();
+            recordedStateHashes.Clear();
+            Debug.Log("[GameSimulation] Started recording with state hash tracking");
         }
         
         /// <summary>
@@ -132,16 +162,39 @@ namespace ArenaGame.Client
         }
         
         /// <summary>
+        /// Get recorded state hashes (for saving with replay)
+        /// </summary>
+        public Dictionary<int, string> GetRecordedStateHashes()
+        {
+            return new Dictionary<int, string>(recordedStateHashes);
+        }
+        
+        /// <summary>
         /// Start replaying from saved commands
         /// </summary>
-        public void StartReplay(List<ISimulationCommand> commands)
+        public void StartReplay(List<ISimulationCommand> commands, Dictionary<int, string> stateHashes = null)
         {
             isReplaying = true;
             replayCommands = new List<ISimulationCommand>(commands);
             replayCommandIndex = 0;
             
+            // Load state hashes for divergence checking
+            if (stateHashes != null && stateHashes.Count > 0)
+            {
+                recordedStateHashes = new Dictionary<int, string>(stateHashes);
+                checkDivergence = true;
+                Debug.Log($"[GameSimulation] Loaded {stateHashes.Count} state hashes for divergence checking");
+            }
+            else
+            {
+                checkDivergence = false;
+                Debug.Log("[GameSimulation] No state hashes provided - divergence checking disabled");
+            }
+            
             // Reset simulation for clean replay
             simulation.Reset();
+            
+            Debug.Log($"[GameSimulation] Started replay with {commands.Count} commands, divergence checking: {checkDivergence}");
         }
         
         /// <summary>

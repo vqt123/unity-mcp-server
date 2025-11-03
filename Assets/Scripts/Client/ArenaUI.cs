@@ -217,10 +217,11 @@ namespace ArenaGame.Client
             if (GameSimulation.Instance != null)
             {
                 var recordedCommands = GameSimulation.Instance.StopRecording();
+                var stateHashes = GameSimulation.Instance.GetRecordedStateHashes();
                 if (recordedCommands != null && recordedCommands.Count > 0)
                 {
-                    ArenaReplayManager.SaveReplay(recordedCommands);
-                    Debug.Log($"[ArenaUI] Saved replay with {recordedCommands.Count} commands");
+                    ArenaReplayManager.SaveReplay(recordedCommands, stateHashes);
+                    Debug.Log($"[ArenaUI] Saved replay with {recordedCommands.Count} commands and {stateHashes.Count} state hashes");
                 }
             }
             
