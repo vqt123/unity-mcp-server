@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero_IceArcher
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: fce8507cbca8143e2911f474f3709693, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 445446e44a91d4fcda9862aca3e67d57, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

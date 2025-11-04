@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero_TankHero
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: e474986b8345a406b99cfa282b80d777, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: bfc6c3a0939674f289c7186e24c87175, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

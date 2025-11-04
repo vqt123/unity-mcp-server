@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero_Mage
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 96fc7e935e6544f3d9426c3ba0699352, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: b1a3044b180c94bd684189f282170d9f, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

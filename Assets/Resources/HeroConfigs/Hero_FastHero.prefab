@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero_FastHero
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 69e99d0ddc8e84a45ab8f4cfd5eacacb, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 1b2b78555f62b4a9e965ec80c4daf967, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

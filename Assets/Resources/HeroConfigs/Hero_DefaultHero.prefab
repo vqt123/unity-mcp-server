@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hero_DefaultHero
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 53a12eae5080e47efbc5195abdde27fd, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 7901faca117214cb5b7f98c1079d153f, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -107,6 +107,12 @@ namespace ArenaGame.Editor
                             // Unparent from temp object
                             instance.transform.SetParent(null);
                             
+                            // Ensure Animator component exists
+                            if (instance.GetComponent<Animator>() == null)
+                            {
+                                instance.AddComponent<Animator>();
+                            }
+                            
                             // Save as prefab
                             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
                             
