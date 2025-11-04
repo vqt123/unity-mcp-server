@@ -19,6 +19,13 @@ MonoBehaviour:
   damage: 100
   moveSpeed: 5
   attackSpeed: 2
-  weaponConfig: {fileID: 11400000, guid: b9e997384c40d4f2cb7e2828d42ec475, type: 2}
+  weaponType: Bow
+  projectileSpeed: 45
+  projectileCount: 1
+  aoeRadius: 0
+  piercing: 0
+  bulletColor: {r: 1, g: 1, b: 1, a: 1}
   heroColor: {r: 1, g: 0, b: 0, a: 1}
-  heroPrefab: {fileID: 0}
+  heroPrefab: {fileID: 7493826734740285748, guid: 90823737c05ab478c85ab3346a5e94d9, type: 3}
+  projectilePrefab: {fileID: 0}
+  projectileFXPrefab: {fileID: 0}

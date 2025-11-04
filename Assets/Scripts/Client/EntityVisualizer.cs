@@ -137,14 +137,29 @@ namespace ArenaGame.Client
         
         private void CreateHeroView(HeroSpawnedEvent evt)
         {
-            if (heroPrefab == null)
+            // Try to get hero prefab from HeroConfigDatabase
+            GameObject heroPrefabToUse = GetHeroPrefabForType(evt.HeroType);
+            
+            // Fallback to default hero prefab if config not found
+            if (heroPrefabToUse == null)
             {
-                Debug.LogError("[EntityVisualizer] Hero prefab is null!");
+                heroPrefabToUse = heroPrefab;
+            }
+            
+            // Final fallback: try to load from Resources
+            if (heroPrefabToUse == null)
+            {
+                heroPrefabToUse = Resources.Load<GameObject>("Hero");
+            }
+            
+            if (heroPrefabToUse == null)
+            {
+                Debug.LogError($"[EntityVisualizer] Hero prefab is null for type '{evt.HeroType}'!");
                 return;
             }
             
             Vector3 initialPos = ToVector3(evt.Position);
-            GameObject obj = Instantiate(heroPrefab, initialPos, Quaternion.identity);
+            GameObject obj = Instantiate(heroPrefabToUse, initialPos, Quaternion.identity);
             obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
             
             // Store entity ID for reference
@@ -163,6 +178,21 @@ namespace ArenaGame.Client
             };
             
             entityViews[evt.HeroId] = obj;
+        }
+        
+        private GameObject GetHeroPrefabForType(string heroType)
+        {
+            // Try to get from HeroConfigDatabase
+            if (HeroConfigDatabase.Instance != null)
+            {
+                HeroConfigSO config = HeroConfigDatabase.Instance.GetHeroConfig(heroType);
+                if (config != null && config.heroPrefab != null)
+                {
+                    return config.heroPrefab;
+                }
+            }
+            
+            return null;
         }
         
         private void CreateEnemyView(EnemySpawnedEvent evt)
