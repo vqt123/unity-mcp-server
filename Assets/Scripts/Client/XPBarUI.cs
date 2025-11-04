@@ -94,15 +94,15 @@ namespace ArenaGame.Client
                 return;
             }
             
-            // Create container at bottom of screen
+            // Create container at top of screen
             GameObject containerObj = new GameObject("XPBarContainer");
             containerObj.transform.SetParent(canvas.transform, false);
             
             RectTransform containerRect = containerObj.AddComponent<RectTransform>();
-            containerRect.anchorMin = new Vector2(0.1f, 0f);
-            containerRect.anchorMax = new Vector2(0.9f, 0f);
-            containerRect.pivot = new Vector2(0.5f, 0f);
-            containerRect.anchoredPosition = new Vector2(0, 50);
+            containerRect.anchorMin = new Vector2(0.1f, 1f);
+            containerRect.anchorMax = new Vector2(0.9f, 1f);
+            containerRect.pivot = new Vector2(0.5f, 1f);
+            containerRect.anchoredPosition = new Vector2(0, -50);
             containerRect.sizeDelta = new Vector2(0, 20);
             
             // Create background

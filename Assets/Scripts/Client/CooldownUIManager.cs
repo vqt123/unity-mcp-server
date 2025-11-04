@@ -51,26 +51,25 @@ namespace ArenaGame.Client
                 return;
             }
             
-            // Create container in bottom-right
+            // Create container in bottom middle
             GameObject containerObj = new GameObject("CooldownContainer");
             containerObj.transform.SetParent(canvas.transform, false);
             
             cooldownContainer = containerObj.AddComponent<RectTransform>();
-            cooldownContainer.anchorMin = new Vector2(1, 0);
-            cooldownContainer.anchorMax = new Vector2(1, 0);
-            cooldownContainer.pivot = new Vector2(1, 0);
-            cooldownContainer.anchoredPosition = new Vector2(-20, 20);
-            cooldownContainer.sizeDelta = new Vector2(200, 100);
+            cooldownContainer.anchorMin = new Vector2(0.5f, 0f);
+            cooldownContainer.anchorMax = new Vector2(0.5f, 0f);
+            cooldownContainer.pivot = new Vector2(0.5f, 0f);
+            cooldownContainer.anchoredPosition = new Vector2(0, 80);
+            cooldownContainer.sizeDelta = new Vector2(400, 100);
             
             // Add horizontal layout group
             HorizontalLayoutGroup layout = containerObj.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = spacing;
-            layout.childAlignment = TextAnchor.MiddleRight;
+            layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
-            layout.reverseArrangement = true; // Right to left
             
             Debug.Log("[CooldownUI] Created cooldown container");
         }
@@ -92,16 +91,31 @@ namespace ArenaGame.Client
                 return;
             }
             
-            // Create cooldown UI element
+            // Create cooldown UI element with vertical layout (icon on top, text below)
             GameObject cooldownObj = new GameObject($"Cooldown_{heroType}_{heroId.Value}");
             cooldownObj.transform.SetParent(cooldownContainer, false);
             
             RectTransform rect = cooldownObj.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(cooldownSize, cooldownSize);
+            rect.sizeDelta = new Vector2(cooldownSize + 20, cooldownSize + 30); // Extra space for text
+            
+            // Add vertical layout for icon + text
+            VerticalLayoutGroup verticalLayout = cooldownObj.AddComponent<VerticalLayoutGroup>();
+            verticalLayout.spacing = 5f;
+            verticalLayout.childAlignment = TextAnchor.MiddleCenter;
+            verticalLayout.childControlWidth = true;
+            verticalLayout.childControlHeight = false;
+            verticalLayout.childForceExpandWidth = true;
+            verticalLayout.childForceExpandHeight = false;
+            
+            // Create icon container
+            GameObject iconContainer = new GameObject("Icon");
+            iconContainer.transform.SetParent(cooldownObj.transform, false);
+            RectTransform iconRect = iconContainer.AddComponent<RectTransform>();
+            iconRect.sizeDelta = new Vector2(cooldownSize, cooldownSize);
             
             // Add background circle
             GameObject bgObj = new GameObject("Background");
-            bgObj.transform.SetParent(cooldownObj.transform, false);
+            bgObj.transform.SetParent(iconContainer.transform, false);
             RectTransform bgRect = bgObj.AddComponent<RectTransform>();
             bgRect.anchorMin = Vector2.zero;
             bgRect.anchorMax = Vector2.one;
@@ -112,7 +126,7 @@ namespace ArenaGame.Client
             
             // Add fill image
             GameObject fillObj = new GameObject("Fill");
-            fillObj.transform.SetParent(cooldownObj.transform, false);
+            fillObj.transform.SetParent(iconContainer.transform, false);
             RectTransform fillRect = fillObj.AddComponent<RectTransform>();
             fillRect.anchorMin = Vector2.zero;
             fillRect.anchorMax = Vector2.one;
@@ -125,6 +139,18 @@ namespace ArenaGame.Client
             fillImage.fillClockwise = false;
             fillImage.fillAmount = 0f;
             fillImage.color = Color.red;
+            
+            // Add hero name text
+            GameObject textObj = new GameObject("HeroName");
+            textObj.transform.SetParent(cooldownObj.transform, false);
+            RectTransform textRect = textObj.AddComponent<RectTransform>();
+            textRect.sizeDelta = new Vector2(cooldownSize + 20, 20);
+            
+            TMPro.TextMeshProUGUI nameText = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+            nameText.text = heroType;
+            nameText.fontSize = 14;
+            nameText.alignment = TMPro.TextAlignmentOptions.Center;
+            nameText.color = Color.white;
             
             // Add CooldownRadialUI component to track this specific hero
             CooldownRadialUI cooldownUI = cooldownObj.AddComponent<CooldownRadialUI>();
