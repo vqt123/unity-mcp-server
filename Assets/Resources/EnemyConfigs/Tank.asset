@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb26ea23c34c84aaf9d7e9fa99ed533a, type: 3}
+  m_Name: Tank
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.EnemyConfigSO
+  enemyTypeName: Tank
+  displayName: Tank
+  description: A heavily armored enemy
+  maxHealth: 200
+  damage: 15
+  moveSpeed: 1
+  attackRange: 1.2
+  attackSpeed: 0.5
+  isBoss: 0
+  isMiniBoss: 0
+  enemyPrefab: {fileID: 49664409928230331, guid: 82dd4b3e48ff1974f92d0019f58a4f24, type: 3}
+  enemyColor: {r: 0.6, g: 0.3, b: 0.8, a: 1}

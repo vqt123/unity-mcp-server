@@ -87,6 +87,14 @@ namespace ArenaGame.Client
                 GameLogger.Log("[Bootstrap] ✓ Created HeroConfigDatabase");
             }
             
+            // 2a1. Create EnemyConfigDatabase (loads enemy configs from Resources)
+            if (EnemyConfigDatabase.Instance == null)
+            {
+                GameObject enemyDbObj = new GameObject("EnemyConfigDatabase");
+                enemyDbObj.AddComponent<EnemyConfigDatabase>();
+                GameLogger.Log("[Bootstrap] ✓ Created EnemyConfigDatabase");
+            }
+            
             // 2b. Register bridge so Shared assembly can use HeroConfigSO
             HeroConfigConverter.RegisterBridge();
             GameLogger.Log("[Bootstrap] ✓ Registered HeroConfig bridge");

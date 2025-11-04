@@ -167,14 +167,29 @@ namespace ArenaGame.Client
         
         private void CreateEnemyView(EnemySpawnedEvent evt)
         {
-            if (enemyPrefab == null)
+            // Try to get enemy prefab from EnemyConfigDatabase
+            GameObject enemyPrefabToUse = GetEnemyPrefabForType(evt.EnemyType);
+            
+            // Fallback to default enemy prefab if config not found
+            if (enemyPrefabToUse == null)
             {
-                Debug.LogError("[EntityVisualizer] Enemy prefab is null!");
+                enemyPrefabToUse = enemyPrefab;
+            }
+            
+            // Final fallback: try to load from Resources
+            if (enemyPrefabToUse == null)
+            {
+                enemyPrefabToUse = Resources.Load<GameObject>("Enemy");
+            }
+            
+            if (enemyPrefabToUse == null)
+            {
+                Debug.LogError($"[EntityVisualizer] Enemy prefab is null for type '{evt.EnemyType}'!");
                 return;
             }
             
             Vector3 initialPos = ToVector3(evt.Position);
-            GameObject obj = Instantiate(enemyPrefab, initialPos, Quaternion.identity);
+            GameObject obj = Instantiate(enemyPrefabToUse, initialPos, Quaternion.identity);
             obj.name = $"Enemy_{evt.EnemyId.Value}_{evt.EnemyType}";
             
             if (evt.IsBoss) obj.transform.localScale *= 2f;
@@ -196,6 +211,21 @@ namespace ArenaGame.Client
             };
             
             entityViews[evt.EnemyId] = obj;
+        }
+        
+        private GameObject GetEnemyPrefabForType(string enemyType)
+        {
+            // Try to get from EnemyConfigDatabase
+            if (EnemyConfigDatabase.Instance != null)
+            {
+                EnemyConfigSO config = EnemyConfigDatabase.Instance.GetEnemyConfig(enemyType);
+                if (config != null && config.enemyPrefab != null)
+                {
+                    return config.enemyPrefab;
+                }
+            }
+            
+            return null;
         }
         
         private void CreateProjectileView(ProjectileSpawnedEvent evt)
