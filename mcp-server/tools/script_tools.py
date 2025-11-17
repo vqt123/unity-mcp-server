@@ -125,6 +125,27 @@ SCRIPT_TOOLS = [
             },
             "required": ["gameObjectName", "componentType"]
         }
+    },
+    {
+        "name": "unity_set_asset_property",
+        "description": "Set a property on a ScriptableObject asset or any asset file. Supports primitives, strings, and asset references (use {\"type\": \"reference\", \"path\": \"Assets/...\"} for prefabs/assets).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "assetPath": {
+                    "type": "string",
+                    "description": "Path to the asset file (e.g., 'Assets/Resources/HeroConfigs/Archer_Hero.asset')"
+                },
+                "propertyName": {
+                    "type": "string",
+                    "description": "Name of the property/field to set (e.g., 'heroPrefab', 'maxHealth')"
+                },
+                "value": {
+                    "description": "Value to set. For asset references, use {\"type\": \"reference\", \"path\": \"Assets/Characters/FBX/Elf.fbx\"}. For primitives, use the value directly."
+                }
+            },
+            "required": ["assetPath", "propertyName", "value"]
+        }
     }
 ]
 

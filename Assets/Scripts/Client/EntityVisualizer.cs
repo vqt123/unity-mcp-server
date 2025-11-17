@@ -169,24 +169,23 @@ namespace ArenaGame.Client
             
             GameObject heroPrefabToUse = null;
             
-            // Priority 1: Use global settings if available
-            if (globalSettings != null && globalSettings.defaultHeroModel != null)
+            // Priority 1: Try to get hero prefab from HeroConfigSO (per-hero-type models)
+            // This allows each hero type to have its own FBX model
+            heroPrefabToUse = GetHeroPrefabForType(evt.HeroType);
+            if (heroPrefabToUse != null)
+            {
+                Debug.Log($"[animtest] ✓ Using HeroConfigSO.heroPrefab for {evt.HeroType}: {heroPrefabToUse.name}");
+            }
+            else
+            {
+                Debug.Log($"[animtest] No heroPrefab found in HeroConfigSO for {evt.HeroType}, checking GlobalGameSettings...");
+            }
+            
+            // Priority 2: Fall back to global settings default model (shared model for all heroes)
+            if (heroPrefabToUse == null && globalSettings != null && globalSettings.defaultHeroModel != null)
             {
                 heroPrefabToUse = globalSettings.defaultHeroModel;
                 Debug.Log($"[animtest] ✓ Using GlobalGameSettings.defaultHeroModel: {heroPrefabToUse.name}");
-            }
-            // Priority 2: Try to get hero prefab from HeroConfigDatabase
-            else
-            {
-                heroPrefabToUse = GetHeroPrefabForType(evt.HeroType);
-                if (heroPrefabToUse != null)
-                {
-                    Debug.Log($"[animtest] Using HeroConfigDatabase prefab: {heroPrefabToUse.name}");
-                }
-                else
-                {
-                    Debug.Log($"[animtest] No prefab found in HeroConfigDatabase for {evt.HeroType}");
-                }
             }
             
             // Priority 3: Fallback to default hero prefab if config not found
