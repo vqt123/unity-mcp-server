@@ -4,6 +4,9 @@ using System.Linq;
 using ArenaGame.Shared.Core;
 using ArenaGame.Shared.Events;
 using ArenaGame.Shared.Math;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using EntityId = ArenaGame.Shared.Entities.EntityId;
 
 namespace ArenaGame.Client
@@ -161,6 +164,41 @@ namespace ArenaGame.Client
             Vector3 initialPos = ToVector3(evt.Position);
             GameObject obj = Instantiate(heroPrefabToUse, initialPos, Quaternion.identity);
             obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
+            
+            // Ensure Animator is enabled and playing
+            Animator animator = obj.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                animator = obj.GetComponent<Animator>();
+            }
+            
+            if (animator != null)
+            {
+                animator.enabled = true;
+                
+                // Force play idle animation if controller and avatar are assigned
+                if (animator.runtimeAnimatorController != null)
+                {
+                    if (animator.avatar != null && animator.avatar.isValid)
+                    {
+                        animator.Play("Idle", 0, 0f);
+                        Debug.Log($"[EntityVisualizer] Started Idle animation for {evt.HeroType}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[EntityVisualizer] Animator on {evt.HeroType} has no valid avatar! Animation won't play.");
+                        Debug.LogWarning($"[EntityVisualizer] Avatar status: null={animator.avatar == null}, valid={animator.avatar?.isValid}");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EntityVisualizer] Animator on {evt.HeroType} has no controller assigned!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[EntityVisualizer] Hero prefab {evt.HeroType} has no Animator component!");
+            }
             
             // Store entity ID for reference
             var view = obj.AddComponent<EntityView>();

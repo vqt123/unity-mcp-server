@@ -36,6 +36,9 @@ namespace UnityMCP
                     case "unity_save_prefab":
                         return SaveAsPrefab(args);
                     
+                    case "unity_create_prefab_from_asset":
+                        return CreatePrefabFromAsset(args);
+                    
                     case "unity_add_script_component":
                         return AddScriptComponent(args);
                     
@@ -3272,6 +3275,130 @@ namespace UnityMCP
                         ["success"] = true,
                         ["prefabPath"] = prefabPath,
                         ["gameObjectName"] = gameObjectName
+                    };
+                }
+                else
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = "Failed to create prefab"
+                    };
+                }
+            }
+            catch (System.Exception e)
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = e.Message
+                };
+            }
+        }
+        
+        private static JObject CreatePrefabFromAsset(JObject args)
+        {
+            string assetPath = args["assetPath"]?.ToString();
+            string prefabPath = args["prefabPath"]?.ToString();
+            string gameObjectName = args["gameObjectName"]?.ToString();
+            
+            if (string.IsNullOrEmpty(assetPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Asset path is required"
+                };
+            }
+            
+            if (string.IsNullOrEmpty(prefabPath))
+            {
+                return new JObject
+                {
+                    ["success"] = false,
+                    ["error"] = "Prefab path is required"
+                };
+            }
+            
+            try
+            {
+                // Load the asset
+                GameObject assetPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+                if (assetPrefab == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Could not load asset at '{assetPath}'"
+                    };
+                }
+                
+                // Instantiate in scene
+                GameObject instance = PrefabUtility.InstantiatePrefab(assetPrefab) as GameObject;
+                if (instance == null)
+                {
+                    return new JObject
+                    {
+                        ["success"] = false,
+                        ["error"] = $"Could not instantiate asset '{assetPath}'"
+                    };
+                }
+                
+                // Set name if provided
+                if (!string.IsNullOrEmpty(gameObjectName))
+                {
+                    instance.name = gameObjectName;
+                }
+                
+                instance.transform.position = Vector3.zero;
+                instance.transform.rotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
+                
+                // Ensure path starts with Assets/
+                if (!prefabPath.StartsWith("Assets/"))
+                {
+                    prefabPath = "Assets/" + prefabPath;
+                }
+                
+                // Ensure path ends with .prefab
+                if (!prefabPath.EndsWith(".prefab"))
+                {
+                    prefabPath += ".prefab";
+                }
+                
+                // Ensure directory exists
+                string directory = System.IO.Path.GetDirectoryName(prefabPath);
+                if (!AssetDatabase.IsValidFolder(directory))
+                {
+                    string[] folders = directory.Split('/');
+                    string currentPath = folders[0];
+                    for (int i = 1; i < folders.Length; i++)
+                    {
+                        string newPath = currentPath + "/" + folders[i];
+                        if (!AssetDatabase.IsValidFolder(newPath))
+                        {
+                            AssetDatabase.CreateFolder(currentPath, folders[i]);
+                        }
+                        currentPath = newPath;
+                    }
+                }
+                
+                // Save as prefab
+                GameObject prefab = PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
+                
+                // Clean up instance
+                UnityEngine.Object.DestroyImmediate(instance);
+                
+                if (prefab != null)
+                {
+                    AssetDatabase.Refresh();
+                    Debug.Log($"[MCP] Created prefab from asset: {prefabPath}");
+                    
+                    return new JObject
+                    {
+                        ["success"] = true,
+                        ["prefabPath"] = prefabPath,
+                        ["assetPath"] = assetPath
                     };
                 }
                 else

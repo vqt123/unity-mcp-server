@@ -26,6 +26,6 @@ MonoBehaviour:
   piercing: 0
   bulletColor: {r: 1, g: 1, b: 1, a: 1}
   heroColor: {r: 0, g: 0, b: 1, a: 1}
-  heroPrefab: {fileID: 4622111918084143689, guid: 7865769d83fad462ca31f9de32e4c32e, type: 3}
+  heroPrefab: {fileID: 9169994778850274125, guid: d354128b5d34643228cb1c4783c92750, type: 3}
   projectilePrefab: {fileID: 0}
   projectileFXPrefab: {fileID: 0}

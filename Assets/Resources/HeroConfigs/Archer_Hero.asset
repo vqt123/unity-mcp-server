@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf63e7d1affde4402a0ccfe9a43bf74f, type: 3}
   m_Name: Archer_Hero
   m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.HeroConfigSO
-  heroTypeName: Archer
+  heroTypeName: BlueSoldier
   displayName: Archer
   description: Ranged hero with bow
   maxHealth: 150
@@ -26,6 +26,6 @@ MonoBehaviour:
   piercing: 0
   bulletColor: {r: 1, g: 1, b: 1, a: 1}
   heroColor: {r: 0, g: 1, b: 0, a: 1}
-  heroPrefab: {fileID: 658934291134955798, guid: cd7393102f6ac4c919684677ec2bf8b3, type: 3}
+  heroPrefab: {fileID: 9169994778850274125, guid: d354128b5d34643228cb1c4783c92750, type: 3}
   projectilePrefab: {fileID: 0}
   projectileFXPrefab: {fileID: 0}

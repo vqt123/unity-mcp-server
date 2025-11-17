@@ -62,6 +62,25 @@ This project has additional rules in `.cursor/rules/`:
 5. Test with Unity Editor
 ```
 
+## Critical: Unity & MCP Restart Protocol
+
+**ALWAYS ask the user to restart Unity and MCP before proceeding with any task that involves:**
+- Unity Editor operations
+- MCP tool usage
+- Script compilation
+- Scene modifications
+- Prefab changes
+- Any Unity-related work
+
+**NEVER automatically proceed with Unity/MCP operations without explicit confirmation that both are restarted and ready.**
+
+**Workflow**:
+1. When starting a Unity-related task, **FIRST** ask: "Please restart Unity Editor and the MCP server, then confirm when ready."
+2. **WAIT** for user confirmation before proceeding
+3. Only then begin using MCP tools or making changes
+
+**Why**: Unity Editor and MCP server can get into inconsistent states. Restarting ensures a clean state before operations.
+
 ## Key Principles
 
 - **Deterministic**: Fixed-point math, no floating point

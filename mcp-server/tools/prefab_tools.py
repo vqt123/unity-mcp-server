@@ -48,6 +48,28 @@ PREFAB_TOOLS = [
             },
             "required": ["prefabPath", "action"]
         }
+    },
+    {
+        "name": "unity_create_prefab_from_asset",
+        "description": "Create a prefab from an existing asset (FBX, model, etc.) by loading it into the scene and saving as a prefab. Automatically handles instantiation and cleanup.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "assetPath": {
+                    "type": "string",
+                    "description": "Path to the asset file (e.g., 'Assets/Characters/FBX/BlueSoldier_Female.fbx')"
+                },
+                "prefabPath": {
+                    "type": "string",
+                    "description": "Path where to save the prefab (e.g., 'Assets/Prefabs/Hero_BlueSoldier_Female.prefab')"
+                },
+                "gameObjectName": {
+                    "type": "string",
+                    "description": "Optional: Name for the GameObject (defaults to asset filename)"
+                }
+            },
+            "required": ["assetPath", "prefabPath"]
+        }
     }
 ]
 
