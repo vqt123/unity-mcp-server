@@ -89,6 +89,28 @@ This project has additional rules in `.cursor/rules/`:
 - **Separated**: Simulation (Shared) independent of rendering (Client)
 - **Clean**: No circular dependencies
 
+## Troubleshooting Log Prefixes
+
+**ALWAYS use unique prefixes for troubleshooting logs** to make them easy to filter and identify.
+
+**Format**: `[prefix] Message content`
+
+**Examples**:
+- `[projmiss]` - Projectile collision/miss debugging
+- `[animtest]` - Animation system debugging
+- `[combat]` - Combat system debugging
+- `[spawn]` - Entity spawning debugging
+- `[movement]` - Movement system debugging
+
+**Rules**:
+1. Use a **unique, descriptive prefix** for each system/feature
+2. Use **square brackets** `[prefix]` format
+3. Keep prefixes **short** (3-10 characters)
+4. Use **lowercase** with no spaces
+5. Document the prefix in code comments if it's used extensively
+
+**Why**: Makes it easy to filter logs in Unity Console or log files to focus on specific systems.
+
 ---
 
 **Remember**: Main.md is your map. Start there!

@@ -187,17 +187,44 @@ namespace ArenaGame.Shared.Systems
                 
                 bool hitSomething = false;
                 
-                // Check collision with enemies
+                // Calculate previous position (for swept collision detection)
+                // Previous position = current position - velocity * deltaTime
+                FixV2 previousPosition = proj.Position - (proj.Velocity * world.FixedDeltaTime);
+                
+                // Check collision with enemies using swept circle collision
                 foreach (var enemyId in world.EnemyIds)
                 {
                     if (!world.TryGetEnemy(enemyId, out Enemy enemy)) continue;
                     if (!enemy.IsAlive) continue;
                     
-                    // Simple circle collision (enemy has implicit radius)
+                    // Enemy collision radius
                     Fix64 enemyRadius = Fix64.FromFloat(0.5f);
-                    Fix64 dist = FixV2.Distance(proj.Position, enemy.Position);
                     
-                    if (dist <= enemyRadius)
+                    // Check swept collision: line segment from previousPosition to current Position
+                    bool hit = CheckSweptCircleCollision(
+                        previousPosition, 
+                        proj.Position, 
+                        Fix64.Zero, // Projectile radius (0 for point collision)
+                        enemy.Position, 
+                        enemyRadius
+                    );
+                    
+                    if (!hit)
+                    {
+                        // Log near misses for debugging
+                        Fix64 distToEnemy = FixV2.Distance(proj.Position, enemy.Position);
+                        Fix64 distToEnemyPrev = FixV2.Distance(previousPosition, enemy.Position);
+                        Fix64 closestDist = distToEnemy < distToEnemyPrev ? distToEnemy : distToEnemyPrev;
+                        
+                        // Log if projectile passed very close to enemy (within 2x radius)
+                        if (closestDist <= enemyRadius * Fix64.FromInt(2))
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[projmiss] Projectile {projId.Value} near-missed enemy {enemyId.Value}: closestDist={closestDist.ToFloat():F3}, enemyRadius={enemyRadius.ToFloat():F3}, projSpeed={proj.Speed.ToFloat():F1}, distNow={distToEnemy.ToFloat():F3}, distPrev={distToEnemyPrev.ToFloat():F3}");
+                        }
+                        continue;
+                    }
+                    
+                    // HIT! Apply damage
                     {
                         // Store enemy position BEFORE applying damage (in case enemy dies and gets removed)
                         FixV2 enemyPosAtHit = enemy.Position;
@@ -262,9 +289,11 @@ namespace ArenaGame.Shared.Systems
                         
                         hitSomething = true;
                         
+                        System.Diagnostics.Debug.WriteLine($"[projmiss] Projectile {projId.Value} HIT enemy {enemyId.Value} at tick {world.CurrentTick}, dist={FixV2.Distance(proj.Position, enemy.Position).ToFloat():F3}");
+                        
                         // ALWAYS destroy projectile on hit (unless piercing - only ice arrow)
                         // Break immediately so projectile doesn't hit multiple enemies
-                            break;
+                        break;
                     }
                 }
                 
@@ -403,6 +432,52 @@ namespace ArenaGame.Shared.Systems
             }
             
             return nearest;
+        }
+        
+        /// <summary>
+        /// Checks if a moving circle (swept from startPos to endPos) collides with a static circle
+        /// Uses swept circle-circle collision detection to prevent tunneling
+        /// </summary>
+        private static bool CheckSweptCircleCollision(
+            FixV2 lineStart,      // Previous projectile position
+            FixV2 lineEnd,        // Current projectile position
+            Fix64 movingRadius,   // Projectile radius (usually 0)
+            FixV2 circleCenter,   // Enemy position
+            Fix64 circleRadius)   // Enemy collision radius
+        {
+            // Vector from line start to end
+            FixV2 lineDir = lineEnd - lineStart;
+            Fix64 lineLength = lineDir.Magnitude;
+            
+            // If line has no length, just check point collision
+            if (lineLength <= Fix64.Zero)
+            {
+                Fix64 dist = FixV2.Distance(lineStart, circleCenter);
+                return dist <= (movingRadius + circleRadius);
+            }
+            
+            // Normalize line direction
+            FixV2 lineDirNorm = lineDir / lineLength;
+            
+            // Vector from line start to circle center
+            FixV2 toCircle = circleCenter - lineStart;
+            
+            // Project circle center onto line segment
+            Fix64 projectionLength = FixV2.Dot(toCircle, lineDirNorm);
+            
+            // Clamp projection to line segment bounds
+            Fix64 clampedProjection = projectionLength;
+            if (clampedProjection < Fix64.Zero) clampedProjection = Fix64.Zero;
+            if (clampedProjection > lineLength) clampedProjection = lineLength;
+            
+            // Find closest point on line segment to circle center
+            FixV2 closestPoint = lineStart + (lineDirNorm * clampedProjection);
+            
+            // Check distance from closest point to circle center
+            Fix64 distToCircle = FixV2.Distance(closestPoint, circleCenter);
+            
+            // Collision if distance is less than sum of radii
+            return distToCircle <= (movingRadius + circleRadius);
         }
     }
 }
