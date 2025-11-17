@@ -29,6 +29,8 @@ namespace ArenaGame.Client
         
         private Dictionary<EntityId, GameObject> entityViews = new Dictionary<EntityId, GameObject>();
         private Dictionary<EntityId, GameObject> projectileParticleEmitters = new Dictionary<EntityId, GameObject>(); // Track particle emitters for projectiles
+        private Dictionary<EntityId, Animator> heroAnimators = new Dictionary<EntityId, Animator>(); // Track animators for heroes
+        private Dictionary<EntityId, float> heroLastShootTime = new Dictionary<EntityId, float>(); // Track when heroes last shot (for fire animation)
         
         // Position buffer for interpolation - we need TWO positions:
         // - previousTickPos: position from tick N-1
@@ -92,16 +94,20 @@ namespace ArenaGame.Client
             EventBus.Subscribe<HeroKilledEvent>(OnEvent);
             EventBus.Subscribe<EnemyKilledEvent>(OnEvent);
             EventBus.Subscribe<ProjectileDestroyedEvent>(OnEvent);
+            EventBus.Subscribe<EntityMovedEvent>(OnEvent);
+            EventBus.Subscribe<HeroShootEvent>(OnEvent);
         }
         
         void OnDisable()
         {
             EventBus.Unsubscribe<HeroSpawnedEvent>(OnEvent);
             EventBus.Unsubscribe<EnemySpawnedEvent>(OnEvent);
-            EventBus.Subscribe<ProjectileSpawnedEvent>(OnEvent);
+            EventBus.Unsubscribe<ProjectileSpawnedEvent>(OnEvent);
             EventBus.Unsubscribe<HeroKilledEvent>(OnEvent);
             EventBus.Unsubscribe<EnemyKilledEvent>(OnEvent);
             EventBus.Unsubscribe<ProjectileDestroyedEvent>(OnEvent);
+            EventBus.Unsubscribe<EntityMovedEvent>(OnEvent);
+            EventBus.Unsubscribe<HeroShootEvent>(OnEvent);
         }
         
         void LateUpdate()
@@ -135,70 +141,96 @@ namespace ArenaGame.Client
                 case ProjectileDestroyedEvent projDestroy:
                     DestroyEntityView(projDestroy.ProjectileId);
                     break;
+                case EntityMovedEvent moved:
+                    UpdateHeroAnimation(moved);
+                    break;
+                case HeroShootEvent shoot:
+                    OnHeroShoot(shoot);
+                    break;
             }
         }
         
         private void CreateHeroView(HeroSpawnedEvent evt)
         {
-            // Try to get hero prefab from HeroConfigDatabase
-            GameObject heroPrefabToUse = GetHeroPrefabForType(evt.HeroType);
+            Debug.Log($"[animtest] ========== CreateHeroView START for {evt.HeroType} ==========");
             
-            // Fallback to default hero prefab if config not found
-            if (heroPrefabToUse == null)
+            // Load global game settings
+            GlobalGameSettings globalSettings = Resources.Load<GlobalGameSettings>("GlobalGameSettings");
+            Debug.Log($"[animtest] GlobalGameSettings loaded: {(globalSettings != null ? "YES" : "NO")}");
+            
+            if (globalSettings != null)
             {
-                heroPrefabToUse = heroPrefab;
+                Debug.Log($"[animtest] GlobalGameSettings.defaultHeroModel: {(globalSettings.defaultHeroModel != null ? globalSettings.defaultHeroModel.name : "NULL")}");
+                Debug.Log($"[animtest] GlobalGameSettings.heroIdleAnimation: {(globalSettings.heroIdleAnimation != null ? globalSettings.heroIdleAnimation.name : "NULL")}");
+                Debug.Log($"[animtest] GlobalGameSettings.heroWalkAnimation: {(globalSettings.heroWalkAnimation != null ? globalSettings.heroWalkAnimation.name : "NULL")}");
+                Debug.Log($"[animtest] GlobalGameSettings.heroFireAnimation: {(globalSettings.heroFireAnimation != null ? globalSettings.heroFireAnimation.name : "NULL")}");
+                Debug.Log($"[animtest] IsHeroSettingsValid: {globalSettings.IsHeroSettingsValid()}");
             }
             
-            // Final fallback: try to load from Resources
-            if (heroPrefabToUse == null)
+            GameObject heroPrefabToUse = null;
+            
+            // Priority 1: Use global settings if available
+            if (globalSettings != null && globalSettings.defaultHeroModel != null)
             {
-                heroPrefabToUse = Resources.Load<GameObject>("Hero");
+                heroPrefabToUse = globalSettings.defaultHeroModel;
+                Debug.Log($"[animtest] ✓ Using GlobalGameSettings.defaultHeroModel: {heroPrefabToUse.name}");
             }
-            
-            if (heroPrefabToUse == null)
+            // Priority 2: Try to get hero prefab from HeroConfigDatabase
+            else
             {
-                Debug.LogError($"[EntityVisualizer] Hero prefab is null for type '{evt.HeroType}'!");
-                return;
-            }
-            
-            Vector3 initialPos = ToVector3(evt.Position);
-            GameObject obj = Instantiate(heroPrefabToUse, initialPos, Quaternion.identity);
-            obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
-            
-            // Ensure Animator is enabled and playing
-            Animator animator = obj.GetComponentInChildren<Animator>();
-            if (animator == null)
-            {
-                animator = obj.GetComponent<Animator>();
-            }
-            
-            if (animator != null)
-            {
-                animator.enabled = true;
-                
-                // Force play idle animation if controller and avatar are assigned
-                if (animator.runtimeAnimatorController != null)
+                heroPrefabToUse = GetHeroPrefabForType(evt.HeroType);
+                if (heroPrefabToUse != null)
                 {
-                    if (animator.avatar != null && animator.avatar.isValid)
-                    {
-                        animator.Play("Idle", 0, 0f);
-                        Debug.Log($"[EntityVisualizer] Started Idle animation for {evt.HeroType}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[EntityVisualizer] Animator on {evt.HeroType} has no valid avatar! Animation won't play.");
-                        Debug.LogWarning($"[EntityVisualizer] Avatar status: null={animator.avatar == null}, valid={animator.avatar?.isValid}");
-                    }
+                    Debug.Log($"[animtest] Using HeroConfigDatabase prefab: {heroPrefabToUse.name}");
                 }
                 else
                 {
-                    Debug.LogWarning($"[EntityVisualizer] Animator on {evt.HeroType} has no controller assigned!");
+                    Debug.Log($"[animtest] No prefab found in HeroConfigDatabase for {evt.HeroType}");
                 }
             }
-            else
+            
+            // Priority 3: Fallback to default hero prefab if config not found
+            if (heroPrefabToUse == null)
             {
-                Debug.LogWarning($"[EntityVisualizer] Hero prefab {evt.HeroType} has no Animator component!");
+                heroPrefabToUse = heroPrefab;
+                if (heroPrefabToUse != null)
+                {
+                    Debug.Log($"[animtest] Using fallback heroPrefab: {heroPrefabToUse.name}");
+                }
+                else
+                {
+                    Debug.Log($"[animtest] heroPrefab field is null");
+                }
             }
+            
+            // Priority 4: Final fallback: try to load from Resources
+            if (heroPrefabToUse == null)
+            {
+                heroPrefabToUse = Resources.Load<GameObject>("Hero");
+                if (heroPrefabToUse != null)
+                {
+                    Debug.Log($"[animtest] Loaded Hero prefab from Resources");
+                }
+                else
+                {
+                    Debug.Log($"[animtest] No Hero prefab found in Resources");
+                }
+            }
+            
+            if (heroPrefabToUse == null)
+            {
+                Debug.LogError($"[animtest] ❌ Hero prefab is null for type '{evt.HeroType}'! Cannot create hero view.");
+                return;
+            }
+            
+            Debug.Log($"[animtest] Instantiating hero prefab: {heroPrefabToUse.name}");
+            Vector3 initialPos = ToVector3(evt.Position);
+            GameObject obj = Instantiate(heroPrefabToUse, initialPos, Quaternion.identity);
+            obj.name = $"Hero_{evt.HeroId.Value}_{evt.HeroType}";
+            Debug.Log($"[animtest] Hero GameObject created: {obj.name} at position {initialPos}");
+            
+            // Setup Animator with global settings
+            SetupHeroAnimator(obj, globalSettings);
             
             // Store entity ID for reference
             var view = obj.AddComponent<EntityView>();
@@ -216,6 +248,346 @@ namespace ArenaGame.Client
             };
             
             entityViews[evt.HeroId] = obj;
+            
+            // Store animator reference
+            Animator animator = obj.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                animator = obj.GetComponent<Animator>();
+            }
+            if (animator != null)
+            {
+                heroAnimators[evt.HeroId] = animator;
+            }
+        }
+        
+        private void SetupHeroAnimator(GameObject heroObj, GlobalGameSettings globalSettings)
+        {
+            Debug.Log($"[animtest] ========== SetupHeroAnimator START for {heroObj.name} ==========");
+            
+            Animator animator = heroObj.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                animator = heroObj.GetComponent<Animator>();
+                Debug.Log($"[animtest] Found Animator on root: {(animator != null ? "YES" : "NO")}");
+            }
+            else
+            {
+                Debug.Log($"[animtest] Found Animator in children: {animator.name}");
+            }
+            
+            // If no animator exists, add one
+            if (animator == null)
+            {
+                animator = heroObj.AddComponent<Animator>();
+                Debug.Log($"[animtest] Added Animator component to {heroObj.name}");
+            }
+            
+            animator.enabled = true;
+            animator.updateMode = AnimatorUpdateMode.Normal;
+            Debug.Log($"[animtest] Animator enabled: {animator.enabled}, updateMode: {animator.updateMode}");
+            
+            // Use global settings if available
+            if (globalSettings != null && globalSettings.IsHeroSettingsValid())
+            {
+                Debug.Log($"[animtest] ✓ GlobalGameSettings is valid, setting up animator...");
+                
+                // Get avatar from the model
+                Avatar avatar = null;
+                if (globalSettings.defaultHeroModel != null)
+                {
+                    Debug.Log($"[animtest] Looking for avatar in model: {globalSettings.defaultHeroModel.name}");
+                    
+                    // Try to get avatar from the model's Animator if it has one
+                    Animator modelAnimator = globalSettings.defaultHeroModel.GetComponent<Animator>();
+                    if (modelAnimator != null && modelAnimator.avatar != null)
+                    {
+                        avatar = modelAnimator.avatar;
+                        Debug.Log($"[animtest] Found avatar on model's Animator: {avatar.name}, valid: {avatar.isValid}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[animtest] Model has no Animator or avatar, trying to extract from FBX asset...");
+                        // Try to extract avatar from FBX asset
+                        #if UNITY_EDITOR
+                        string assetPath = UnityEditor.AssetDatabase.GetAssetPath(globalSettings.defaultHeroModel);
+                        Debug.Log($"[animtest] FBX asset path: {assetPath}");
+                        if (!string.IsNullOrEmpty(assetPath))
+                        {
+                            // Try to get avatar from ModelImporter first
+                            UnityEditor.ModelImporter importer = UnityEditor.AssetImporter.GetAtPath(assetPath) as UnityEditor.ModelImporter;
+                            if (importer != null)
+                            {
+                                Debug.Log($"[animtest] ModelImporter found, animationType: {importer.animationType}");
+                                
+                                // For Generic animation type, we don't need an avatar - animations use the model's actual bone structure
+                                if (importer.animationType == UnityEditor.ModelImporterAnimationType.Generic)
+                                {
+                                    Debug.Log($"[animtest] FBX is Generic animation type - no avatar needed, animations use model's bone structure directly");
+                                    // Generic animations don't require an avatar, so we can proceed without one
+                                    avatar = null; // Explicitly set to null for Generic
+                                }
+                                else if (importer.animationType == UnityEditor.ModelImporterAnimationType.Human)
+                                {
+                                    // Try to load avatar for Humanoid
+                                    Debug.Log($"[animtest] FBX is Humanoid, trying to get avatar...");
+                                    Object[] assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(assetPath);
+                                    Debug.Log($"[animtest] Found {assets.Length} assets in FBX");
+                                    
+                                    foreach (Object asset in assets)
+                                    {
+                                        if (asset is Avatar av && av.isValid)
+                                        {
+                                            avatar = av;
+                                            Debug.Log($"[animtest] ✓ Using avatar: {avatar.name}, valid: {avatar.isValid}");
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (avatar == null)
+                                    {
+                                        Debug.LogError($"[animtest] ❌ No valid avatar found for Humanoid FBX!");
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.Log($"[animtest] FBX animationType is {importer.animationType} - Legacy/None, no avatar needed");
+                                    avatar = null;
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[animtest] ⚠️ Could not get ModelImporter for {assetPath}");
+                            }
+                        }
+                        #endif
+                    }
+                }
+                
+                // For Generic animation type, avatar is optional (animations use model's bone structure)
+                // For Humanoid, avatar is required
+                if (avatar != null)
+                {
+                    animator.avatar = avatar;
+                    Debug.Log($"[animtest] ✓ Assigned avatar to animator: {avatar.name}, valid: {avatar.isValid}");
+                }
+                else
+                {
+                    #if UNITY_EDITOR
+                    UnityEditor.ModelImporter importer = UnityEditor.AssetImporter.GetAtPath(UnityEditor.AssetDatabase.GetAssetPath(globalSettings.defaultHeroModel)) as UnityEditor.ModelImporter;
+                    if (importer != null && importer.animationType == UnityEditor.ModelImporterAnimationType.Generic)
+                    {
+                        Debug.Log($"[animtest] ✓ Generic animation type - no avatar needed, animations will use model's bone structure");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[animtest] ⚠️ No avatar found or assigned! Animations may not work.");
+                    }
+                    #else
+                    Debug.LogWarning($"[animtest] ⚠️ No avatar found or assigned!");
+                    #endif
+                }
+                
+                // Create runtime animator controller if we have animations
+                if (globalSettings.heroIdleAnimation != null || globalSettings.heroWalkAnimation != null || globalSettings.heroFireAnimation != null)
+                {
+                    Debug.Log($"[animtest] Creating animator controller with animations...");
+                    RuntimeAnimatorController controller = CreateHeroAnimatorController(globalSettings);
+                    if (controller != null)
+                    {
+                        animator.runtimeAnimatorController = controller;
+                        Debug.Log($"[animtest] ✓ Assigned controller to animator: {controller.name}");
+                        
+                        // Play idle animation and ensure it loops
+                        if (globalSettings.heroIdleAnimation != null)
+                        {
+                            // Ensure idle animation is set to loop
+                            #if UNITY_EDITOR
+                            AnimationClipSettings clipSettings = UnityEditor.AnimationUtility.GetAnimationClipSettings(globalSettings.heroIdleAnimation);
+                            if (!clipSettings.loopTime)
+                            {
+                                clipSettings.loopTime = true;
+                                UnityEditor.AnimationUtility.SetAnimationClipSettings(globalSettings.heroIdleAnimation, clipSettings);
+                                Debug.Log($"[animtest] Set {globalSettings.heroIdleAnimation.name} to loop");
+                            }
+                            #endif
+                            
+                            // Ensure animator is enabled and updating
+                            animator.enabled = true;
+                            animator.updateMode = AnimatorUpdateMode.Normal;
+                            
+                            // Play the animation
+                            animator.Play("Idle", 0, 0f);
+                            animator.Update(0f); // Force immediate update
+                            
+                            // Verify the state is playing - comprehensive diagnostics
+                            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+                            
+                            // Check if we can get the actual clip from the override controller
+                            AnimatorOverrideController overrideCtrl = controller as AnimatorOverrideController;
+                            AnimationClip actualClip = null;
+                            if (overrideCtrl != null)
+                            {
+                                var clips = overrideCtrl.clips;
+                                foreach (var clipPair in clips)
+                                {
+                                    if (clipPair.originalClip != null && clipPair.originalClip.name == "Idle")
+                                    {
+                                        actualClip = clipPair.overrideClip;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            Debug.Log($"[animtest] ========== ANIMATION DIAGNOSTICS ==========");
+                            Debug.Log($"[animtest] Animator enabled: {animator.enabled}");
+                            Debug.Log($"[animtest] Animator has controller: {animator.runtimeAnimatorController != null}");
+                            Debug.Log($"[animtest] Animator has avatar: {animator.avatar != null}, valid: {(animator.avatar != null ? animator.avatar.isValid : false)}");
+                            Debug.Log($"[animtest] Current state name: {(stateInfo.IsName("Idle") ? "Idle" : "NOT Idle")}");
+                            Debug.Log($"[animtest] State normalizedTime: {stateInfo.normalizedTime}");
+                            Debug.Log($"[animtest] State length: {stateInfo.length}");
+                            Debug.Log($"[animtest] State speed: {stateInfo.speed}");
+                            Debug.Log($"[animtest] State loop: {stateInfo.loop}");
+                            Debug.Log($"[animtest] Assigned clip name: {globalSettings.heroIdleAnimation.name}");
+                            Debug.Log($"[animtest] Assigned clip length: {globalSettings.heroIdleAnimation.length}");
+                            Debug.Log($"[animtest] Assigned clip frameRate: {globalSettings.heroIdleAnimation.frameRate}");
+                            Debug.Log($"[animtest] Actual clip from controller: {(actualClip != null ? actualClip.name : "NULL")}");
+                            if (actualClip != null)
+                            {
+                                Debug.Log($"[animtest] Actual clip length: {actualClip.length}, loopTime: {actualClip.isLooping}");
+                            }
+                            Debug.Log($"[animtest] ==========================================");
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"[animtest] ⚠️ No idle animation to play!");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"[animtest] ❌ Failed to create animator controller!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[animtest] ⚠️ No animations assigned in GlobalGameSettings!");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[animtest] ⚠️ GlobalGameSettings is null or invalid!");
+                if (globalSettings == null)
+                {
+                    Debug.LogWarning($"[animtest] GlobalGameSettings is NULL - make sure it's in Assets/Resources/GlobalGameSettings.asset");
+                }
+                else
+                {
+                    Debug.LogWarning($"[animtest] GlobalGameSettings exists but IsHeroSettingsValid() returned false");
+                }
+                
+                // Fallback: use existing animator setup
+                if (animator.runtimeAnimatorController != null)
+                {
+                    Debug.Log($"[animtest] Using existing controller: {animator.runtimeAnimatorController.name}");
+                    if (animator.avatar != null && animator.avatar.isValid)
+                    {
+                        Debug.Log($"[animtest] Avatar is valid: {animator.avatar.name}");
+                        if (globalSettings != null && globalSettings.heroIdleAnimation != null)
+                        {
+                            animator.Play("Idle", 0, 0f);
+                            Debug.Log($"[animtest] Started Idle animation");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[animtest] ⚠️ Animator has no valid avatar!");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[animtest] ❌ Animator has no controller assigned and GlobalGameSettings not available!");
+                }
+            }
+            
+            Debug.Log($"[animtest] ========== SetupHeroAnimator END ==========");
+        }
+        
+        private RuntimeAnimatorController CreateHeroAnimatorController(GlobalGameSettings settings)
+        {
+            Debug.Log($"[animtest] ========== CreateHeroAnimatorController START ==========");
+            
+            // Try to load a base controller from Resources, or use a simple one
+            // For now, we'll create an AnimatorOverrideController if we have a base controller
+            RuntimeAnimatorController baseController = Resources.Load<RuntimeAnimatorController>("HeroBaseController");
+            Debug.Log($"[animtest] Base controller loaded: {(baseController != null ? baseController.name : "NULL")}");
+            
+            if (baseController == null)
+            {
+                // No base controller - animations won't work without one
+                // The user should either:
+                // 1. Create a simple Animator Controller with Idle/Walk/Fire states and save it to Resources/HeroBaseController.controller
+                // 2. Or set up the controller on the FBX model directly
+                Debug.LogWarning("[animtest] ❌ No base Animator Controller found. Please create Resources/HeroBaseController.controller with Idle, Walk, and Fire states, or set up the controller on the FBX model.");
+                return null;
+            }
+            
+            // Create an override controller with the animations from global settings
+            AnimatorOverrideController overrideController = new AnimatorOverrideController(baseController);
+            Debug.Log($"[animtest] Created AnimatorOverrideController");
+            
+            // Check and log loop settings for each animation
+            if (settings.heroIdleAnimation != null)
+            {
+                #if UNITY_EDITOR
+                AnimationClipSettings clipSettings = UnityEditor.AnimationUtility.GetAnimationClipSettings(settings.heroIdleAnimation);
+                Debug.Log($"[animtest] Idle clip loopTime: {clipSettings.loopTime}, wrapMode: {settings.heroIdleAnimation.wrapMode}");
+                if (!clipSettings.loopTime)
+                {
+                    clipSettings.loopTime = true;
+                    UnityEditor.AnimationUtility.SetAnimationClipSettings(settings.heroIdleAnimation, clipSettings);
+                    Debug.Log($"[animtest] ✓ Fixed Idle animation loop setting");
+                }
+                #endif
+                overrideController["Idle"] = settings.heroIdleAnimation;
+                Debug.Log($"[animtest] ✓ Assigned Idle animation: {settings.heroIdleAnimation.name}");
+            }
+            else
+            {
+                Debug.LogWarning($"[animtest] ⚠️ heroIdleAnimation is null!");
+            }
+            
+            if (settings.heroWalkAnimation != null)
+            {
+                #if UNITY_EDITOR
+                AnimationClipSettings clipSettings = UnityEditor.AnimationUtility.GetAnimationClipSettings(settings.heroWalkAnimation);
+                Debug.Log($"[animtest] Walk clip loopTime: {clipSettings.loopTime}, wrapMode: {settings.heroWalkAnimation.wrapMode}");
+                if (!clipSettings.loopTime)
+                {
+                    clipSettings.loopTime = true;
+                    UnityEditor.AnimationUtility.SetAnimationClipSettings(settings.heroWalkAnimation, clipSettings);
+                    Debug.Log($"[animtest] ✓ Fixed Walk animation loop setting");
+                }
+                #endif
+                overrideController["Walk"] = settings.heroWalkAnimation;
+                Debug.Log($"[animtest] ✓ Assigned Walk animation: {settings.heroWalkAnimation.name}");
+            }
+            else
+            {
+                Debug.Log($"[animtest] heroWalkAnimation is null (optional)");
+            }
+            
+            if (settings.heroFireAnimation != null)
+            {
+                overrideController["Fire"] = settings.heroFireAnimation;
+                Debug.Log($"[animtest] ✓ Assigned Fire animation: {settings.heroFireAnimation.name}");
+            }
+            else
+            {
+                Debug.Log($"[animtest] heroFireAnimation is null (optional)");
+            }
+            
+            Debug.Log($"[animtest] ========== CreateHeroAnimatorController END ==========");
+            return overrideController;
         }
         
         private GameObject GetHeroPrefabForType(string heroType)
@@ -524,10 +896,83 @@ namespace ArenaGame.Client
             return fx;
         }
         
+        private void UpdateHeroAnimation(EntityMovedEvent evt)
+        {
+            // Delegate to the velocity-based update method
+            UpdateHeroAnimationFromVelocity(evt.EntityId, evt.Velocity);
+        }
+        
+        private void UpdateHeroAnimationFromVelocity(EntityId heroId, FixV2 velocity)
+        {
+            // Only update animation for heroes
+            if (!heroAnimators.TryGetValue(heroId, out Animator animator) || animator == null)
+                return;
+            
+            // Check if hero just shot (fire animation should play for a short time)
+            bool isFiring = false;
+            if (heroLastShootTime.TryGetValue(heroId, out float lastShootTime))
+            {
+                float timeSinceShoot = Time.time - lastShootTime;
+                isFiring = timeSinceShoot < 0.5f; // Fire animation plays for 0.5 seconds
+            }
+            
+            // Determine which animation to play
+            string targetState = "Idle";
+            if (isFiring)
+            {
+                targetState = "Fire";
+            }
+            
+            // Only change state if not already in the target state
+            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
+            string currentStateName = GetStateNameFromStateInfo(currentState);
+            
+            if (currentStateName != targetState)
+            {
+                animator.Play(targetState, 0, 0f);
+                Debug.Log($"[animtest] Hero {heroId.Value} animation: {targetState} (firing: {isFiring})");
+            }
+        }
+        
+        private string GetStateNameFromStateInfo(AnimatorStateInfo stateInfo)
+        {
+            // Get the state name from the full path (e.g., "Base Layer.Idle" -> "Idle")
+            string fullPath = stateInfo.fullPathHash.ToString();
+            
+            // Try to get state name from animator
+            if (stateInfo.IsName("Idle"))
+                return "Idle";
+            if (stateInfo.IsName("Walk"))
+                return "Walk";
+            if (stateInfo.IsName("Fire"))
+                return "Fire";
+            
+            // Fallback: check normalized time to determine if we're in a looping state
+            // If normalizedTime > 1, we've looped at least once
+            return "Unknown";
+        }
+        
+        private void OnHeroShoot(HeroShootEvent evt)
+        {
+            // Record shoot time for fire animation
+            heroLastShootTime[evt.HeroId] = Time.time;
+            
+            // Immediately play fire animation
+            if (heroAnimators.TryGetValue(evt.HeroId, out Animator animator) && animator != null)
+            {
+                animator.Play("Fire", 0, 0f);
+                Debug.Log($"[animtest] Hero {evt.HeroId.Value} shooting - playing Fire animation");
+            }
+        }
+        
         private void DestroyEntityView(EntityId id)
         {
             // Clean up position buffer
             entityPositionBuffers.Remove(id);
+            
+            // Clean up animator tracking (for heroes)
+            heroAnimators.Remove(id);
+            heroLastShootTime.Remove(id);
             
             GameObject obj = null;
             if (entityViews.TryGetValue(id, out obj))
@@ -640,6 +1085,9 @@ namespace ArenaGame.Client
                         obj.transform.position = interpolatedPos;
                         
                         entityPositionBuffers[heroId] = buffer;
+                        
+                        // Update animation based on velocity
+                        UpdateHeroAnimationFromVelocity(heroId, hero.Velocity);
                     }
                     else
                     {
@@ -749,4 +1197,5 @@ namespace ArenaGame.Client
         }
     }
 }
+
 
