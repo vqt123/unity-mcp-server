@@ -1,93 +1,124 @@
 # Using Hero Prefabs In Game
 
-## Quick Steps
+**Last Updated**: January 2025  
+**Current System**: GlobalGameSettings for centralized hero configuration
 
-1. **Create Animation Configs** (if not done)
-   - Open `Tools/Setup/Create Hero Prefabs from FBX`
-   - Click "Create Animation Configs for All Characters"
-   - Assign Idle, Walk, and Fire animations in each config
+---
 
-2. **Create Hero Prefabs**
-   - Click "Scan and Create Hero Prefabs"
-   - Prefabs are saved to `Assets/Prefabs/` (e.g., `Hero_BlueSoldier_Male.prefab`)
+## Quick Start
 
-3. **Assign Prefab to HeroConfigSO**
-   - Open the HeroConfigSO asset (e.g., `Assets/Resources/HeroConfigs/BlueSoldier_Hero.asset`)
-   - Drag the prefab from `Assets/Prefabs/` to the `heroPrefab` field
-   - Make sure `heroTypeName` matches (e.g., "BlueSoldier")
+The current system uses **GlobalGameSettings** to configure default hero models and animations for all heroes. This is simpler than the old per-hero configuration system.
 
-4. **Test in Game**
-   - Open your game scene (e.g., `ArenaGame.unity`)
-   - Enter Play Mode
-   - Hero should spawn with animations!
+### Step 1: Configure GlobalGameSettings
 
-## Detailed Instructions
+1. **Open GlobalGameSettings**:
+   - Navigate to `Assets/Resources/GlobalGameSettings.asset`
+   - Or create new: Right-click → `ArenaGame/Global Game Settings`
 
-### Step 1: Create Hero Prefabs
+2. **Assign Default Hero Model**:
+   - Drag an FBX model from `Assets/Characters/FBX/` to the **Default Hero Model** field
+   - Example: `BaseCharacter.fbx` or `BlueSoldier_Female.fbx`
 
-After assigning animations in your configs, run the tool:
-- `Tools/Setup/Create Hero Prefabs from FBX`
-- Click "Scan and Create Hero Prefabs"
-- Check console for success messages
+3. **Assign Hero Animations**:
+   - Expand the FBX model in Project window (click arrow)
+   - Find animation clips (e.g., `CharacterArmature|Idle`, `CharacterArmature|Walk`, `CharacterArmature|Shoot_OneHanded`)
+   - Drag animations to:
+     - **Hero Idle Animation**
+     - **Hero Walk Animation**
+     - **Hero Fire Animation**
 
-**Output**: Prefabs in `Assets/Prefabs/` like:
-- `Hero_BlueSoldier_Male.prefab`
-- `Hero_Elf.prefab`
-- etc.
+4. **Create Base Animator Controller** (if needed):
+   - Click **"Create Hero Base Animator Controller"** button in Inspector
+   - This creates `Assets/Resources/HeroBaseController.controller` with Idle, Walk, and Fire states
 
-### Step 2: Find or Create HeroConfigSO
+5. **Configure Animation Loop Settings** (optional):
+   - Click **"Configure Animation Loop Settings"** button
+   - This sets Idle/Walk to loop, Fire to not loop
 
-Your hero configs are in `Assets/Resources/HeroConfigs/`:
-- If you have `BlueSoldier_Hero.asset`, open it
-- If not, create one: Right-click → `ArenaGame/Hero Config`
-- Name it `BlueSoldier_Hero.asset`
-
-### Step 3: Assign Prefab to Config
-
-1. Open the HeroConfigSO asset in Inspector
-2. Set `heroTypeName` to match your character (e.g., "BlueSoldier")
-3. Drag `Hero_BlueSoldier_Male.prefab` from `Assets/Prefabs/` to the `heroPrefab` field
-4. Save the asset
-
-### Step 4: Verify Hero Type Name
-
-The `heroTypeName` in HeroConfigSO must match:
-- The name used when spawning heroes in code
-- The name in your game's hero selection system
-
-**Example**:
-- If your code spawns `"BlueSoldier"`, the config's `heroTypeName` must be `"BlueSoldier"`
-- The prefab name doesn't matter, only the `heroTypeName` field
-
-### Step 5: Test in Game
+### Step 2: Test in Game
 
 1. Open your game scene (`Assets/Scenes/ArenaGame.unity` or similar)
 2. Make sure `GameBootstrapper` is in the scene
 3. Enter Play Mode
-4. Your hero should spawn with animations!
+4. Heroes should spawn with animations from GlobalGameSettings!
+
+---
+
+## How It Works
+
+### Runtime Animation Setup
+
+When heroes spawn, `EntityVisualizer`:
+1. Loads `GlobalGameSettings` from Resources
+2. Instantiates the `defaultHeroModel` GameObject
+3. Creates an `AnimatorOverrideController` from `HeroBaseController`
+4. Assigns animations from `GlobalGameSettings` to the override controller
+5. All heroes use the same model/animations (configurable globally)
+
+### Code Reference
+
+**Location**: `Assets/Scripts/Client/EntityVisualizer.cs`
+
+```csharp
+private void SetupHeroAnimator(GameObject heroObj, GlobalGameSettings globalSettings)
+{
+    // Creates AnimatorOverrideController with animations from GlobalGameSettings
+    // Assigns Idle, Walk, and Fire animations
+}
+```
+
+---
 
 ## Troubleshooting
 
 ### Hero doesn't appear
-- Check that `heroTypeName` in HeroConfigSO matches the spawn code
-- Verify prefab is assigned in HeroConfigSO
+- Check that `GlobalGameSettings.defaultHeroModel` is assigned
+- Verify the FBX model exists in `Assets/Characters/FBX/`
 - Check console for errors
 
 ### Animations not playing
-- Verify Animator component exists on prefab
-- Check that Animator Controller is assigned
-- Verify avatar is assigned
-- Check that animation clips are assigned in the controller
+- Verify `GlobalGameSettings.heroIdleAnimation` is assigned
+- Check that `HeroBaseController.controller` exists in `Assets/Resources/`
+- If missing, click **"Create Hero Base Animator Controller"** in GlobalGameSettings Inspector
+- Check console for `[animtest]` logs
 
-### Wrong hero appears
-- Check `heroTypeName` matches what your code expects
-- Verify the correct prefab is assigned
+### Wrong animations playing
+- Verify animation clips are assigned in `GlobalGameSettings`
+- Check that animation clips come from the same FBX as the model
+- Ensure animations are properly imported (expand FBX to see clips)
+
+### Animations not looping
+- Click **"Configure Animation Loop Settings"** in GlobalGameSettings Inspector
+- This sets loop settings on the animation clips
+
+---
 
 ## File Locations
 
-- **Prefabs**: `Assets/Prefabs/Hero_*.prefab`
-- **Controllers**: `Assets/Prefabs/Hero_*_Controller.controller`
-- **Configs**: `Assets/Resources/HeroConfigs/*_Hero.asset`
-- **Animation Configs**: `Assets/Resources/HeroAnimationConfigs/*_Animations.asset`
+- **GlobalGameSettings**: `Assets/Resources/GlobalGameSettings.asset`
+- **Base Animator Controller**: `Assets/Resources/HeroBaseController.controller`
+- **Hero Models**: `Assets/Characters/FBX/*.fbx`
+- **Hero Configs** (for combat stats): `Assets/Resources/HeroConfigs/*_Hero.asset`
 
+---
 
+## Advanced: Per-Hero Overrides
+
+Currently, all heroes use the same model/animations from `GlobalGameSettings`. 
+
+If you need per-hero customization:
+1. Assign different prefabs in `HeroConfigSO.heroPrefab` (in `Assets/Resources/HeroConfigs/`)
+2. Those prefabs will be used instead of `GlobalGameSettings.defaultHeroModel`
+3. The prefab should have its own Animator Controller configured
+
+**Note**: The system prioritizes:
+1. `HeroConfigSO.heroPrefab` (if assigned)
+2. `GlobalGameSettings.defaultHeroModel` (fallback)
+
+---
+
+## Related Documentation
+
+- **Main.md**: Project overview
+- **Project-Audit.md**: Current system documentation
+- **GlobalGameSettings.cs**: ScriptableObject definition
