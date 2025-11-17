@@ -202,22 +202,30 @@ namespace ArenaGame.Client
                 GameLogger.Log("[Bootstrap] ✓ Gave starting rewards: 300 gold, 100 gems");
             }
             
-            // 7. Create PartySpawner (spawns heroes from party)
+            // 7. Create LevelSpawnManager (manages level-based enemy spawning)
+            if (FindObjectOfType<LevelSpawnManager>() == null)
+            {
+                GameObject levelSpawnObj = new GameObject("LevelSpawnManager");
+                levelSpawnObj.AddComponent<LevelSpawnManager>();
+                GameLogger.Log("[Bootstrap] ✓ Created LevelSpawnManager");
+            }
+            
+            // 8. Create PartySpawner (spawns heroes from party)
             GameObject partySpawnerObj = new GameObject("PartySpawner");
             partySpawnerObj.AddComponent<PartySpawner>();
             GameLogger.Log("[Bootstrap] ✓ Created PartySpawner");
             
-            // 8. Create WaveManager (spawns enemies)
+            // 9. Create WaveManager (spawns enemies - legacy wave system)
             GameObject waveObj = new GameObject("WaveManager");
             waveObj.AddComponent<WaveManager>();
             GameLogger.Log("[Bootstrap] ✓ Created WaveManager");
             
-            // 9. Create ArenaUI (exit button, gold display)
+            // 10. Create ArenaUI (exit button, gold display)
             GameObject arenaUIObj = new GameObject("ArenaUI");
             arenaUIObj.AddComponent<ArenaUI>();
             GameLogger.Log("[Bootstrap] ✓ Created ArenaUI");
             
-            // 10. Create DamageNumberSpawner (floating damage numbers) - always create it
+            // 11. Create DamageNumberSpawner (floating damage numbers) - always create it
             GameObject dmgNumObj = new GameObject("DamageNumberSpawner");
             DamageNumberSpawner spawner = dmgNumObj.AddComponent<DamageNumberSpawner>();
             if (damageNumberPrefab != null)

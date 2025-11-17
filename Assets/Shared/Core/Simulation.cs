@@ -34,8 +34,11 @@ namespace ArenaGame.Shared.Core
                 commandProcessor.ProcessCommands(commands);
             }
             
-            // 1. Update wave system (spawns enemies deterministically)
-            WaveSystem.Update(world);
+            // 1. Update level spawn system (time-based continuous spawning)
+            LevelSpawnSystem.Update(world);
+            
+            // 1b. Update wave system (legacy wave-based spawning - can be disabled)
+            // WaveSystem.Update(world);
             
             // 2. AI decides what enemies do
             AISystem.UpdateEnemies(world);
@@ -67,6 +70,7 @@ namespace ArenaGame.Shared.Core
             world = new SimulationWorld();
             commandProcessor = new CommandProcessor(world);
             WaveSystem.Reset();
+            LevelSpawnSystem.Reset();
         }
     }
 }

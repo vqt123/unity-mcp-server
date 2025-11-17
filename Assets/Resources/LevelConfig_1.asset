@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75192428602a3427e8de2be898fba944, type: 3}
+  m_Name: LevelConfig_1
+  m_EditorClassIdentifier: ArenaGame.Client::ArenaGame.Client.LevelConfigSO
+  levelNumber: 1
+  levelName: The Beginning
+  spawnSchedules:
+  - enemyType: BasicGrunt
+    startTime: 0
+    initialSpawnInterval: 1
+    healthMultiplier: 1
+    isActive: 1
+  - enemyType: EliteTank
+    startTime: 30
+    initialSpawnInterval: 5
+    healthMultiplier: 4
+    isActive: 1
+  spawnRateIncreaseInterval: 5
+  spawnRateIncreaseMultiplier: 0.1

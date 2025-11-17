@@ -87,6 +87,16 @@ namespace ArenaGame.Shared.Data
                 IsBoss = true,
                 IsMiniBoss = false
             }},
+            { "EliteTank", new EnemyConfig {
+                EnemyType = "EliteTank",
+                MaxHealth = Fix64.FromInt(120), // 4x BasicGrunt health (30 * 4)
+                MoveSpeed = Fix64.FromInt(1),
+                Damage = Fix64.FromInt(10),
+                AttackRange = Fix64.FromFloat(1.2f),
+                AttackSpeed = Fix64.FromFloat(0.5f),
+                IsBoss = false,
+                IsMiniBoss = false
+            }},
         };
 
         public static EnemyConfig GetConfig(string enemyType)
