@@ -635,6 +635,33 @@ namespace ArenaGame.Client
             if (evt.IsBoss) obj.transform.localScale *= 2f;
             else if (evt.IsMiniBoss) obj.transform.localScale *= 1.5f;
             
+            // Randomize animation start point to prevent all enemies from moving in sync
+            Animator enemyAnimator = obj.GetComponentInChildren<Animator>();
+            if (enemyAnimator == null)
+            {
+                enemyAnimator = obj.GetComponent<Animator>();
+            }
+            
+            if (enemyAnimator != null && enemyAnimator.runtimeAnimatorController != null)
+            {
+                // Get the current state info
+                AnimatorStateInfo stateInfo = enemyAnimator.GetCurrentAnimatorStateInfo(0);
+                
+                // Randomize the normalizedTime (0.0 to 1.0) to start at a random point in the animation cycle
+                float randomStartTime = Random.Range(0f, 1f);
+                
+                // Play the current state at the randomized start time
+                if (stateInfo.IsName("Walk") || stateInfo.IsName("Idle"))
+                {
+                    enemyAnimator.Play(stateInfo.fullPathHash, 0, randomStartTime);
+                }
+                else
+                {
+                    // If not in Walk or Idle, try to play Walk at random start
+                    enemyAnimator.Play("Walk", 0, randomStartTime);
+                }
+            }
+            
             // Store entity ID for reference
             var view = obj.AddComponent<EntityView>();
             view.EntityId = evt.EnemyId;
